@@ -1,0 +1,24 @@
+{
+  "name": "beyond-studio-scoping",
+  "version": "1.0.0",
+  "description": "scoping for beyond studio",
+  "main": "app.js",
+  "scripts": {
+    "test": "",
+    "start": "parcel app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axbwh/beyond-studio-scoping.git"
+  },
+  "author": "Alex Bannwarth",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/axbwh/beyond-studio-scoping/issues"
+  },
+  "homepage": "https://github.com/axbwh/beyond-studio-scoping#readme",
+  "dependencies": {
+    "curtainsjs": "^8.1.3",
+    "parcel": "^2.7.0"
+  }
+}
