@@ -81,7 +81,6 @@ window.addEventListener('load', () => {
     });
     const sliderTarget = new RenderTarget(curtains);
 
-    console.log('heyaaa')
 
     // track scroll values
     const scroll = {
@@ -92,7 +91,6 @@ window.addEventListener('load', () => {
 
      // get our plane element
     const planeElement = document.getElementById('slider');
-    const canvasElement = document.getElementById('canvas');
 
     const threeD = new ThreeD()
 
@@ -228,6 +226,28 @@ window.addEventListener('load', () => {
                 fonts.loaded++;
 
                 if(fonts.loaded === fonts.list.length) {
+                
+
+                    // create our text planes
+                    const textEls = document.querySelectorAll('.text-plane');
+                    
+                    textEls.forEach(textEl => {
+
+                        const textPlane = new Plane(curtains, textEl, {
+                            vertexShader: textShader.vs,
+                            fragmentShader: textShader.fs
+                        });
+
+                        // create the text texture and... that's it!
+                        const textTexture = new TextTexture({
+                            plane: textPlane,
+                            textElement: textPlane.htmlElement,
+                            sampler: "uTexture",
+                            resolution: 1.5,
+                            skipFontLoading: true, // we've already loaded the fonts
+                        });
+                    });
+
 
                     // create our shader pass
                     const scrollPass = new ShaderPass(curtains, {
@@ -247,6 +267,7 @@ window.addEventListener('load', () => {
                         }
                     });
 
+                    threeD.ready()
                     scrollPass.loadCanvas(threeD.canvas)
 
                     // calculate the lerped scroll effect
@@ -263,24 +284,6 @@ window.addEventListener('load', () => {
                         scrollPass.uniforms.scrollEffect.value = scroll.effect;
                     });
                     
-
-                    // create our text planes
-                    const textEls = document.querySelectorAll('.text-plane');
-                    textEls.forEach(textEl => {
-                        const textPlane = new Plane(curtains, textEl, {
-                            vertexShader: textShader.vs,
-                            fragmentShader: textShader.fs
-                        });
-
-                        // create the text texture and... that's it!
-                        const textTexture = new TextTexture({
-                            plane: textPlane,
-                            textElement: textPlane.htmlElement,
-                            sampler: "uTexture",
-                            resolution: 1.5,
-                            skipFontLoading: true, // we've already loaded the fonts
-                        });
-                    });
                     
                 }
             })

@@ -62,13 +62,19 @@ class ThreeD {
         this.shape.rotation.z = Math.PI / 4 ;
         this.mouse = { x : 0.5, y: 0.5};
 
-        document.addEventListener('mousemove',this.mouseEvent.bind(this), false);
+        
     }
 
     mouseEvent(event){
         event.preventDefault();
 	    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
 	    this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+    }
+
+    ready(){
+        document.addEventListener('mousemove',this.mouseEvent.bind(this), false);
+        this.move();
+        this.render();
     }
 
     move(){
