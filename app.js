@@ -165,7 +165,6 @@ window.addEventListener('load', () => {
             });
     
             planeElement.addEventListener("click", () => {
-                console.log('click baby')
                 if(!slideshowState.isChanging) {
                     // enable drawing for now
                     //curtains.enableDrawing();

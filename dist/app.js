@@ -615,7 +615,6 @@ window.addEventListener("load", ()=>{
         pixelRatio: Math.min(1.5, window.devicePixelRatio)
     });
     const sliderTarget = new (0, _curtainsjs.RenderTarget)(curtains);
-    console.log("heyaaa");
     // track scroll values
     const scroll = {
         value: 0,
@@ -686,7 +685,6 @@ window.addEventListener("load", ()=>{
                 fromTexture: multiTexturesPlane.textures[slideshowState.nextTextureIndex]
             });
             planeElement.addEventListener("click", ()=>{
-                console.log("click baby");
                 if (!slideshowState.isChanging) {
                     // enable drawing for now
                     //curtains.enableDrawing();
@@ -8418,7 +8416,6 @@ class ThreeD {
     }
     mouseEvent(event) {
         event.preventDefault();
-        console.log(this.mouse);
         this.mouse.x = event.clientX / window.innerWidth * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     }
