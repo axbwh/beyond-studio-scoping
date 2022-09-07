@@ -2,6 +2,7 @@ import {Curtains, Plane, RenderTarget, PingPongPlane, ShaderPass} from 'curtains
 import {TextTexture} from './TextTexture';
 import sliderShader from './sliderShader';
 import textShader from './textShader';
+import ThreeD from './3d';
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 
@@ -16,6 +17,7 @@ const scrollFs = `
     varying vec2 vTextureCoord;
 
     uniform sampler2D uRenderTexture;
+    uniform sampler2D threeDTexture;
 
     // lerped scroll deltas
     // negative when scrolling down, positive when scrolling up
@@ -26,24 +28,48 @@ const scrollFs = `
 
 
     void main() {
-        vec2 scrollTextCoords = vTextureCoord;
+        vec2 scrollUv = vTextureCoord;
         float horizontalStretch;
+        vec4 threeDCol = texture2D(threeDTexture, vTextureCoord);
 
         // branching on an uniform is ok
         if(uScrollEffect >= 0.0) {
-            scrollTextCoords.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
-            horizontalStretch = sin(scrollTextCoords.y);
+            scrollUv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
+            horizontalStretch = sin(scrollUv.y);
         }
         else if(uScrollEffect < 0.0) {
-            scrollTextCoords.y += (scrollTextCoords.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
-            horizontalStretch = sin(-1.0 * (1.0 - scrollTextCoords.y));
+            scrollUv.y += (scrollUv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
+            horizontalStretch = sin(-1.0 * (1.0 - scrollUv.y));
         }
 
-        scrollTextCoords.x = scrollTextCoords.x * 2.0 - 1.0;
-        scrollTextCoords.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;
-        scrollTextCoords.x = (scrollTextCoords.x + 1.0) * 0.5;
+        scrollUv.x = scrollUv.x * 2.0 - 1.0;
+        scrollUv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;
+        scrollUv.x = (scrollUv.x + 1.0) * 0.5;
+        // moving the content underneath the square
 
-        gl_FragColor = texture2D(uRenderTexture, scrollTextCoords);
+        vec2 uvR = scrollUv;
+        vec2 uvG = scrollUv;
+        vec2 uvB = scrollUv;
+        uvR.x += threeDCol.r * 0.005;
+        uvR.y += threeDCol.r * 0.005;
+        uvG.x -= threeDCol.r * 0.005;
+        uvG.y += threeDCol.r * 0.005;
+        uvB.y -= threeDCol.r * 0.005;
+
+        vec4 colR =  texture2D(uRenderTexture, uvR);
+        vec4 colG =  texture2D(uRenderTexture, uvG);
+        vec4 colB =  texture2D(uRenderTexture, uvB);
+        float maxA = max(max(colR.a, colG.a), colB.a);
+
+        vec4 splitCol = vec4(colR.r, colG.g, colB.b, colR.a);
+
+        vec4 baseCol = texture2D(uRenderTexture, scrollUv);
+
+        vec4 mixCol = mix(baseCol, splitCol, threeDCol.g);
+        mixCol = mix(mixCol, vec4(0.8 ,0.8 ,0.8, 1.0), clamp(threeDCol.g - mixCol.a, 0.0, 1.0));
+
+        gl_FragColor = mixCol;
+        //gl_FragColor = texture2D(threeDTexture, scrollUv);
     }
 `;
 
@@ -55,6 +81,8 @@ window.addEventListener('load', () => {
     });
     const sliderTarget = new RenderTarget(curtains);
 
+    console.log('heyaaa')
+
     // track scroll values
     const scroll = {
         value: 0,
@@ -65,6 +93,8 @@ window.addEventListener('load', () => {
      // get our plane element
     const planeElement = document.getElementById('slider');
     const canvasElement = document.getElementById('canvas');
+
+    const threeD = new ThreeD()
 
         // here we will handle which texture is visible and the timer to transition between images
         const slideshowState = {
@@ -218,8 +248,12 @@ window.addEventListener('load', () => {
                         }
                     });
 
+                    scrollPass.loadCanvas(threeD.canvas)
+
                     // calculate the lerped scroll effect
                     scrollPass.onRender(() => {
+                        threeD.move()
+                        threeD.render()
                         scroll.lastValue = scroll.value;
                         scroll.value = curtains.getScrollValues().y;
 
