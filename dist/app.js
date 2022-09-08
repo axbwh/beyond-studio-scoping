@@ -8358,11 +8358,9 @@ exports.default = {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _three = require("three");
-var _svgloaderJs = require("three/examples/jsm/loaders/SVGLoader.js");
 var _gltfloaderJs = require("three/examples/jsm/loaders/GLTFLoader.js");
 var _dracoloaderJs = require("three/examples/jsm/loaders/DRACOLoader.js");
-var _iconSvg = require("./icon.svg");
-var _iconSvgDefault = parcelHelpers.interopDefault(_iconSvg);
+var _threeSubdivide = require("three-subdivide");
 var _iconGlb = require("./icon.glb");
 var _iconGlbDefault = parcelHelpers.interopDefault(_iconGlb);
 const vs = `
@@ -8418,17 +8416,6 @@ class ThreeD {
         window.addEventListener("resize", this.onWindowResize);
     // document.body.appendChild( this.renderer.domElement );
     }
-    loadSvg() {
-        const loader = new (0, _svgloaderJs.SVGLoader)();
-        return loader.loadAsync((0, _iconSvgDefault.default)).then((data)=>{
-            const shape = (0, _svgloaderJs.SVGLoader).createShapes(data.paths[0])[0]; // create a shape from the first svg path
-            this.geometry = new _three.ShapeGeometry(shape);
-            this.mesh = new _three.Mesh(this.geometry, this.material);
-            this.scene.add(this.mesh);
-            //this.mesh.rotation.z = Math.PI / 4 ;
-            this.ready();
-        });
-    }
     loadGlb() {
         // Instantiate a loader
         const loader = new (0, _gltfloaderJs.GLTFLoader)();
@@ -8438,7 +8425,10 @@ class ThreeD {
         loader.setDRACOLoader(dracoLoader);
         return loader.loadAsync((0, _iconGlbDefault.default)).then((glb)=>{
             console.log(glb.scene.children[0].geometry);
-            this.geometry = glb.scene.children[0].geometry;
+            const geo = glb.scene.children[0].geometry;
+            // const smoothGeo = LoopSubdivision.modify(geo, 1)
+            // this.geometry = smoothGeo
+            this.geometry = geo;
             this.mesh = new _three.Mesh(this.geometry, this.material);
             this.scene.add(this.mesh);
             this.mesh.rotation.x = Math.PI / 4;
@@ -8480,7 +8470,7 @@ class ThreeD {
 }
 exports.default = ThreeD;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","three":"ktPTu","three/examples/jsm/loaders/SVGLoader.js":"7mdYV","./icon.svg":"fn7rL","./icon.glb":"8EsCM","three/examples/jsm/loaders/GLTFLoader.js":"dVRsF","three/examples/jsm/loaders/DRACOLoader.js":"lkdU4"}],"ktPTu":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","three":"ktPTu","./icon.glb":"8EsCM","three/examples/jsm/loaders/GLTFLoader.js":"dVRsF","three/examples/jsm/loaders/DRACOLoader.js":"lkdU4","three-subdivide":"e6vhA"}],"ktPTu":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "ACESFilmicToneMapping", ()=>ACESFilmicToneMapping);
@@ -37474,1682 +37464,8 @@ if (typeof window !== "undefined") {
     else window.__THREE__ = REVISION;
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"7mdYV":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "SVGLoader", ()=>SVGLoader);
-var _three = require("three");
-class SVGLoader extends (0, _three.Loader) {
-    constructor(manager){
-        super(manager);
-        // Default dots per inch
-        this.defaultDPI = 90;
-        // Accepted units: 'mm', 'cm', 'in', 'pt', 'pc', 'px'
-        this.defaultUnit = "px";
-    }
-    load(url, onLoad, onProgress, onError) {
-        const scope = this;
-        const loader = new (0, _three.FileLoader)(scope.manager);
-        loader.setPath(scope.path);
-        loader.setRequestHeader(scope.requestHeader);
-        loader.setWithCredentials(scope.withCredentials);
-        loader.load(url, function(text) {
-            try {
-                onLoad(scope.parse(text));
-            } catch (e) {
-                if (onError) onError(e);
-                else console.error(e);
-                scope.manager.itemError(url);
-            }
-        }, onProgress, onError);
-    }
-    parse(text) {
-        const scope = this;
-        function parseNode(node, style) {
-            if (node.nodeType !== 1) return;
-            const transform = getNodeTransform(node);
-            let isDefsNode = false;
-            let path = null;
-            switch(node.nodeName){
-                case "svg":
-                    style = parseStyle(node, style);
-                    break;
-                case "style":
-                    parseCSSStylesheet(node);
-                    break;
-                case "g":
-                    style = parseStyle(node, style);
-                    break;
-                case "path":
-                    style = parseStyle(node, style);
-                    if (node.hasAttribute("d")) path = parsePathNode(node);
-                    break;
-                case "rect":
-                    style = parseStyle(node, style);
-                    path = parseRectNode(node);
-                    break;
-                case "polygon":
-                    style = parseStyle(node, style);
-                    path = parsePolygonNode(node);
-                    break;
-                case "polyline":
-                    style = parseStyle(node, style);
-                    path = parsePolylineNode(node);
-                    break;
-                case "circle":
-                    style = parseStyle(node, style);
-                    path = parseCircleNode(node);
-                    break;
-                case "ellipse":
-                    style = parseStyle(node, style);
-                    path = parseEllipseNode(node);
-                    break;
-                case "line":
-                    style = parseStyle(node, style);
-                    path = parseLineNode(node);
-                    break;
-                case "defs":
-                    isDefsNode = true;
-                    break;
-                case "use":
-                    style = parseStyle(node, style);
-                    const href = node.getAttributeNS("http://www.w3.org/1999/xlink", "href") || "";
-                    const usedNodeId = href.substring(1);
-                    const usedNode = node.viewportElement.getElementById(usedNodeId);
-                    if (usedNode) parseNode(usedNode, style);
-                    else console.warn("SVGLoader: 'use node' references non-existent node id: " + usedNodeId);
-                    break;
-                default:
-            }
-            if (path) {
-                if (style.fill !== undefined && style.fill !== "none") path.color.setStyle(style.fill);
-                transformPath(path, currentTransform);
-                paths.push(path);
-                path.userData = {
-                    node: node,
-                    style: style
-                };
-            }
-            const childNodes = node.childNodes;
-            for(let i = 0; i < childNodes.length; i++){
-                const node1 = childNodes[i];
-                if (isDefsNode && node1.nodeName !== "style" && node1.nodeName !== "defs") continue;
-                parseNode(node1, style);
-            }
-            if (transform) {
-                transformStack.pop();
-                if (transformStack.length > 0) currentTransform.copy(transformStack[transformStack.length - 1]);
-                else currentTransform.identity();
-            }
-        }
-        function parsePathNode(node) {
-            const path = new (0, _three.ShapePath)();
-            const point = new (0, _three.Vector2)();
-            const control = new (0, _three.Vector2)();
-            const firstPoint = new (0, _three.Vector2)();
-            let isFirstPoint = true;
-            let doSetFirstPoint = false;
-            const d = node.getAttribute("d");
-            // console.log( d );
-            const commands = d.match(/[a-df-z][^a-df-z]*/ig);
-            for(let i = 0, l = commands.length; i < l; i++){
-                const command = commands[i];
-                const type = command.charAt(0);
-                const data = command.slice(1).trim();
-                if (isFirstPoint === true) {
-                    doSetFirstPoint = true;
-                    isFirstPoint = false;
-                }
-                let numbers;
-                switch(type){
-                    case "M":
-                        numbers = parseFloats(data);
-                        for(let j = 0, jl = numbers.length; j < jl; j += 2){
-                            point.x = numbers[j + 0];
-                            point.y = numbers[j + 1];
-                            control.x = point.x;
-                            control.y = point.y;
-                            if (j === 0) path.moveTo(point.x, point.y);
-                            else path.lineTo(point.x, point.y);
-                            if (j === 0) firstPoint.copy(point);
-                        }
-                        break;
-                    case "H":
-                        numbers = parseFloats(data);
-                        for(let j1 = 0, jl1 = numbers.length; j1 < jl1; j1++){
-                            point.x = numbers[j1];
-                            control.x = point.x;
-                            control.y = point.y;
-                            path.lineTo(point.x, point.y);
-                            if (j1 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "V":
-                        numbers = parseFloats(data);
-                        for(let j2 = 0, jl2 = numbers.length; j2 < jl2; j2++){
-                            point.y = numbers[j2];
-                            control.x = point.x;
-                            control.y = point.y;
-                            path.lineTo(point.x, point.y);
-                            if (j2 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "L":
-                        numbers = parseFloats(data);
-                        for(let j3 = 0, jl3 = numbers.length; j3 < jl3; j3 += 2){
-                            point.x = numbers[j3 + 0];
-                            point.y = numbers[j3 + 1];
-                            control.x = point.x;
-                            control.y = point.y;
-                            path.lineTo(point.x, point.y);
-                            if (j3 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "C":
-                        numbers = parseFloats(data);
-                        for(let j4 = 0, jl4 = numbers.length; j4 < jl4; j4 += 6){
-                            path.bezierCurveTo(numbers[j4 + 0], numbers[j4 + 1], numbers[j4 + 2], numbers[j4 + 3], numbers[j4 + 4], numbers[j4 + 5]);
-                            control.x = numbers[j4 + 2];
-                            control.y = numbers[j4 + 3];
-                            point.x = numbers[j4 + 4];
-                            point.y = numbers[j4 + 5];
-                            if (j4 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "S":
-                        numbers = parseFloats(data);
-                        for(let j5 = 0, jl5 = numbers.length; j5 < jl5; j5 += 4){
-                            path.bezierCurveTo(getReflection(point.x, control.x), getReflection(point.y, control.y), numbers[j5 + 0], numbers[j5 + 1], numbers[j5 + 2], numbers[j5 + 3]);
-                            control.x = numbers[j5 + 0];
-                            control.y = numbers[j5 + 1];
-                            point.x = numbers[j5 + 2];
-                            point.y = numbers[j5 + 3];
-                            if (j5 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "Q":
-                        numbers = parseFloats(data);
-                        for(let j6 = 0, jl6 = numbers.length; j6 < jl6; j6 += 4){
-                            path.quadraticCurveTo(numbers[j6 + 0], numbers[j6 + 1], numbers[j6 + 2], numbers[j6 + 3]);
-                            control.x = numbers[j6 + 0];
-                            control.y = numbers[j6 + 1];
-                            point.x = numbers[j6 + 2];
-                            point.y = numbers[j6 + 3];
-                            if (j6 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "T":
-                        numbers = parseFloats(data);
-                        for(let j7 = 0, jl7 = numbers.length; j7 < jl7; j7 += 2){
-                            const rx = getReflection(point.x, control.x);
-                            const ry = getReflection(point.y, control.y);
-                            path.quadraticCurveTo(rx, ry, numbers[j7 + 0], numbers[j7 + 1]);
-                            control.x = rx;
-                            control.y = ry;
-                            point.x = numbers[j7 + 0];
-                            point.y = numbers[j7 + 1];
-                            if (j7 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "A":
-                        numbers = parseFloats(data, [
-                            3,
-                            4
-                        ], 7);
-                        for(let j8 = 0, jl8 = numbers.length; j8 < jl8; j8 += 7){
-                            // skip command if start point == end point
-                            if (numbers[j8 + 5] == point.x && numbers[j8 + 6] == point.y) continue;
-                            const start = point.clone();
-                            point.x = numbers[j8 + 5];
-                            point.y = numbers[j8 + 6];
-                            control.x = point.x;
-                            control.y = point.y;
-                            parseArcCommand(path, numbers[j8], numbers[j8 + 1], numbers[j8 + 2], numbers[j8 + 3], numbers[j8 + 4], start, point);
-                            if (j8 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "m":
-                        numbers = parseFloats(data);
-                        for(let j9 = 0, jl9 = numbers.length; j9 < jl9; j9 += 2){
-                            point.x += numbers[j9 + 0];
-                            point.y += numbers[j9 + 1];
-                            control.x = point.x;
-                            control.y = point.y;
-                            if (j9 === 0) path.moveTo(point.x, point.y);
-                            else path.lineTo(point.x, point.y);
-                            if (j9 === 0) firstPoint.copy(point);
-                        }
-                        break;
-                    case "h":
-                        numbers = parseFloats(data);
-                        for(let j10 = 0, jl10 = numbers.length; j10 < jl10; j10++){
-                            point.x += numbers[j10];
-                            control.x = point.x;
-                            control.y = point.y;
-                            path.lineTo(point.x, point.y);
-                            if (j10 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "v":
-                        numbers = parseFloats(data);
-                        for(let j11 = 0, jl11 = numbers.length; j11 < jl11; j11++){
-                            point.y += numbers[j11];
-                            control.x = point.x;
-                            control.y = point.y;
-                            path.lineTo(point.x, point.y);
-                            if (j11 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "l":
-                        numbers = parseFloats(data);
-                        for(let j12 = 0, jl12 = numbers.length; j12 < jl12; j12 += 2){
-                            point.x += numbers[j12 + 0];
-                            point.y += numbers[j12 + 1];
-                            control.x = point.x;
-                            control.y = point.y;
-                            path.lineTo(point.x, point.y);
-                            if (j12 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "c":
-                        numbers = parseFloats(data);
-                        for(let j13 = 0, jl13 = numbers.length; j13 < jl13; j13 += 6){
-                            path.bezierCurveTo(point.x + numbers[j13 + 0], point.y + numbers[j13 + 1], point.x + numbers[j13 + 2], point.y + numbers[j13 + 3], point.x + numbers[j13 + 4], point.y + numbers[j13 + 5]);
-                            control.x = point.x + numbers[j13 + 2];
-                            control.y = point.y + numbers[j13 + 3];
-                            point.x += numbers[j13 + 4];
-                            point.y += numbers[j13 + 5];
-                            if (j13 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "s":
-                        numbers = parseFloats(data);
-                        for(let j14 = 0, jl14 = numbers.length; j14 < jl14; j14 += 4){
-                            path.bezierCurveTo(getReflection(point.x, control.x), getReflection(point.y, control.y), point.x + numbers[j14 + 0], point.y + numbers[j14 + 1], point.x + numbers[j14 + 2], point.y + numbers[j14 + 3]);
-                            control.x = point.x + numbers[j14 + 0];
-                            control.y = point.y + numbers[j14 + 1];
-                            point.x += numbers[j14 + 2];
-                            point.y += numbers[j14 + 3];
-                            if (j14 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "q":
-                        numbers = parseFloats(data);
-                        for(let j15 = 0, jl15 = numbers.length; j15 < jl15; j15 += 4){
-                            path.quadraticCurveTo(point.x + numbers[j15 + 0], point.y + numbers[j15 + 1], point.x + numbers[j15 + 2], point.y + numbers[j15 + 3]);
-                            control.x = point.x + numbers[j15 + 0];
-                            control.y = point.y + numbers[j15 + 1];
-                            point.x += numbers[j15 + 2];
-                            point.y += numbers[j15 + 3];
-                            if (j15 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "t":
-                        numbers = parseFloats(data);
-                        for(let j16 = 0, jl16 = numbers.length; j16 < jl16; j16 += 2){
-                            const rx1 = getReflection(point.x, control.x);
-                            const ry1 = getReflection(point.y, control.y);
-                            path.quadraticCurveTo(rx1, ry1, point.x + numbers[j16 + 0], point.y + numbers[j16 + 1]);
-                            control.x = rx1;
-                            control.y = ry1;
-                            point.x = point.x + numbers[j16 + 0];
-                            point.y = point.y + numbers[j16 + 1];
-                            if (j16 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "a":
-                        numbers = parseFloats(data, [
-                            3,
-                            4
-                        ], 7);
-                        for(let j17 = 0, jl17 = numbers.length; j17 < jl17; j17 += 7){
-                            // skip command if no displacement
-                            if (numbers[j17 + 5] == 0 && numbers[j17 + 6] == 0) continue;
-                            const start1 = point.clone();
-                            point.x += numbers[j17 + 5];
-                            point.y += numbers[j17 + 6];
-                            control.x = point.x;
-                            control.y = point.y;
-                            parseArcCommand(path, numbers[j17], numbers[j17 + 1], numbers[j17 + 2], numbers[j17 + 3], numbers[j17 + 4], start1, point);
-                            if (j17 === 0 && doSetFirstPoint === true) firstPoint.copy(point);
-                        }
-                        break;
-                    case "Z":
-                    case "z":
-                        path.currentPath.autoClose = true;
-                        if (path.currentPath.curves.length > 0) {
-                            // Reset point to beginning of Path
-                            point.copy(firstPoint);
-                            path.currentPath.currentPoint.copy(point);
-                            isFirstPoint = true;
-                        }
-                        break;
-                    default:
-                        console.warn(command);
-                }
-                // console.log( type, parseFloats( data ), parseFloats( data ).length  )
-                doSetFirstPoint = false;
-            }
-            return path;
-        }
-        function parseCSSStylesheet(node) {
-            if (!node.sheet || !node.sheet.cssRules || !node.sheet.cssRules.length) return;
-            for(let i = 0; i < node.sheet.cssRules.length; i++){
-                const stylesheet = node.sheet.cssRules[i];
-                if (stylesheet.type !== 1) continue;
-                const selectorList = stylesheet.selectorText.split(/,/gm).filter(Boolean).map((i)=>i.trim());
-                for(let j = 0; j < selectorList.length; j++){
-                    // Remove empty rules
-                    const definitions = Object.fromEntries(Object.entries(stylesheet.style).filter(([, v])=>v !== ""));
-                    stylesheets[selectorList[j]] = Object.assign(stylesheets[selectorList[j]] || {}, definitions);
-                }
-            }
-        }
-        /**
-		 * https://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
-		 * https://mortoray.com/2017/02/16/rendering-an-svg-elliptical-arc-as-bezier-curves/ Appendix: Endpoint to center arc conversion
-		 * From
-		 * rx ry x-axis-rotation large-arc-flag sweep-flag x y
-		 * To
-		 * aX, aY, xRadius, yRadius, aStartAngle, aEndAngle, aClockwise, aRotation
-		 */ function parseArcCommand(path, rx, ry, x_axis_rotation, large_arc_flag, sweep_flag, start, end) {
-            if (rx == 0 || ry == 0) {
-                // draw a line if either of the radii == 0
-                path.lineTo(end.x, end.y);
-                return;
-            }
-            x_axis_rotation = x_axis_rotation * Math.PI / 180;
-            // Ensure radii are positive
-            rx = Math.abs(rx);
-            ry = Math.abs(ry);
-            // Compute (x1', y1')
-            const dx2 = (start.x - end.x) / 2.0;
-            const dy2 = (start.y - end.y) / 2.0;
-            const x1p = Math.cos(x_axis_rotation) * dx2 + Math.sin(x_axis_rotation) * dy2;
-            const y1p = -Math.sin(x_axis_rotation) * dx2 + Math.cos(x_axis_rotation) * dy2;
-            // Compute (cx', cy')
-            let rxs = rx * rx;
-            let rys = ry * ry;
-            const x1ps = x1p * x1p;
-            const y1ps = y1p * y1p;
-            // Ensure radii are large enough
-            const cr = x1ps / rxs + y1ps / rys;
-            if (cr > 1) {
-                // scale up rx,ry equally so cr == 1
-                const s = Math.sqrt(cr);
-                rx = s * rx;
-                ry = s * ry;
-                rxs = rx * rx;
-                rys = ry * ry;
-            }
-            const dq = rxs * y1ps + rys * x1ps;
-            const pq = (rxs * rys - dq) / dq;
-            let q = Math.sqrt(Math.max(0, pq));
-            if (large_arc_flag === sweep_flag) q = -q;
-            const cxp = q * rx * y1p / ry;
-            const cyp = -q * ry * x1p / rx;
-            // Step 3: Compute (cx, cy) from (cx', cy')
-            const cx = Math.cos(x_axis_rotation) * cxp - Math.sin(x_axis_rotation) * cyp + (start.x + end.x) / 2;
-            const cy = Math.sin(x_axis_rotation) * cxp + Math.cos(x_axis_rotation) * cyp + (start.y + end.y) / 2;
-            // Step 4: Compute θ1 and Δθ
-            const theta = svgAngle(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry);
-            const delta = svgAngle((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry) % (Math.PI * 2);
-            path.currentPath.absellipse(cx, cy, rx, ry, theta, theta + delta, sweep_flag === 0, x_axis_rotation);
-        }
-        function svgAngle(ux, uy, vx, vy) {
-            const dot = ux * vx + uy * vy;
-            const len = Math.sqrt(ux * ux + uy * uy) * Math.sqrt(vx * vx + vy * vy);
-            let ang = Math.acos(Math.max(-1, Math.min(1, dot / len))); // floating point precision, slightly over values appear
-            if (ux * vy - uy * vx < 0) ang = -ang;
-            return ang;
-        }
-        /*
-		* According to https://www.w3.org/TR/SVG/shapes.html#RectElementRXAttribute
-		* rounded corner should be rendered to elliptical arc, but bezier curve does the job well enough
-		*/ function parseRectNode(node) {
-            const x = parseFloatWithUnits(node.getAttribute("x") || 0);
-            const y = parseFloatWithUnits(node.getAttribute("y") || 0);
-            const rx = parseFloatWithUnits(node.getAttribute("rx") || node.getAttribute("ry") || 0);
-            const ry = parseFloatWithUnits(node.getAttribute("ry") || node.getAttribute("rx") || 0);
-            const w = parseFloatWithUnits(node.getAttribute("width"));
-            const h = parseFloatWithUnits(node.getAttribute("height"));
-            // Ellipse arc to Bezier approximation Coefficient (Inversed). See:
-            // https://spencermortensen.com/articles/bezier-circle/
-            const bci = 0.448084975506;
-            const path = new (0, _three.ShapePath)();
-            // top left
-            path.moveTo(x + rx, y);
-            // top right
-            path.lineTo(x + w - rx, y);
-            if (rx !== 0 || ry !== 0) path.bezierCurveTo(x + w - rx * bci, y, x + w, y + ry * bci, x + w, y + ry);
-            // bottom right
-            path.lineTo(x + w, y + h - ry);
-            if (rx !== 0 || ry !== 0) path.bezierCurveTo(x + w, y + h - ry * bci, x + w - rx * bci, y + h, x + w - rx, y + h);
-            // bottom left
-            path.lineTo(x + rx, y + h);
-            if (rx !== 0 || ry !== 0) path.bezierCurveTo(x + rx * bci, y + h, x, y + h - ry * bci, x, y + h - ry);
-            // back to top left
-            path.lineTo(x, y + ry);
-            if (rx !== 0 || ry !== 0) path.bezierCurveTo(x, y + ry * bci, x + rx * bci, y, x + rx, y);
-            return path;
-        }
-        function parsePolygonNode(node) {
-            function iterator(match, a, b) {
-                const x = parseFloatWithUnits(a);
-                const y = parseFloatWithUnits(b);
-                if (index === 0) path.moveTo(x, y);
-                else path.lineTo(x, y);
-                index++;
-            }
-            const regex = /(-?[\d\.?]+)[,|\s](-?[\d\.?]+)/g;
-            const path = new (0, _three.ShapePath)();
-            let index = 0;
-            node.getAttribute("points").replace(regex, iterator);
-            path.currentPath.autoClose = true;
-            return path;
-        }
-        function parsePolylineNode(node) {
-            function iterator(match, a, b) {
-                const x = parseFloatWithUnits(a);
-                const y = parseFloatWithUnits(b);
-                if (index === 0) path.moveTo(x, y);
-                else path.lineTo(x, y);
-                index++;
-            }
-            const regex = /(-?[\d\.?]+)[,|\s](-?[\d\.?]+)/g;
-            const path = new (0, _three.ShapePath)();
-            let index = 0;
-            node.getAttribute("points").replace(regex, iterator);
-            path.currentPath.autoClose = false;
-            return path;
-        }
-        function parseCircleNode(node) {
-            const x = parseFloatWithUnits(node.getAttribute("cx") || 0);
-            const y = parseFloatWithUnits(node.getAttribute("cy") || 0);
-            const r = parseFloatWithUnits(node.getAttribute("r") || 0);
-            const subpath = new (0, _three.Path)();
-            subpath.absarc(x, y, r, 0, Math.PI * 2);
-            const path = new (0, _three.ShapePath)();
-            path.subPaths.push(subpath);
-            return path;
-        }
-        function parseEllipseNode(node) {
-            const x = parseFloatWithUnits(node.getAttribute("cx") || 0);
-            const y = parseFloatWithUnits(node.getAttribute("cy") || 0);
-            const rx = parseFloatWithUnits(node.getAttribute("rx") || 0);
-            const ry = parseFloatWithUnits(node.getAttribute("ry") || 0);
-            const subpath = new (0, _three.Path)();
-            subpath.absellipse(x, y, rx, ry, 0, Math.PI * 2);
-            const path = new (0, _three.ShapePath)();
-            path.subPaths.push(subpath);
-            return path;
-        }
-        function parseLineNode(node) {
-            const x1 = parseFloatWithUnits(node.getAttribute("x1") || 0);
-            const y1 = parseFloatWithUnits(node.getAttribute("y1") || 0);
-            const x2 = parseFloatWithUnits(node.getAttribute("x2") || 0);
-            const y2 = parseFloatWithUnits(node.getAttribute("y2") || 0);
-            const path = new (0, _three.ShapePath)();
-            path.moveTo(x1, y1);
-            path.lineTo(x2, y2);
-            path.currentPath.autoClose = false;
-            return path;
-        }
-        //
-        function parseStyle(node, style) {
-            style = Object.assign({}, style); // clone style
-            let stylesheetStyles = {};
-            if (node.hasAttribute("class")) {
-                const classSelectors = node.getAttribute("class").split(/\s/).filter(Boolean).map((i)=>i.trim());
-                for(let i = 0; i < classSelectors.length; i++)stylesheetStyles = Object.assign(stylesheetStyles, stylesheets["." + classSelectors[i]]);
-            }
-            if (node.hasAttribute("id")) stylesheetStyles = Object.assign(stylesheetStyles, stylesheets["#" + node.getAttribute("id")]);
-            function addStyle(svgName, jsName, adjustFunction) {
-                if (adjustFunction === undefined) adjustFunction = function copy(v) {
-                    if (v.startsWith("url")) console.warn("SVGLoader: url access in attributes is not implemented.");
-                    return v;
-                };
-                if (node.hasAttribute(svgName)) style[jsName] = adjustFunction(node.getAttribute(svgName));
-                if (stylesheetStyles[svgName]) style[jsName] = adjustFunction(stylesheetStyles[svgName]);
-                if (node.style && node.style[svgName] !== "") style[jsName] = adjustFunction(node.style[svgName]);
-            }
-            function clamp(v) {
-                return Math.max(0, Math.min(1, parseFloatWithUnits(v)));
-            }
-            function positive(v) {
-                return Math.max(0, parseFloatWithUnits(v));
-            }
-            addStyle("fill", "fill");
-            addStyle("fill-opacity", "fillOpacity", clamp);
-            addStyle("fill-rule", "fillRule");
-            addStyle("opacity", "opacity", clamp);
-            addStyle("stroke", "stroke");
-            addStyle("stroke-opacity", "strokeOpacity", clamp);
-            addStyle("stroke-width", "strokeWidth", positive);
-            addStyle("stroke-linejoin", "strokeLineJoin");
-            addStyle("stroke-linecap", "strokeLineCap");
-            addStyle("stroke-miterlimit", "strokeMiterLimit", positive);
-            addStyle("visibility", "visibility");
-            return style;
-        }
-        // http://www.w3.org/TR/SVG11/implnote.html#PathElementImplementationNotes
-        function getReflection(a, b) {
-            return a - (b - a);
-        }
-        // from https://github.com/ppvg/svg-numbers (MIT License)
-        function parseFloats(input, flags, stride) {
-            if (typeof input !== "string") throw new TypeError("Invalid input: " + typeof input);
-            // Character groups
-            const RE = {
-                SEPARATOR: /[ \t\r\n\,.\-+]/,
-                WHITESPACE: /[ \t\r\n]/,
-                DIGIT: /[\d]/,
-                SIGN: /[-+]/,
-                POINT: /\./,
-                COMMA: /,/,
-                EXP: /e/i,
-                FLAGS: /[01]/
-            };
-            // States
-            const SEP = 0;
-            const INT = 1;
-            const FLOAT = 2;
-            const EXP = 3;
-            let state = SEP;
-            let seenComma = true;
-            let number = "", exponent = "";
-            const result = [];
-            function throwSyntaxError(current, i, partial) {
-                const error = new SyntaxError('Unexpected character "' + current + '" at index ' + i + ".");
-                error.partial = partial;
-                throw error;
-            }
-            function newNumber() {
-                if (number !== "") {
-                    if (exponent === "") result.push(Number(number));
-                    else result.push(Number(number) * Math.pow(10, Number(exponent)));
-                }
-                number = "";
-                exponent = "";
-            }
-            let current;
-            const length = input.length;
-            for(let i = 0; i < length; i++){
-                current = input[i];
-                // check for flags
-                if (Array.isArray(flags) && flags.includes(result.length % stride) && RE.FLAGS.test(current)) {
-                    state = INT;
-                    number = current;
-                    newNumber();
-                    continue;
-                }
-                // parse until next number
-                if (state === SEP) {
-                    // eat whitespace
-                    if (RE.WHITESPACE.test(current)) continue;
-                    // start new number
-                    if (RE.DIGIT.test(current) || RE.SIGN.test(current)) {
-                        state = INT;
-                        number = current;
-                        continue;
-                    }
-                    if (RE.POINT.test(current)) {
-                        state = FLOAT;
-                        number = current;
-                        continue;
-                    }
-                    // throw on double commas (e.g. "1, , 2")
-                    if (RE.COMMA.test(current)) {
-                        if (seenComma) throwSyntaxError(current, i, result);
-                        seenComma = true;
-                    }
-                }
-                // parse integer part
-                if (state === INT) {
-                    if (RE.DIGIT.test(current)) {
-                        number += current;
-                        continue;
-                    }
-                    if (RE.POINT.test(current)) {
-                        number += current;
-                        state = FLOAT;
-                        continue;
-                    }
-                    if (RE.EXP.test(current)) {
-                        state = EXP;
-                        continue;
-                    }
-                    // throw on double signs ("-+1"), but not on sign as separator ("-1-2")
-                    if (RE.SIGN.test(current) && number.length === 1 && RE.SIGN.test(number[0])) throwSyntaxError(current, i, result);
-                }
-                // parse decimal part
-                if (state === FLOAT) {
-                    if (RE.DIGIT.test(current)) {
-                        number += current;
-                        continue;
-                    }
-                    if (RE.EXP.test(current)) {
-                        state = EXP;
-                        continue;
-                    }
-                    // throw on double decimal points (e.g. "1..2")
-                    if (RE.POINT.test(current) && number[number.length - 1] === ".") throwSyntaxError(current, i, result);
-                }
-                // parse exponent part
-                if (state === EXP) {
-                    if (RE.DIGIT.test(current)) {
-                        exponent += current;
-                        continue;
-                    }
-                    if (RE.SIGN.test(current)) {
-                        if (exponent === "") {
-                            exponent += current;
-                            continue;
-                        }
-                        if (exponent.length === 1 && RE.SIGN.test(exponent)) throwSyntaxError(current, i, result);
-                    }
-                }
-                // end of number
-                if (RE.WHITESPACE.test(current)) {
-                    newNumber();
-                    state = SEP;
-                    seenComma = false;
-                } else if (RE.COMMA.test(current)) {
-                    newNumber();
-                    state = SEP;
-                    seenComma = true;
-                } else if (RE.SIGN.test(current)) {
-                    newNumber();
-                    state = INT;
-                    number = current;
-                } else if (RE.POINT.test(current)) {
-                    newNumber();
-                    state = FLOAT;
-                    number = current;
-                } else throwSyntaxError(current, i, result);
-            }
-            // add the last number found (if any)
-            newNumber();
-            return result;
-        }
-        // Units
-        const units = [
-            "mm",
-            "cm",
-            "in",
-            "pt",
-            "pc",
-            "px"
-        ];
-        // Conversion: [ fromUnit ][ toUnit ] (-1 means dpi dependent)
-        const unitConversion = {
-            "mm": {
-                "mm": 1,
-                "cm": 0.1,
-                "in": 1 / 25.4,
-                "pt": 72 / 25.4,
-                "pc": 6 / 25.4,
-                "px": -1
-            },
-            "cm": {
-                "mm": 10,
-                "cm": 1,
-                "in": 1 / 2.54,
-                "pt": 72 / 2.54,
-                "pc": 6 / 2.54,
-                "px": -1
-            },
-            "in": {
-                "mm": 25.4,
-                "cm": 2.54,
-                "in": 1,
-                "pt": 72,
-                "pc": 6,
-                "px": -1
-            },
-            "pt": {
-                "mm": 25.4 / 72,
-                "cm": 2.54 / 72,
-                "in": 1 / 72,
-                "pt": 1,
-                "pc": 6 / 72,
-                "px": -1
-            },
-            "pc": {
-                "mm": 25.4 / 6,
-                "cm": 2.54 / 6,
-                "in": 1 / 6,
-                "pt": 12,
-                "pc": 1,
-                "px": -1
-            },
-            "px": {
-                "px": 1
-            }
-        };
-        function parseFloatWithUnits(string) {
-            let theUnit = "px";
-            if (typeof string === "string" || string instanceof String) for(let i = 0, n = units.length; i < n; i++){
-                const u = units[i];
-                if (string.endsWith(u)) {
-                    theUnit = u;
-                    string = string.substring(0, string.length - u.length);
-                    break;
-                }
-            }
-            let scale = undefined;
-            if (theUnit === "px" && scope.defaultUnit !== "px") // Conversion scale from  pixels to inches, then to default units
-            scale = unitConversion["in"][scope.defaultUnit] / scope.defaultDPI;
-            else {
-                scale = unitConversion[theUnit][scope.defaultUnit];
-                if (scale < 0) // Conversion scale to pixels
-                scale = unitConversion[theUnit]["in"] * scope.defaultDPI;
-            }
-            return scale * parseFloat(string);
-        }
-        // Transforms
-        function getNodeTransform(node) {
-            if (!(node.hasAttribute("transform") || node.nodeName === "use" && (node.hasAttribute("x") || node.hasAttribute("y")))) return null;
-            const transform = parseNodeTransform(node);
-            if (transformStack.length > 0) transform.premultiply(transformStack[transformStack.length - 1]);
-            currentTransform.copy(transform);
-            transformStack.push(transform);
-            return transform;
-        }
-        function parseNodeTransform(node) {
-            const transform = new (0, _three.Matrix3)();
-            const currentTransform = tempTransform0;
-            if (node.nodeName === "use" && (node.hasAttribute("x") || node.hasAttribute("y"))) {
-                const tx = parseFloatWithUnits(node.getAttribute("x"));
-                const ty = parseFloatWithUnits(node.getAttribute("y"));
-                transform.translate(tx, ty);
-            }
-            if (node.hasAttribute("transform")) {
-                const transformsTexts = node.getAttribute("transform").split(")");
-                for(let tIndex = transformsTexts.length - 1; tIndex >= 0; tIndex--){
-                    const transformText = transformsTexts[tIndex].trim();
-                    if (transformText === "") continue;
-                    const openParPos = transformText.indexOf("(");
-                    const closeParPos = transformText.length;
-                    if (openParPos > 0 && openParPos < closeParPos) {
-                        const transformType = transformText.slice(0, openParPos);
-                        const array = parseFloats(transformText.slice(openParPos + 1));
-                        currentTransform.identity();
-                        switch(transformType){
-                            case "translate":
-                                if (array.length >= 1) {
-                                    const tx1 = array[0];
-                                    let ty1 = 0;
-                                    if (array.length >= 2) ty1 = array[1];
-                                    currentTransform.translate(tx1, ty1);
-                                }
-                                break;
-                            case "rotate":
-                                if (array.length >= 1) {
-                                    let angle = 0;
-                                    let cx = 0;
-                                    let cy = 0;
-                                    // Angle
-                                    angle = -array[0] * Math.PI / 180;
-                                    if (array.length >= 3) {
-                                        // Center x, y
-                                        cx = array[1];
-                                        cy = array[2];
-                                    }
-                                    // Rotate around center (cx, cy)
-                                    tempTransform1.identity().translate(-cx, -cy);
-                                    tempTransform2.identity().rotate(angle);
-                                    tempTransform3.multiplyMatrices(tempTransform2, tempTransform1);
-                                    tempTransform1.identity().translate(cx, cy);
-                                    currentTransform.multiplyMatrices(tempTransform1, tempTransform3);
-                                }
-                                break;
-                            case "scale":
-                                if (array.length >= 1) {
-                                    const scaleX = array[0];
-                                    let scaleY = scaleX;
-                                    if (array.length >= 2) scaleY = array[1];
-                                    currentTransform.scale(scaleX, scaleY);
-                                }
-                                break;
-                            case "skewX":
-                                if (array.length === 1) currentTransform.set(1, Math.tan(array[0] * Math.PI / 180), 0, 0, 1, 0, 0, 0, 1);
-                                break;
-                            case "skewY":
-                                if (array.length === 1) currentTransform.set(1, 0, 0, Math.tan(array[0] * Math.PI / 180), 1, 0, 0, 0, 1);
-                                break;
-                            case "matrix":
-                                if (array.length === 6) currentTransform.set(array[0], array[2], array[4], array[1], array[3], array[5], 0, 0, 1);
-                                break;
-                        }
-                    }
-                    transform.premultiply(currentTransform);
-                }
-            }
-            return transform;
-        }
-        function transformPath(path, m) {
-            function transfVec2(v2) {
-                tempV3.set(v2.x, v2.y, 1).applyMatrix3(m);
-                v2.set(tempV3.x, tempV3.y);
-            }
-            const isRotated = isTransformRotated(m);
-            const subPaths = path.subPaths;
-            for(let i = 0, n = subPaths.length; i < n; i++){
-                const subPath = subPaths[i];
-                const curves = subPath.curves;
-                for(let j = 0; j < curves.length; j++){
-                    const curve = curves[j];
-                    if (curve.isLineCurve) {
-                        transfVec2(curve.v1);
-                        transfVec2(curve.v2);
-                    } else if (curve.isCubicBezierCurve) {
-                        transfVec2(curve.v0);
-                        transfVec2(curve.v1);
-                        transfVec2(curve.v2);
-                        transfVec2(curve.v3);
-                    } else if (curve.isQuadraticBezierCurve) {
-                        transfVec2(curve.v0);
-                        transfVec2(curve.v1);
-                        transfVec2(curve.v2);
-                    } else if (curve.isEllipseCurve) {
-                        if (isRotated) console.warn("SVGLoader: Elliptic arc or ellipse rotation or skewing is not implemented.");
-                        tempV2.set(curve.aX, curve.aY);
-                        transfVec2(tempV2);
-                        curve.aX = tempV2.x;
-                        curve.aY = tempV2.y;
-                        curve.xRadius *= getTransformScaleX(m);
-                        curve.yRadius *= getTransformScaleY(m);
-                    }
-                }
-            }
-        }
-        function isTransformRotated(m) {
-            return m.elements[1] !== 0 || m.elements[3] !== 0;
-        }
-        function getTransformScaleX(m) {
-            const te = m.elements;
-            return Math.sqrt(te[0] * te[0] + te[1] * te[1]);
-        }
-        function getTransformScaleY(m) {
-            const te = m.elements;
-            return Math.sqrt(te[3] * te[3] + te[4] * te[4]);
-        }
-        //
-        const paths = [];
-        const stylesheets = {};
-        const transformStack = [];
-        const tempTransform0 = new (0, _three.Matrix3)();
-        const tempTransform1 = new (0, _three.Matrix3)();
-        const tempTransform2 = new (0, _three.Matrix3)();
-        const tempTransform3 = new (0, _three.Matrix3)();
-        const tempV2 = new (0, _three.Vector2)();
-        const tempV3 = new (0, _three.Vector3)();
-        const currentTransform = new (0, _three.Matrix3)();
-        const xml = new DOMParser().parseFromString(text, "image/svg+xml"); // application/xml
-        parseNode(xml.documentElement, {
-            fill: "#000",
-            fillOpacity: 1,
-            strokeOpacity: 1,
-            strokeWidth: 1,
-            strokeLineJoin: "miter",
-            strokeLineCap: "butt",
-            strokeMiterLimit: 4
-        });
-        const data = {
-            paths: paths,
-            xml: xml.documentElement
-        };
-        // console.log( paths );
-        return data;
-    }
-    static createShapes(shapePath) {
-        // Param shapePath: a shapepath as returned by the parse function of this class
-        // Returns Shape object
-        const BIGNUMBER = 999999999;
-        const IntersectionLocationType = {
-            ORIGIN: 0,
-            DESTINATION: 1,
-            BETWEEN: 2,
-            LEFT: 3,
-            RIGHT: 4,
-            BEHIND: 5,
-            BEYOND: 6
-        };
-        const classifyResult = {
-            loc: IntersectionLocationType.ORIGIN,
-            t: 0
-        };
-        function findEdgeIntersection(a0, a1, b0, b1) {
-            const x1 = a0.x;
-            const x2 = a1.x;
-            const x3 = b0.x;
-            const x4 = b1.x;
-            const y1 = a0.y;
-            const y2 = a1.y;
-            const y3 = b0.y;
-            const y4 = b1.y;
-            const nom1 = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);
-            const nom2 = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3);
-            const denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
-            const t1 = nom1 / denom;
-            const t2 = nom2 / denom;
-            if (denom === 0 && nom1 !== 0 || t1 <= 0 || t1 >= 1 || t2 < 0 || t2 > 1) //1. lines are parallel or edges don't intersect
-            return null;
-            else if (nom1 === 0 && denom === 0) {
-                //2. lines are colinear
-                //check if endpoints of edge2 (b0-b1) lies on edge1 (a0-a1)
-                for(let i = 0; i < 2; i++){
-                    classifyPoint(i === 0 ? b0 : b1, a0, a1);
-                    //find position of this endpoints relatively to edge1
-                    if (classifyResult.loc == IntersectionLocationType.ORIGIN) {
-                        const point = i === 0 ? b0 : b1;
-                        return {
-                            x: point.x,
-                            y: point.y,
-                            t: classifyResult.t
-                        };
-                    } else if (classifyResult.loc == IntersectionLocationType.BETWEEN) {
-                        const x = +(x1 + classifyResult.t * (x2 - x1)).toPrecision(10);
-                        const y = +(y1 + classifyResult.t * (y2 - y1)).toPrecision(10);
-                        return {
-                            x: x,
-                            y: y,
-                            t: classifyResult.t
-                        };
-                    }
-                }
-                return null;
-            } else {
-                //3. edges intersect
-                for(let i1 = 0; i1 < 2; i1++){
-                    classifyPoint(i1 === 0 ? b0 : b1, a0, a1);
-                    if (classifyResult.loc == IntersectionLocationType.ORIGIN) {
-                        const point1 = i1 === 0 ? b0 : b1;
-                        return {
-                            x: point1.x,
-                            y: point1.y,
-                            t: classifyResult.t
-                        };
-                    }
-                }
-                const x5 = +(x1 + t1 * (x2 - x1)).toPrecision(10);
-                const y5 = +(y1 + t1 * (y2 - y1)).toPrecision(10);
-                return {
-                    x: x5,
-                    y: y5,
-                    t: t1
-                };
-            }
-        }
-        function classifyPoint(p, edgeStart, edgeEnd) {
-            const ax = edgeEnd.x - edgeStart.x;
-            const ay = edgeEnd.y - edgeStart.y;
-            const bx = p.x - edgeStart.x;
-            const by = p.y - edgeStart.y;
-            const sa = ax * by - bx * ay;
-            if (p.x === edgeStart.x && p.y === edgeStart.y) {
-                classifyResult.loc = IntersectionLocationType.ORIGIN;
-                classifyResult.t = 0;
-                return;
-            }
-            if (p.x === edgeEnd.x && p.y === edgeEnd.y) {
-                classifyResult.loc = IntersectionLocationType.DESTINATION;
-                classifyResult.t = 1;
-                return;
-            }
-            if (sa < -Number.EPSILON) {
-                classifyResult.loc = IntersectionLocationType.LEFT;
-                return;
-            }
-            if (sa > Number.EPSILON) {
-                classifyResult.loc = IntersectionLocationType.RIGHT;
-                return;
-            }
-            if (ax * bx < 0 || ay * by < 0) {
-                classifyResult.loc = IntersectionLocationType.BEHIND;
-                return;
-            }
-            if (Math.sqrt(ax * ax + ay * ay) < Math.sqrt(bx * bx + by * by)) {
-                classifyResult.loc = IntersectionLocationType.BEYOND;
-                return;
-            }
-            let t;
-            if (ax !== 0) t = bx / ax;
-            else t = by / ay;
-            classifyResult.loc = IntersectionLocationType.BETWEEN;
-            classifyResult.t = t;
-        }
-        function getIntersections(path1, path2) {
-            const intersectionsRaw = [];
-            const intersections = [];
-            for(let index = 1; index < path1.length; index++){
-                const path1EdgeStart = path1[index - 1];
-                const path1EdgeEnd = path1[index];
-                for(let index2 = 1; index2 < path2.length; index2++){
-                    const path2EdgeStart = path2[index2 - 1];
-                    const path2EdgeEnd = path2[index2];
-                    const intersection = findEdgeIntersection(path1EdgeStart, path1EdgeEnd, path2EdgeStart, path2EdgeEnd);
-                    if (intersection !== null && intersectionsRaw.find((i)=>i.t <= intersection.t + Number.EPSILON && i.t >= intersection.t - Number.EPSILON) === undefined) {
-                        intersectionsRaw.push(intersection);
-                        intersections.push(new (0, _three.Vector2)(intersection.x, intersection.y));
-                    }
-                }
-            }
-            return intersections;
-        }
-        function getScanlineIntersections(scanline, boundingBox, paths) {
-            const center = new (0, _three.Vector2)();
-            boundingBox.getCenter(center);
-            const allIntersections = [];
-            paths.forEach((path)=>{
-                // check if the center of the bounding box is in the bounding box of the paths.
-                // this is a pruning method to limit the search of intersections in paths that can't envelop of the current path.
-                // if a path envelops another path. The center of that oter path, has to be inside the bounding box of the enveloping path.
-                if (path.boundingBox.containsPoint(center)) {
-                    const intersections = getIntersections(scanline, path.points);
-                    intersections.forEach((p)=>{
-                        allIntersections.push({
-                            identifier: path.identifier,
-                            isCW: path.isCW,
-                            point: p
-                        });
-                    });
-                }
-            });
-            allIntersections.sort((i1, i2)=>{
-                return i1.point.x - i2.point.x;
-            });
-            return allIntersections;
-        }
-        function isHoleTo(simplePath, allPaths, scanlineMinX, scanlineMaxX, _fillRule) {
-            if (_fillRule === null || _fillRule === undefined || _fillRule === "") _fillRule = "nonzero";
-            const centerBoundingBox = new (0, _three.Vector2)();
-            simplePath.boundingBox.getCenter(centerBoundingBox);
-            const scanline = [
-                new (0, _three.Vector2)(scanlineMinX, centerBoundingBox.y),
-                new (0, _three.Vector2)(scanlineMaxX, centerBoundingBox.y)
-            ];
-            const scanlineIntersections = getScanlineIntersections(scanline, simplePath.boundingBox, allPaths);
-            scanlineIntersections.sort((i1, i2)=>{
-                return i1.point.x - i2.point.x;
-            });
-            const baseIntersections = [];
-            const otherIntersections = [];
-            scanlineIntersections.forEach((i)=>{
-                if (i.identifier === simplePath.identifier) baseIntersections.push(i);
-                else otherIntersections.push(i);
-            });
-            const firstXOfPath = baseIntersections[0].point.x;
-            // build up the path hierarchy
-            const stack = [];
-            let i = 0;
-            while(i < otherIntersections.length && otherIntersections[i].point.x < firstXOfPath){
-                if (stack.length > 0 && stack[stack.length - 1] === otherIntersections[i].identifier) stack.pop();
-                else stack.push(otherIntersections[i].identifier);
-                i++;
-            }
-            stack.push(simplePath.identifier);
-            if (_fillRule === "evenodd") {
-                const isHole = stack.length % 2 === 0 ? true : false;
-                const isHoleFor = stack[stack.length - 2];
-                return {
-                    identifier: simplePath.identifier,
-                    isHole: isHole,
-                    for: isHoleFor
-                };
-            } else if (_fillRule === "nonzero") {
-                // check if path is a hole by counting the amount of paths with alternating rotations it has to cross.
-                let isHole1 = true;
-                let isHoleFor1 = null;
-                let lastCWValue = null;
-                for(let i1 = 0; i1 < stack.length; i1++){
-                    const identifier = stack[i1];
-                    if (isHole1) {
-                        lastCWValue = allPaths[identifier].isCW;
-                        isHole1 = false;
-                        isHoleFor1 = identifier;
-                    } else if (lastCWValue !== allPaths[identifier].isCW) {
-                        lastCWValue = allPaths[identifier].isCW;
-                        isHole1 = true;
-                    }
-                }
-                return {
-                    identifier: simplePath.identifier,
-                    isHole: isHole1,
-                    for: isHoleFor1
-                };
-            } else console.warn('fill-rule: "' + _fillRule + '" is currently not implemented.');
-        }
-        // check for self intersecting paths
-        // TODO
-        // check intersecting paths
-        // TODO
-        // prepare paths for hole detection
-        let identifier = 0;
-        let scanlineMinX = BIGNUMBER;
-        let scanlineMaxX = -BIGNUMBER;
-        let simplePaths = shapePath.subPaths.map((p)=>{
-            const points = p.getPoints();
-            let maxY = -BIGNUMBER;
-            let minY = BIGNUMBER;
-            let maxX = -BIGNUMBER;
-            let minX = BIGNUMBER;
-            //points.forEach(p => p.y *= -1);
-            for(let i = 0; i < points.length; i++){
-                const p1 = points[i];
-                if (p1.y > maxY) maxY = p1.y;
-                if (p1.y < minY) minY = p1.y;
-                if (p1.x > maxX) maxX = p1.x;
-                if (p1.x < minX) minX = p1.x;
-            }
-            //
-            if (scanlineMaxX <= maxX) scanlineMaxX = maxX + 1;
-            if (scanlineMinX >= minX) scanlineMinX = minX - 1;
-            return {
-                curves: p.curves,
-                points: points,
-                isCW: (0, _three.ShapeUtils).isClockWise(points),
-                identifier: identifier++,
-                boundingBox: new (0, _three.Box2)(new (0, _three.Vector2)(minX, minY), new (0, _three.Vector2)(maxX, maxY))
-            };
-        });
-        simplePaths = simplePaths.filter((sp)=>sp.points.length > 1);
-        // check if path is solid or a hole
-        const isAHole = simplePaths.map((p)=>isHoleTo(p, simplePaths, scanlineMinX, scanlineMaxX, shapePath.userData?.style.fillRule));
-        const shapesToReturn = [];
-        simplePaths.forEach((p)=>{
-            const amIAHole = isAHole[p.identifier];
-            if (!amIAHole.isHole) {
-                const shape = new (0, _three.Shape)();
-                shape.curves = p.curves;
-                const holes = isAHole.filter((h)=>h.isHole && h.for === p.identifier);
-                holes.forEach((h)=>{
-                    const hole = simplePaths[h.identifier];
-                    const path = new (0, _three.Path)();
-                    path.curves = hole.curves;
-                    shape.holes.push(path);
-                });
-                shapesToReturn.push(shape);
-            }
-        });
-        return shapesToReturn;
-    }
-    static getStrokeStyle(width, color, lineJoin, lineCap, miterLimit) {
-        // Param width: Stroke width
-        // Param color: As returned by THREE.Color.getStyle()
-        // Param lineJoin: One of "round", "bevel", "miter" or "miter-limit"
-        // Param lineCap: One of "round", "square" or "butt"
-        // Param miterLimit: Maximum join length, in multiples of the "width" parameter (join is truncated if it exceeds that distance)
-        // Returns style object
-        width = width !== undefined ? width : 1;
-        color = color !== undefined ? color : "#000";
-        lineJoin = lineJoin !== undefined ? lineJoin : "miter";
-        lineCap = lineCap !== undefined ? lineCap : "butt";
-        miterLimit = miterLimit !== undefined ? miterLimit : 4;
-        return {
-            strokeColor: color,
-            strokeWidth: width,
-            strokeLineJoin: lineJoin,
-            strokeLineCap: lineCap,
-            strokeMiterLimit: miterLimit
-        };
-    }
-    static pointsToStroke(points, style, arcDivisions, minDistance) {
-        // Generates a stroke with some witdh around the given path.
-        // The path can be open or closed (last point equals to first point)
-        // Param points: Array of Vector2D (the path). Minimum 2 points.
-        // Param style: Object with SVG properties as returned by SVGLoader.getStrokeStyle(), or SVGLoader.parse() in the path.userData.style object
-        // Params arcDivisions: Arc divisions for round joins and endcaps. (Optional)
-        // Param minDistance: Points closer to this distance will be merged. (Optional)
-        // Returns BufferGeometry with stroke triangles (In plane z = 0). UV coordinates are generated ('u' along path. 'v' across it, from left to right)
-        const vertices = [];
-        const normals = [];
-        const uvs = [];
-        if (SVGLoader.pointsToStrokeWithBuffers(points, style, arcDivisions, minDistance, vertices, normals, uvs) === 0) return null;
-        const geometry = new (0, _three.BufferGeometry)();
-        geometry.setAttribute("position", new (0, _three.Float32BufferAttribute)(vertices, 3));
-        geometry.setAttribute("normal", new (0, _three.Float32BufferAttribute)(normals, 3));
-        geometry.setAttribute("uv", new (0, _three.Float32BufferAttribute)(uvs, 2));
-        return geometry;
-    }
-    static pointsToStrokeWithBuffers(points, style, arcDivisions, minDistance, vertices, normals, uvs, vertexOffset) {
-        // This function can be called to update existing arrays or buffers.
-        // Accepts same parameters as pointsToStroke, plus the buffers and optional offset.
-        // Param vertexOffset: Offset vertices to start writing in the buffers (3 elements/vertex for vertices and normals, and 2 elements/vertex for uvs)
-        // Returns number of written vertices / normals / uvs pairs
-        // if 'vertices' parameter is undefined no triangles will be generated, but the returned vertices count will still be valid (useful to preallocate the buffers)
-        // 'normals' and 'uvs' buffers are optional
-        const tempV2_1 = new (0, _three.Vector2)();
-        const tempV2_2 = new (0, _three.Vector2)();
-        const tempV2_3 = new (0, _three.Vector2)();
-        const tempV2_4 = new (0, _three.Vector2)();
-        const tempV2_5 = new (0, _three.Vector2)();
-        const tempV2_6 = new (0, _three.Vector2)();
-        const tempV2_7 = new (0, _three.Vector2)();
-        const lastPointL = new (0, _three.Vector2)();
-        const lastPointR = new (0, _three.Vector2)();
-        const point0L = new (0, _three.Vector2)();
-        const point0R = new (0, _three.Vector2)();
-        const currentPointL = new (0, _three.Vector2)();
-        const currentPointR = new (0, _three.Vector2)();
-        const nextPointL = new (0, _three.Vector2)();
-        const nextPointR = new (0, _three.Vector2)();
-        const innerPoint = new (0, _three.Vector2)();
-        const outerPoint = new (0, _three.Vector2)();
-        arcDivisions = arcDivisions !== undefined ? arcDivisions : 12;
-        minDistance = minDistance !== undefined ? minDistance : 0.001;
-        vertexOffset = vertexOffset !== undefined ? vertexOffset : 0;
-        // First ensure there are no duplicated points
-        points = removeDuplicatedPoints(points);
-        const numPoints = points.length;
-        if (numPoints < 2) return 0;
-        const isClosed = points[0].equals(points[numPoints - 1]);
-        let currentPoint;
-        let previousPoint = points[0];
-        let nextPoint;
-        const strokeWidth2 = style.strokeWidth / 2;
-        const deltaU = 1 / (numPoints - 1);
-        let u0 = 0, u1;
-        let innerSideModified;
-        let joinIsOnLeftSide;
-        let isMiter;
-        let initialJoinIsOnLeftSide = false;
-        let numVertices = 0;
-        let currentCoordinate = vertexOffset * 3;
-        let currentCoordinateUV = vertexOffset * 2;
-        // Get initial left and right stroke points
-        getNormal(points[0], points[1], tempV2_1).multiplyScalar(strokeWidth2);
-        lastPointL.copy(points[0]).sub(tempV2_1);
-        lastPointR.copy(points[0]).add(tempV2_1);
-        point0L.copy(lastPointL);
-        point0R.copy(lastPointR);
-        for(let iPoint = 1; iPoint < numPoints; iPoint++){
-            currentPoint = points[iPoint];
-            // Get next point
-            if (iPoint === numPoints - 1) {
-                if (isClosed) // Skip duplicated initial point
-                nextPoint = points[1];
-                else nextPoint = undefined;
-            } else nextPoint = points[iPoint + 1];
-            // Normal of previous segment in tempV2_1
-            const normal1 = tempV2_1;
-            getNormal(previousPoint, currentPoint, normal1);
-            tempV2_3.copy(normal1).multiplyScalar(strokeWidth2);
-            currentPointL.copy(currentPoint).sub(tempV2_3);
-            currentPointR.copy(currentPoint).add(tempV2_3);
-            u1 = u0 + deltaU;
-            innerSideModified = false;
-            if (nextPoint !== undefined) {
-                // Normal of next segment in tempV2_2
-                getNormal(currentPoint, nextPoint, tempV2_2);
-                tempV2_3.copy(tempV2_2).multiplyScalar(strokeWidth2);
-                nextPointL.copy(currentPoint).sub(tempV2_3);
-                nextPointR.copy(currentPoint).add(tempV2_3);
-                joinIsOnLeftSide = true;
-                tempV2_3.subVectors(nextPoint, previousPoint);
-                if (normal1.dot(tempV2_3) < 0) joinIsOnLeftSide = false;
-                if (iPoint === 1) initialJoinIsOnLeftSide = joinIsOnLeftSide;
-                tempV2_3.subVectors(nextPoint, currentPoint);
-                tempV2_3.normalize();
-                const dot = Math.abs(normal1.dot(tempV2_3));
-                // If path is straight, don't create join
-                if (dot > Number.EPSILON) {
-                    // Compute inner and outer segment intersections
-                    const miterSide = strokeWidth2 / dot;
-                    tempV2_3.multiplyScalar(-miterSide);
-                    tempV2_4.subVectors(currentPoint, previousPoint);
-                    tempV2_5.copy(tempV2_4).setLength(miterSide).add(tempV2_3);
-                    innerPoint.copy(tempV2_5).negate();
-                    const miterLength2 = tempV2_5.length();
-                    const segmentLengthPrev = tempV2_4.length();
-                    tempV2_4.divideScalar(segmentLengthPrev);
-                    tempV2_6.subVectors(nextPoint, currentPoint);
-                    const segmentLengthNext = tempV2_6.length();
-                    tempV2_6.divideScalar(segmentLengthNext);
-                    // Check that previous and next segments doesn't overlap with the innerPoint of intersection
-                    if (tempV2_4.dot(innerPoint) < segmentLengthPrev && tempV2_6.dot(innerPoint) < segmentLengthNext) innerSideModified = true;
-                    outerPoint.copy(tempV2_5).add(currentPoint);
-                    innerPoint.add(currentPoint);
-                    isMiter = false;
-                    if (innerSideModified) {
-                        if (joinIsOnLeftSide) {
-                            nextPointR.copy(innerPoint);
-                            currentPointR.copy(innerPoint);
-                        } else {
-                            nextPointL.copy(innerPoint);
-                            currentPointL.copy(innerPoint);
-                        }
-                    } else // The segment triangles are generated here if there was overlapping
-                    makeSegmentTriangles();
-                    switch(style.strokeLineJoin){
-                        case "bevel":
-                            makeSegmentWithBevelJoin(joinIsOnLeftSide, innerSideModified, u1);
-                            break;
-                        case "round":
-                            // Segment triangles
-                            createSegmentTrianglesWithMiddleSection(joinIsOnLeftSide, innerSideModified);
-                            // Join triangles
-                            if (joinIsOnLeftSide) makeCircularSector(currentPoint, currentPointL, nextPointL, u1, 0);
-                            else makeCircularSector(currentPoint, nextPointR, currentPointR, u1, 1);
-                            break;
-                        case "miter":
-                        case "miter-clip":
-                        default:
-                            const miterFraction = strokeWidth2 * style.strokeMiterLimit / miterLength2;
-                            if (miterFraction < 1) {
-                                // The join miter length exceeds the miter limit
-                                if (style.strokeLineJoin !== "miter-clip") {
-                                    makeSegmentWithBevelJoin(joinIsOnLeftSide, innerSideModified, u1);
-                                    break;
-                                } else {
-                                    // Segment triangles
-                                    createSegmentTrianglesWithMiddleSection(joinIsOnLeftSide, innerSideModified);
-                                    // Miter-clip join triangles
-                                    if (joinIsOnLeftSide) {
-                                        tempV2_6.subVectors(outerPoint, currentPointL).multiplyScalar(miterFraction).add(currentPointL);
-                                        tempV2_7.subVectors(outerPoint, nextPointL).multiplyScalar(miterFraction).add(nextPointL);
-                                        addVertex(currentPointL, u1, 0);
-                                        addVertex(tempV2_6, u1, 0);
-                                        addVertex(currentPoint, u1, 0.5);
-                                        addVertex(currentPoint, u1, 0.5);
-                                        addVertex(tempV2_6, u1, 0);
-                                        addVertex(tempV2_7, u1, 0);
-                                        addVertex(currentPoint, u1, 0.5);
-                                        addVertex(tempV2_7, u1, 0);
-                                        addVertex(nextPointL, u1, 0);
-                                    } else {
-                                        tempV2_6.subVectors(outerPoint, currentPointR).multiplyScalar(miterFraction).add(currentPointR);
-                                        tempV2_7.subVectors(outerPoint, nextPointR).multiplyScalar(miterFraction).add(nextPointR);
-                                        addVertex(currentPointR, u1, 1);
-                                        addVertex(tempV2_6, u1, 1);
-                                        addVertex(currentPoint, u1, 0.5);
-                                        addVertex(currentPoint, u1, 0.5);
-                                        addVertex(tempV2_6, u1, 1);
-                                        addVertex(tempV2_7, u1, 1);
-                                        addVertex(currentPoint, u1, 0.5);
-                                        addVertex(tempV2_7, u1, 1);
-                                        addVertex(nextPointR, u1, 1);
-                                    }
-                                }
-                            } else {
-                                // Miter join segment triangles
-                                if (innerSideModified) {
-                                    // Optimized segment + join triangles
-                                    if (joinIsOnLeftSide) {
-                                        addVertex(lastPointR, u0, 1);
-                                        addVertex(lastPointL, u0, 0);
-                                        addVertex(outerPoint, u1, 0);
-                                        addVertex(lastPointR, u0, 1);
-                                        addVertex(outerPoint, u1, 0);
-                                        addVertex(innerPoint, u1, 1);
-                                    } else {
-                                        addVertex(lastPointR, u0, 1);
-                                        addVertex(lastPointL, u0, 0);
-                                        addVertex(outerPoint, u1, 1);
-                                        addVertex(lastPointL, u0, 0);
-                                        addVertex(innerPoint, u1, 0);
-                                        addVertex(outerPoint, u1, 1);
-                                    }
-                                    if (joinIsOnLeftSide) nextPointL.copy(outerPoint);
-                                    else nextPointR.copy(outerPoint);
-                                } else // Add extra miter join triangles
-                                if (joinIsOnLeftSide) {
-                                    addVertex(currentPointL, u1, 0);
-                                    addVertex(outerPoint, u1, 0);
-                                    addVertex(currentPoint, u1, 0.5);
-                                    addVertex(currentPoint, u1, 0.5);
-                                    addVertex(outerPoint, u1, 0);
-                                    addVertex(nextPointL, u1, 0);
-                                } else {
-                                    addVertex(currentPointR, u1, 1);
-                                    addVertex(outerPoint, u1, 1);
-                                    addVertex(currentPoint, u1, 0.5);
-                                    addVertex(currentPoint, u1, 0.5);
-                                    addVertex(outerPoint, u1, 1);
-                                    addVertex(nextPointR, u1, 1);
-                                }
-                                isMiter = true;
-                            }
-                            break;
-                    }
-                } else // The segment triangles are generated here when two consecutive points are collinear
-                makeSegmentTriangles();
-            } else // The segment triangles are generated here if it is the ending segment
-            makeSegmentTriangles();
-            if (!isClosed && iPoint === numPoints - 1) // Start line endcap
-            addCapGeometry(points[0], point0L, point0R, joinIsOnLeftSide, true, u0);
-            // Increment loop variables
-            u0 = u1;
-            previousPoint = currentPoint;
-            lastPointL.copy(nextPointL);
-            lastPointR.copy(nextPointR);
-        }
-        if (!isClosed) // Ending line endcap
-        addCapGeometry(currentPoint, currentPointL, currentPointR, joinIsOnLeftSide, false, u1);
-        else if (innerSideModified && vertices) {
-            // Modify path first segment vertices to adjust to the segments inner and outer intersections
-            let lastOuter = outerPoint;
-            let lastInner = innerPoint;
-            if (initialJoinIsOnLeftSide !== joinIsOnLeftSide) {
-                lastOuter = innerPoint;
-                lastInner = outerPoint;
-            }
-            if (joinIsOnLeftSide) {
-                if (isMiter || initialJoinIsOnLeftSide) {
-                    lastInner.toArray(vertices, 0);
-                    lastInner.toArray(vertices, 9);
-                    if (isMiter) lastOuter.toArray(vertices, 3);
-                }
-            } else if (isMiter || !initialJoinIsOnLeftSide) {
-                lastInner.toArray(vertices, 3);
-                lastInner.toArray(vertices, 9);
-                if (isMiter) lastOuter.toArray(vertices, 0);
-            }
-        }
-        return numVertices;
-        // -- End of algorithm
-        // -- Functions
-        function getNormal(p1, p2, result) {
-            result.subVectors(p2, p1);
-            return result.set(-result.y, result.x).normalize();
-        }
-        function addVertex(position, u, v) {
-            if (vertices) {
-                vertices[currentCoordinate] = position.x;
-                vertices[currentCoordinate + 1] = position.y;
-                vertices[currentCoordinate + 2] = 0;
-                if (normals) {
-                    normals[currentCoordinate] = 0;
-                    normals[currentCoordinate + 1] = 0;
-                    normals[currentCoordinate + 2] = 1;
-                }
-                currentCoordinate += 3;
-                if (uvs) {
-                    uvs[currentCoordinateUV] = u;
-                    uvs[currentCoordinateUV + 1] = v;
-                    currentCoordinateUV += 2;
-                }
-            }
-            numVertices += 3;
-        }
-        function makeCircularSector(center, p1, p2, u, v) {
-            // param p1, p2: Points in the circle arc.
-            // p1 and p2 are in clockwise direction.
-            tempV2_1.copy(p1).sub(center).normalize();
-            tempV2_2.copy(p2).sub(center).normalize();
-            let angle = Math.PI;
-            const dot = tempV2_1.dot(tempV2_2);
-            if (Math.abs(dot) < 1) angle = Math.abs(Math.acos(dot));
-            angle /= arcDivisions;
-            tempV2_3.copy(p1);
-            for(let i = 0, il = arcDivisions - 1; i < il; i++){
-                tempV2_4.copy(tempV2_3).rotateAround(center, angle);
-                addVertex(tempV2_3, u, v);
-                addVertex(tempV2_4, u, v);
-                addVertex(center, u, 0.5);
-                tempV2_3.copy(tempV2_4);
-            }
-            addVertex(tempV2_4, u, v);
-            addVertex(p2, u, v);
-            addVertex(center, u, 0.5);
-        }
-        function makeSegmentTriangles() {
-            addVertex(lastPointR, u0, 1);
-            addVertex(lastPointL, u0, 0);
-            addVertex(currentPointL, u1, 0);
-            addVertex(lastPointR, u0, 1);
-            addVertex(currentPointL, u1, 1);
-            addVertex(currentPointR, u1, 0);
-        }
-        function makeSegmentWithBevelJoin(joinIsOnLeftSide, innerSideModified, u) {
-            if (innerSideModified) {
-                // Optimized segment + bevel triangles
-                if (joinIsOnLeftSide) {
-                    // Path segments triangles
-                    addVertex(lastPointR, u0, 1);
-                    addVertex(lastPointL, u0, 0);
-                    addVertex(currentPointL, u1, 0);
-                    addVertex(lastPointR, u0, 1);
-                    addVertex(currentPointL, u1, 0);
-                    addVertex(innerPoint, u1, 1);
-                    // Bevel join triangle
-                    addVertex(currentPointL, u, 0);
-                    addVertex(nextPointL, u, 0);
-                    addVertex(innerPoint, u, 0.5);
-                } else {
-                    // Path segments triangles
-                    addVertex(lastPointR, u0, 1);
-                    addVertex(lastPointL, u0, 0);
-                    addVertex(currentPointR, u1, 1);
-                    addVertex(lastPointL, u0, 0);
-                    addVertex(innerPoint, u1, 0);
-                    addVertex(currentPointR, u1, 1);
-                    // Bevel join triangle
-                    addVertex(currentPointR, u, 1);
-                    addVertex(nextPointR, u, 0);
-                    addVertex(innerPoint, u, 0.5);
-                }
-            } else {
-                // Bevel join triangle. The segment triangles are done in the main loop
-                if (joinIsOnLeftSide) {
-                    addVertex(currentPointL, u, 0);
-                    addVertex(nextPointL, u, 0);
-                    addVertex(currentPoint, u, 0.5);
-                } else {
-                    addVertex(currentPointR, u, 1);
-                    addVertex(nextPointR, u, 0);
-                    addVertex(currentPoint, u, 0.5);
-                }
-            }
-        }
-        function createSegmentTrianglesWithMiddleSection(joinIsOnLeftSide, innerSideModified) {
-            if (innerSideModified) {
-                if (joinIsOnLeftSide) {
-                    addVertex(lastPointR, u0, 1);
-                    addVertex(lastPointL, u0, 0);
-                    addVertex(currentPointL, u1, 0);
-                    addVertex(lastPointR, u0, 1);
-                    addVertex(currentPointL, u1, 0);
-                    addVertex(innerPoint, u1, 1);
-                    addVertex(currentPointL, u0, 0);
-                    addVertex(currentPoint, u1, 0.5);
-                    addVertex(innerPoint, u1, 1);
-                    addVertex(currentPoint, u1, 0.5);
-                    addVertex(nextPointL, u0, 0);
-                    addVertex(innerPoint, u1, 1);
-                } else {
-                    addVertex(lastPointR, u0, 1);
-                    addVertex(lastPointL, u0, 0);
-                    addVertex(currentPointR, u1, 1);
-                    addVertex(lastPointL, u0, 0);
-                    addVertex(innerPoint, u1, 0);
-                    addVertex(currentPointR, u1, 1);
-                    addVertex(currentPointR, u0, 1);
-                    addVertex(innerPoint, u1, 0);
-                    addVertex(currentPoint, u1, 0.5);
-                    addVertex(currentPoint, u1, 0.5);
-                    addVertex(innerPoint, u1, 0);
-                    addVertex(nextPointR, u0, 1);
-                }
-            }
-        }
-        function addCapGeometry(center, p1, p2, joinIsOnLeftSide, start, u) {
-            // param center: End point of the path
-            // param p1, p2: Left and right cap points
-            switch(style.strokeLineCap){
-                case "round":
-                    if (start) {
-                        makeCircularSector(center, p2, p1, u, 0.5);
-                    } else {
-                        makeCircularSector(center, p1, p2, u, 0.5);
-                    }
-                    break;
-                case "square":
-                    if (start) {
-                        tempV2_1.subVectors(p1, center);
-                        tempV2_2.set(tempV2_1.y, -tempV2_1.x);
-                        tempV2_3.addVectors(tempV2_1, tempV2_2).add(center);
-                        tempV2_4.subVectors(tempV2_2, tempV2_1).add(center);
-                        // Modify already existing vertices
-                        if (joinIsOnLeftSide) {
-                            tempV2_3.toArray(vertices, 3);
-                            tempV2_4.toArray(vertices, 0);
-                            tempV2_4.toArray(vertices, 9);
-                        } else {
-                            tempV2_3.toArray(vertices, 3);
-                            tempV2_3.toArray(vertices, 9);
-                            tempV2_4.toArray(vertices, 0);
-                        }
-                    } else {
-                        tempV2_1.subVectors(p2, center);
-                        tempV2_2.set(tempV2_1.y, -tempV2_1.x);
-                        tempV2_3.addVectors(tempV2_1, tempV2_2).add(center);
-                        tempV2_4.subVectors(tempV2_2, tempV2_1).add(center);
-                        const vl = vertices.length;
-                        // Modify already existing vertices
-                        if (joinIsOnLeftSide) {
-                            tempV2_3.toArray(vertices, vl - 3);
-                            tempV2_4.toArray(vertices, vl - 6);
-                            tempV2_4.toArray(vertices, vl - 12);
-                        } else {
-                            tempV2_3.toArray(vertices, vl - 6);
-                            tempV2_4.toArray(vertices, vl - 3);
-                            tempV2_4.toArray(vertices, vl - 12);
-                        }
-                    }
-                    break;
-                case "butt":
-                default:
-                    break;
-            }
-        }
-        function removeDuplicatedPoints(points) {
-            // Creates a new array if necessary with duplicated points removed.
-            // This does not remove duplicated initial and ending points of a closed path.
-            let dupPoints = false;
-            for(let i = 1, n = points.length - 1; i < n; i++){
-                if (points[i].distanceTo(points[i + 1]) < minDistance) {
-                    dupPoints = true;
-                    break;
-                }
-            }
-            if (!dupPoints) return points;
-            const newPoints = [];
-            newPoints.push(points[0]);
-            for(let i1 = 1, n1 = points.length - 1; i1 < n1; i1++){
-                if (points[i1].distanceTo(points[i1 + 1]) >= minDistance) {
-                    newPoints.push(points[i1]);
-                }
-            }
-            newPoints.push(points[points.length - 1]);
-            return newPoints;
-        }
-    }
-}
-
-},{"three":"ktPTu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"fn7rL":[function(require,module,exports) {
-module.exports = require("./helpers/bundle-url").getBundleURL("1G2bZ") + "icon.13023280.svg" + "?" + Date.now();
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"8EsCM":[function(require,module,exports) {
+module.exports = require("./helpers/bundle-url").getBundleURL("1G2bZ") + "icon.2fe26a74.glb" + "?" + Date.now();
 
 },{"./helpers/bundle-url":"lgJ39"}],"lgJ39":[function(require,module,exports) {
 "use strict";
@@ -39185,10 +37501,7 @@ exports.getBundleURL = getBundleURLCached;
 exports.getBaseURL = getBaseURL;
 exports.getOrigin = getOrigin;
 
-},{}],"8EsCM":[function(require,module,exports) {
-module.exports = require("./helpers/bundle-url").getBundleURL("1G2bZ") + "icon.2fe26a74.glb" + "?" + Date.now();
-
-},{"./helpers/bundle-url":"lgJ39"}],"dVRsF":[function(require,module,exports) {
+},{}],"dVRsF":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "GLTFLoader", ()=>GLTFLoader);
@@ -41903,6 +40216,731 @@ class DRACOLoader extends (0, _three.Loader) {
                 return draco.DT_UINT32;
         }
     }
+}
+
+},{"three":"ktPTu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"e6vhA":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "LoopSubdivision", ()=>(0, _loopSubdivisionJs.LoopSubdivision));
+var _loopSubdivisionJs = require("./LoopSubdivision.js");
+
+},{"./LoopSubdivision.js":"8Owuz","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"8Owuz":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+/////////////////////////////////////////////////////////////////////////////////////
+/////   Exports
+/////////////////////////////////////////////////////////////////////////////////////
+parcelHelpers.export(exports, "LoopSubdivision", ()=>LoopSubdivision) /////////////////////////////////////////////////////////////////////////////////////
+ /////   Reference
+ /////////////////////////////////////////////////////////////////////////////////////
+ //
+ // Subdivision Surfaces
+ //      https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/thesis-10.pdf
+ //      https://en.wikipedia.org/wiki/Loop_subdivision_surface
+ //      https://cseweb.ucsd.edu/~alchern/teaching/cse167_fa21/6-3Surfaces.pdf
+ //
+ // Original three.js SubdivisionModifier, r124 (Loop)
+ //      https://github.com/mrdoob/three.js/blob/r124/examples/jsm/modifiers/SubdivisionModifier.js
+ //
+ // Original three.js SubdivisionModifier, r59 (Catmull-Clark)
+ //      https://github.com/mrdoob/three.js/blob/r59/examples/js/modifiers/SubdivisionModifier.js
+ //
+ /////////////////////////////////////////////////////////////////////////////////////
+ /////   License
+ /////////////////////////////////////////////////////////////////////////////////////
+ //
+ // MIT License
+ //
+ // Copyright (c) 2022 Stephens Nunnally <@stevinz>
+ //
+ // Permission is hereby granted, free of charge, to any person obtaining a copy
+ // of this software and associated documentation files (the "Software"), to deal
+ // in the Software without restriction, including without limitation the rights
+ // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ // copies of the Software, and to permit persons to whom the Software is
+ // furnished to do so, subject to the following conditions:
+ //
+ // The above copyright notice and this permission notice shall be included in all
+ // copies or substantial portions of the Software.
+ //
+ // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ // SOFTWARE.
+;
+/** /////////////////////////////////////////////////////////////////////////////////
+//
+// @description Loop Subdivision Surface
+// @about       Smooth subdivision surface modifier for use with three.js BufferGeometry
+// @author      Stephens Nunnally <@stevinz>
+// @license     MIT - Copyright (c) 2022 Stephens Nunnally and Scidian Software
+// @source      https://github.com/stevinz/three-subdivide
+//
+//      See end of file for license details and acknowledgements
+//
+///////////////////////////////////////////////////////////////////////////////////*/ //
+//  Functions
+//      modify              Applies Loop subdivision to BufferGeometry, returns new BufferGeometry
+//      edgeSplit           Splits all triangles at edges shared by coplanar triangles
+//      flat                One iteration of Loop subdivision, without point averaging
+//      smooth              One iteration of Loop subdivision, with point averaging
+//
+//  Info
+//      This modifier uses the Loop (Charles Loop, 1987) subdivision surface algorithm to smooth
+//      modern three.js BufferGeometry.
+//
+//      At one point, three.js included a subdivision surface modifier in the extended examples (see bottom
+//      of file for links), it was removed in r125. The modifier was originally based on the Catmull-Clark
+//      algorithm, which works best for geometry with convex coplanar n-gon faces. In three.js r60 the modifier
+//      was changed to utilize the Loop algorithm. The Loop algorithm was designed to work better with triangle
+//      based meshes.
+//
+//      The Loop algorithm, however, doesn't always provide uniform results as the vertices are
+//      skewed toward the most used vertex positions. A triangle based box (e.g. BoxGeometry for example) will
+//      tend to favor the corners. To alleviate this issue, this implementation includes an initial pass to split
+//      coplanar faces at their shared edges. It starts by splitting along the longest shared edge first, and then
+//      from that midpoint it splits to any remaining coplanar shared edges.
+//
+//      Also by default, this implementation inserts new uv coordinates, but does not average them using the Loop
+//      algorithm. In some cases (often in flat geometries) this will produce undesired results, a
+//      noticeable tearing will occur. In such cases, try passing 'uvSmooth' as true to enable uv averaging.
+//
+//  Note(s)
+//      - This modifier returns a new BufferGeometry instance, it does not dispose() of the old geometry.
+//
+//      - This modifier returns a NonIndexed geometry. An Indexed geometry can be created by using the
+//        BufferGeometryUtils.mergeVertices() function, see:
+//        https://threejs.org/docs/?q=buffer#examples/en/utils/BufferGeometryUtils.mergeVertices
+//
+//      - This modifier works best with geometry whose triangles share edges AND edge vertices. See diagram below.
+//
+//          OKAY          NOT OKAY
+//            O              O
+//           /|\            / \
+//          / | \          /   \
+//         /  |  \        /     \
+//        O---O---O      O---O---O
+//         \  |  /        \  |  /
+//          \ | /          \ | /
+//           \|/            \|/
+//            O              O
+//
+/////////////////////////////////////////////////////////////////////////////////////
+var _three = require("three");
+///// Constants
+const POSITION_DECIMALS = 2;
+///// Local Variables
+const _average = new _three.Vector3();
+const _center = new _three.Vector3();
+const _midpoint = new _three.Vector3();
+const _normal = new _three.Vector3();
+const _temp = new _three.Vector3();
+const _vector0 = new _three.Vector3(); // .Vector4();
+const _vector1 = new _three.Vector3(); // .Vector4();
+const _vector2 = new _three.Vector3(); // .Vector4();
+const _vec0to1 = new _three.Vector3();
+const _vec1to2 = new _three.Vector3();
+const _vec2to0 = new _three.Vector3();
+const _position = [
+    new _three.Vector3(),
+    new _three.Vector3(),
+    new _three.Vector3(), 
+];
+const _vertex = [
+    new _three.Vector3(),
+    new _three.Vector3(),
+    new _three.Vector3(), 
+];
+const _triangle = new _three.Triangle();
+/////////////////////////////////////////////////////////////////////////////////////
+/////   Loop Subdivision Surface
+/////////////////////////////////////////////////////////////////////////////////////
+/** Loop subdivision surface modifier for use with modern three.js BufferGeometry */ class LoopSubdivision {
+    /////////////////////////////////////////////////////////////////////////////////////
+    /////   Modify
+    ////////////////////
+    /**
+     * Applies Loop subdivision modifier to geometry
+     *
+     * @param {Object} bufferGeometry - Three.js geometry to be subdivided
+     * @param {Number} iterations - How many times to run subdividion
+     * @param {Object} params - Optional parameters object, see below
+     * @returns {Object} Returns new, subdivided, three.js BufferGeometry object
+     *
+     * Optional Parameters Object
+     * @param {Boolean} split - Should coplanar faces be divided along shared edges before running Loop subdivision?
+     * @param {Boolean} uvSmooth - Should UV values be averaged during subdivision?
+     * @param {Boolean} preserveEdges - Should edges / breaks in geometry be ignored during subdivision?
+     * @param {Boolean} flatOnly - If true, subdivision generates triangles, but does not modify positions
+     * @param {Number} maxTriangles - If geometry contains more than this many triangles, subdivision will not continue
+    */ static modify(bufferGeometry, iterations = 1, params = {}) {
+        if (arguments.length > 3) console.warn(`LoopSubdivision.modify() now uses a parameter object. See readme for more info!`);
+        if (typeof params !== "object") params = {};
+        ///// Parameters
+        if (params.split === undefined) params.split = true;
+        if (params.uvSmooth === undefined) params.uvSmooth = false;
+        if (params.preserveEdges === undefined) params.preserveEdges = false;
+        if (params.flatOnly === undefined) params.flatOnly = false;
+        if (params.maxTriangles === undefined) params.maxTriangles = Infinity;
+        ///// Geometries
+        if (!verifyGeometry(bufferGeometry)) return bufferGeometry;
+        let modifiedGeometry = bufferGeometry.clone();
+        ///// Presplit
+        if (params.split) {
+            const splitGeometry = LoopSubdivision.edgeSplit(modifiedGeometry);
+            modifiedGeometry.dispose();
+            modifiedGeometry = splitGeometry;
+        }
+        ///// Apply Subdivision
+        for(let i = 0; i < iterations; i++){
+            let currentTriangles = modifiedGeometry.attributes.position.count / 3;
+            if (currentTriangles < params.maxTriangles) {
+                let subdividedGeometry;
+                if (params.flatOnly) subdividedGeometry = LoopSubdivision.flat(modifiedGeometry);
+                else subdividedGeometry = LoopSubdivision.smooth(modifiedGeometry, params);
+                modifiedGeometry.dispose();
+                modifiedGeometry = subdividedGeometry;
+            }
+        }
+        return modifiedGeometry;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////
+    /////   Split Hypotenuse
+    ////////////////////
+    /**
+     * Applies one iteration of split subdivision. Splits all triangles at edges shared by coplanar triangles.
+     * Starts by splitting at longest shared edge, followed by splitting from that new center edge point to the
+     * center of any other shared edges.
+     */ static edgeSplit(geometry) {
+        ///// Geometries
+        if (!verifyGeometry(geometry)) return geometry;
+        const existing = geometry.index !== null ? geometry.toNonIndexed() : geometry.clone();
+        const split = new _three.BufferGeometry();
+        ///// Attributes
+        const attributeList = gatherAttributes(existing);
+        const vertexCount = existing.attributes.position.count;
+        const posAttribute = existing.getAttribute("position");
+        const norAttribute = existing.getAttribute("normal");
+        const edgeHashToTriangle = {};
+        const triangleEdgeHashes = [];
+        const edgeLength = {};
+        const triangleExist = [];
+        ///// Edges
+        for(let i = 0; i < vertexCount; i += 3){
+            // Positions
+            _vector0.fromBufferAttribute(posAttribute, i + 0);
+            _vector1.fromBufferAttribute(posAttribute, i + 1);
+            _vector2.fromBufferAttribute(posAttribute, i + 2);
+            _normal.fromBufferAttribute(norAttribute, i);
+            const vecHash0 = hashFromVector(_vector0);
+            const vecHash1 = hashFromVector(_vector1);
+            const vecHash2 = hashFromVector(_vector2);
+            // Verify Area
+            const triangleSize = _triangle.set(_vector0, _vector1, _vector2).getArea();
+            triangleExist.push(!fuzzy(triangleSize, 0));
+            if (!triangleExist[i / 3]) {
+                triangleEdgeHashes.push([]);
+                continue;
+            }
+            // Calculate Normals
+            calcNormal(_normal, _vector0, _vector1, _vector2);
+            const normalHash = hashFromVector(_normal);
+            // Vertex Hashes
+            let hashes = [
+                `${vecHash0}_${vecHash1}_${normalHash}`,
+                `${vecHash1}_${vecHash0}_${normalHash}`,
+                `${vecHash1}_${vecHash2}_${normalHash}`,
+                `${vecHash2}_${vecHash1}_${normalHash}`,
+                `${vecHash2}_${vecHash0}_${normalHash}`,
+                `${vecHash0}_${vecHash2}_${normalHash}`
+            ];
+            // Store Edge Hashes
+            let index = i / 3;
+            for(let j = 0; j < hashes.length; j++){
+                // Attach Triangle Index to Edge Hash
+                if (!edgeHashToTriangle[hashes[j]]) edgeHashToTriangle[hashes[j]] = [];
+                edgeHashToTriangle[hashes[j]].push(index);
+                // Edge Length
+                if (!edgeLength[hashes[j]]) {
+                    if (j === 0 || j === 1) edgeLength[hashes[j]] = _vector0.distanceTo(_vector1);
+                    if (j === 2 || j === 3) edgeLength[hashes[j]] = _vector1.distanceTo(_vector2);
+                    if (j === 4 || j === 5) edgeLength[hashes[j]] = _vector2.distanceTo(_vector0);
+                }
+            }
+            // Triangle Edge Reference
+            triangleEdgeHashes.push([
+                hashes[0],
+                hashes[2],
+                hashes[4]
+            ]);
+        }
+        ///// Build Geometry, Set Attributes
+        attributeList.forEach((attributeName)=>{
+            const attribute = existing.getAttribute(attributeName);
+            if (!attribute) return;
+            const floatArray = splitAttribute(attribute);
+            split.setAttribute(attributeName, new _three.BufferAttribute(floatArray, attribute.itemSize));
+        });
+        ///// Morph Attributes
+        const morphAttributes = existing.morphAttributes;
+        for(const attributeName in morphAttributes){
+            const array = [];
+            const morphAttribute = morphAttributes[attributeName];
+            // Process Array of Float32BufferAttributes
+            for(let i1 = 0, l = morphAttribute.length; i1 < l; i1++){
+                if (morphAttribute[i1].count !== vertexCount) continue;
+                const floatArray = splitAttribute(morphAttribute[i1]);
+                array.push(new _three.BufferAttribute(floatArray, morphAttribute[i1].itemSize));
+            }
+            split.morphAttributes[attributeName] = array;
+        }
+        split.morphTargetsRelative = existing.morphTargetsRelative;
+        // Clean Up, Return New Geometry
+        existing.dispose();
+        return split;
+        // Loop Subdivide Function
+        function splitAttribute(attribute) {
+            const newTriangles = 4; /* maximum number of new triangles */ 
+            const arrayLength = vertexCount * attribute.itemSize * newTriangles;
+            const floatArray = new attribute.array.constructor(arrayLength);
+            let index = 0;
+            let step = attribute.itemSize;
+            for(let i = 0; i < vertexCount; i += 3){
+                if (!triangleExist[i / 3]) continue;
+                _vector0.fromBufferAttribute(attribute, i + 0);
+                _vector1.fromBufferAttribute(attribute, i + 1);
+                _vector2.fromBufferAttribute(attribute, i + 2);
+                // Check for Shared Edges
+                const existingIndex = i / 3;
+                const edgeHash0to1 = triangleEdgeHashes[existingIndex][0];
+                const edgeHash1to2 = triangleEdgeHashes[existingIndex][1];
+                const edgeHash2to0 = triangleEdgeHashes[existingIndex][2];
+                const edgeCount0to1 = edgeHashToTriangle[edgeHash0to1].length;
+                const edgeCount1to2 = edgeHashToTriangle[edgeHash1to2].length;
+                const edgeCount2to0 = edgeHashToTriangle[edgeHash2to0].length;
+                const sharedCount = edgeCount0to1 + edgeCount1to2 + edgeCount2to0 - 3;
+                // No Shared Edges
+                if (sharedCount === 0) {
+                    setTriangle(floatArray, index, step, _vector0, _vector1, _vector2);
+                    index += step * 3;
+                // Shared Edges
+                } else {
+                    const length0to1 = edgeLength[edgeHash0to1];
+                    const length1to2 = edgeLength[edgeHash1to2];
+                    const length2to0 = edgeLength[edgeHash2to0];
+                    // Add New Triangle Positions
+                    if ((length0to1 > length1to2 || edgeCount1to2 <= 1) && (length0to1 > length2to0 || edgeCount2to0 <= 1) && edgeCount0to1 > 1) {
+                        _center.copy(_vector0).add(_vector1).divideScalar(2.0);
+                        if (edgeCount2to0 > 1) {
+                            _midpoint.copy(_vector2).add(_vector0).divideScalar(2.0);
+                            setTriangle(floatArray, index, step, _vector0, _center, _midpoint);
+                            index += step * 3;
+                            setTriangle(floatArray, index, step, _center, _vector2, _midpoint);
+                            index += step * 3;
+                        } else {
+                            setTriangle(floatArray, index, step, _vector0, _center, _vector2);
+                            index += step * 3;
+                        }
+                        if (edgeCount1to2 > 1) {
+                            _midpoint.copy(_vector1).add(_vector2).divideScalar(2.0);
+                            setTriangle(floatArray, index, step, _center, _vector1, _midpoint);
+                            index += step * 3;
+                            setTriangle(floatArray, index, step, _midpoint, _vector2, _center);
+                            index += step * 3;
+                        } else {
+                            setTriangle(floatArray, index, step, _vector1, _vector2, _center);
+                            index += step * 3;
+                        }
+                    } else if ((length1to2 > length2to0 || edgeCount2to0 <= 1) && edgeCount1to2 > 1) {
+                        _center.copy(_vector1).add(_vector2).divideScalar(2.0);
+                        if (edgeCount0to1 > 1) {
+                            _midpoint.copy(_vector0).add(_vector1).divideScalar(2.0);
+                            setTriangle(floatArray, index, step, _center, _midpoint, _vector1);
+                            index += step * 3;
+                            setTriangle(floatArray, index, step, _midpoint, _center, _vector0);
+                            index += step * 3;
+                        } else {
+                            setTriangle(floatArray, index, step, _vector1, _center, _vector0);
+                            index += step * 3;
+                        }
+                        if (edgeCount2to0 > 1) {
+                            _midpoint.copy(_vector2).add(_vector0).divideScalar(2.0);
+                            setTriangle(floatArray, index, step, _center, _vector2, _midpoint);
+                            index += step * 3;
+                            setTriangle(floatArray, index, step, _midpoint, _vector0, _center);
+                            index += step * 3;
+                        } else {
+                            setTriangle(floatArray, index, step, _vector2, _vector0, _center);
+                            index += step * 3;
+                        }
+                    } else if (edgeCount2to0 > 1) {
+                        _center.copy(_vector2).add(_vector0).divideScalar(2.0);
+                        if (edgeCount1to2 > 1) {
+                            _midpoint.copy(_vector1).add(_vector2).divideScalar(2.0);
+                            setTriangle(floatArray, index, step, _vector2, _center, _midpoint);
+                            index += step * 3;
+                            setTriangle(floatArray, index, step, _center, _vector1, _midpoint);
+                            index += step * 3;
+                        } else {
+                            setTriangle(floatArray, index, step, _vector2, _center, _vector1);
+                            index += step * 3;
+                        }
+                        if (edgeCount0to1 > 1) {
+                            _midpoint.copy(_vector0).add(_vector1).divideScalar(2.0);
+                            setTriangle(floatArray, index, step, _vector0, _midpoint, _center);
+                            index += step * 3;
+                            setTriangle(floatArray, index, step, _midpoint, _vector1, _center);
+                            index += step * 3;
+                        } else {
+                            setTriangle(floatArray, index, step, _vector0, _vector1, _center);
+                            index += step * 3;
+                        }
+                    } else {
+                        setTriangle(floatArray, index, step, _vector0, _vector1, _vector2);
+                        index += step * 3;
+                    }
+                }
+            }
+            // Resize Array
+            const reducedCount = index * 3 / step;
+            const reducedArray = new attribute.array.constructor(reducedCount);
+            for(let i1 = 0; i1 < reducedCount; i1++){
+                reducedArray[i1] = floatArray[i1];
+            }
+            return reducedArray;
+        }
+    }
+    /////////////////////////////////////////////////////////////////////////////////////
+    /////   Flat
+    ////////////////////
+    /** Applies one iteration of Loop (flat) subdivision (1 triangle split into 4 triangles) */ static flat(geometry) {
+        ///// Geometries
+        if (!verifyGeometry(geometry)) return geometry;
+        const existing = geometry.index !== null ? geometry.toNonIndexed() : geometry.clone();
+        const loop = new _three.BufferGeometry();
+        ///// Attributes
+        const attributeList = gatherAttributes(existing);
+        const vertexCount = existing.attributes.position.count;
+        ///// Build Geometry
+        attributeList.forEach((attributeName)=>{
+            const attribute = existing.getAttribute(attributeName);
+            if (!attribute) return;
+            loop.setAttribute(attributeName, LoopSubdivision.flatAttribute(attribute, vertexCount));
+        });
+        ///// Morph Attributes
+        const morphAttributes = existing.morphAttributes;
+        for(const attributeName in morphAttributes){
+            const array = [];
+            const morphAttribute = morphAttributes[attributeName];
+            // Process Array of Float32BufferAttributes
+            for(let i = 0, l = morphAttribute.length; i < l; i++){
+                if (morphAttribute[i].count !== vertexCount) continue;
+                array.push(LoopSubdivision.flatAttribute(morphAttribute[i], vertexCount));
+            }
+            loop.morphAttributes[attributeName] = array;
+        }
+        loop.morphTargetsRelative = existing.morphTargetsRelative;
+        ///// Clean Up
+        existing.dispose();
+        return loop;
+    }
+    static flatAttribute(attribute, vertexCount) {
+        const newTriangles = 4;
+        const arrayLength = vertexCount * attribute.itemSize * newTriangles;
+        const floatArray = new attribute.array.constructor(arrayLength);
+        let index = 0;
+        let step = attribute.itemSize;
+        for(let i = 0; i < vertexCount; i += 3){
+            // Original Vertices
+            _vector0.fromBufferAttribute(attribute, i + 0);
+            _vector1.fromBufferAttribute(attribute, i + 1);
+            _vector2.fromBufferAttribute(attribute, i + 2);
+            // Midpoints
+            _vec0to1.copy(_vector0).add(_vector1).divideScalar(2.0);
+            _vec1to2.copy(_vector1).add(_vector2).divideScalar(2.0);
+            _vec2to0.copy(_vector2).add(_vector0).divideScalar(2.0);
+            // Add New Triangle Positions
+            setTriangle(floatArray, index, step, _vector0, _vec0to1, _vec2to0);
+            index += step * 3;
+            setTriangle(floatArray, index, step, _vector1, _vec1to2, _vec0to1);
+            index += step * 3;
+            setTriangle(floatArray, index, step, _vector2, _vec2to0, _vec1to2);
+            index += step * 3;
+            setTriangle(floatArray, index, step, _vec0to1, _vec1to2, _vec2to0);
+            index += step * 3;
+        }
+        return new _three.BufferAttribute(floatArray, attribute.itemSize);
+    }
+    /////////////////////////////////////////////////////////////////////////////////////
+    /////   Smooth
+    ////////////////////
+    /** Applies one iteration of Loop (smooth) subdivision (1 triangle split into 4 triangles) */ static smooth(geometry, params = {}) {
+        if (typeof params !== "object") params = {};
+        ///// Parameters
+        if (params.uvSmooth === undefined) params.uvSmooth = false;
+        if (params.preserveEdges === undefined) params.preserveEdges = false;
+        ///// Geometries
+        if (!verifyGeometry(geometry)) return geometry;
+        const existing = geometry.index !== null ? geometry.toNonIndexed() : geometry.clone();
+        const flat = LoopSubdivision.flat(existing);
+        const loop = new _three.BufferGeometry();
+        ///// Attributes
+        const attributeList = gatherAttributes(existing);
+        const vertexCount = existing.attributes.position.count;
+        const posAttribute = existing.getAttribute("position");
+        const flatPosition = flat.getAttribute("position");
+        const hashToIndex = {}; // Position hash mapped to index values of same position
+        const existingNeighbors = {}; // Position hash mapped to existing vertex neighbors
+        const flatOpposites = {}; // Position hash mapped to new edge point opposites
+        const existingEdges = {};
+        function addNeighbor(posHash, neighborHash, index) {
+            if (!existingNeighbors[posHash]) existingNeighbors[posHash] = {};
+            if (!existingNeighbors[posHash][neighborHash]) existingNeighbors[posHash][neighborHash] = [];
+            existingNeighbors[posHash][neighborHash].push(index);
+        }
+        function addOpposite(posHash, index) {
+            if (!flatOpposites[posHash]) flatOpposites[posHash] = [];
+            flatOpposites[posHash].push(index);
+        }
+        function addEdgePoint(posHash, edgeHash) {
+            if (!existingEdges[posHash]) existingEdges[posHash] = new Set();
+            existingEdges[posHash].add(edgeHash);
+        }
+        ///// Existing Vertex Hashes
+        for(let i = 0; i < vertexCount; i += 3){
+            const posHash0 = hashFromVector(_vertex[0].fromBufferAttribute(posAttribute, i + 0));
+            const posHash1 = hashFromVector(_vertex[1].fromBufferAttribute(posAttribute, i + 1));
+            const posHash2 = hashFromVector(_vertex[2].fromBufferAttribute(posAttribute, i + 2));
+            // Neighbors (of Existing Geometry)
+            addNeighbor(posHash0, posHash1, i + 1);
+            addNeighbor(posHash0, posHash2, i + 2);
+            addNeighbor(posHash1, posHash0, i + 0);
+            addNeighbor(posHash1, posHash2, i + 2);
+            addNeighbor(posHash2, posHash0, i + 0);
+            addNeighbor(posHash2, posHash1, i + 1);
+            // Opposites (of new FlatSubdivided vertices)
+            _vec0to1.copy(_vertex[0]).add(_vertex[1]).divideScalar(2.0);
+            _vec1to2.copy(_vertex[1]).add(_vertex[2]).divideScalar(2.0);
+            _vec2to0.copy(_vertex[2]).add(_vertex[0]).divideScalar(2.0);
+            const hash0to1 = hashFromVector(_vec0to1);
+            const hash1to2 = hashFromVector(_vec1to2);
+            const hash2to0 = hashFromVector(_vec2to0);
+            addOpposite(hash0to1, i + 2);
+            addOpposite(hash1to2, i + 0);
+            addOpposite(hash2to0, i + 1);
+            // Track Edges for edgePreserve
+            addEdgePoint(posHash0, hash0to1);
+            addEdgePoint(posHash0, hash2to0);
+            addEdgePoint(posHash1, hash0to1);
+            addEdgePoint(posHash1, hash1to2);
+            addEdgePoint(posHash2, hash1to2);
+            addEdgePoint(posHash2, hash2to0);
+        }
+        ///// Flat Position to Index Map
+        for(let i1 = 0; i1 < flat.attributes.position.count; i1++){
+            const posHash = hashFromVector(_vertex[0].fromBufferAttribute(flatPosition, i1));
+            if (!hashToIndex[posHash]) hashToIndex[posHash] = [];
+            hashToIndex[posHash].push(i1);
+        }
+        ///// Build Geometry, Set Attributes
+        attributeList.forEach((attributeName)=>{
+            const existingAttribute = existing.getAttribute(attributeName);
+            const flatAttribute = flat.getAttribute(attributeName);
+            if (existingAttribute === undefined || flatAttribute === undefined) return;
+            const floatArray = subdivideAttribute(attributeName, existingAttribute, flatAttribute);
+            loop.setAttribute(attributeName, new _three.BufferAttribute(floatArray, flatAttribute.itemSize));
+        });
+        ///// Morph Attributes
+        const morphAttributes = existing.morphAttributes;
+        for(const attributeName in morphAttributes){
+            const array = [];
+            const morphAttribute = morphAttributes[attributeName];
+            // Process Array of Float32BufferAttributes
+            for(let i2 = 0, l = morphAttribute.length; i2 < l; i2++){
+                if (morphAttribute[i2].count !== vertexCount) continue;
+                const existingAttribute = morphAttribute[i2];
+                const flatAttribute = LoopSubdivision.flatAttribute(morphAttribute[i2], morphAttribute[i2].count);
+                const floatArray = subdivideAttribute(attributeName, existingAttribute, flatAttribute);
+                array.push(new _three.BufferAttribute(floatArray, flatAttribute.itemSize));
+            }
+            loop.morphAttributes[attributeName] = array;
+        }
+        loop.morphTargetsRelative = existing.morphTargetsRelative;
+        ///// Clean Up
+        flat.dispose();
+        existing.dispose();
+        return loop;
+        //////////
+        // Loop Subdivide Function
+        function subdivideAttribute(attributeName, existingAttribute, flatAttribute) {
+            const arrayLength = flat.attributes.position.count * flatAttribute.itemSize;
+            const floatArray = new existingAttribute.array.constructor(arrayLength);
+            let index = 0;
+            for(let i = 0; i < flat.attributes.position.count; i += 3){
+                if (attributeName === "uv" && !params.uvSmooth) {
+                    for(let v = 0; v < 3; v++){
+                        _vertex[v].fromBufferAttribute(flatAttribute, i + v);
+                    }
+                } else {
+                    for(let v1 = 0; v1 < 3; v1++){
+                        _vertex[v1].fromBufferAttribute(flatAttribute, i + v1);
+                        _position[v1].fromBufferAttribute(flatPosition, i + v1);
+                        let positionHash = hashFromVector(_position[v1]);
+                        let neighbors = existingNeighbors[positionHash];
+                        let opposites = flatOpposites[positionHash];
+                        ///// Adjust Source Vertex
+                        if (neighbors) {
+                            // Check Edges have even Opposite Points
+                            if (params.preserveEdges) {
+                                let edgeSet = existingEdges[positionHash];
+                                let hasPair = true;
+                                for (const edgeHash of edgeSet){
+                                    if (flatOpposites[edgeHash].length % 2 !== 0) hasPair = false;
+                                }
+                                if (!hasPair) continue;
+                            }
+                            // Number of Neighbors
+                            const k = Object.keys(neighbors).length;
+                            ///// Loop's Formula
+                            const beta = 1 / k * (5 / 8 - Math.pow(3 / 8 + 1 / 4 * Math.cos(2 * Math.PI / k), 2));
+                            ///// Warren's Formula
+                            // const beta = (k > 3) ? 3 / (8 * k) : ((k === 3) ? 3 / 16 : 0);
+                            ///// Stevinz' Formula
+                            // const beta = 0.5 / k;
+                            ///// Average with Neighbors
+                            const startWeight = 1.0 - beta * k;
+                            _vertex[v1].multiplyScalar(startWeight);
+                            for(let neighborHash in neighbors){
+                                const neighborIndices = neighbors[neighborHash];
+                                _average.set(0, 0, 0);
+                                for(let j = 0; j < neighborIndices.length; j++){
+                                    _average.add(_temp.fromBufferAttribute(existingAttribute, neighborIndices[j]));
+                                }
+                                _average.divideScalar(neighborIndices.length);
+                                _average.multiplyScalar(beta);
+                                _vertex[v1].add(_average);
+                            }
+                        ///// Newly Added Edge Vertex
+                        } else if (opposites && opposites.length === 2) {
+                            const k1 = opposites.length;
+                            const beta1 = 0.125; /* 1/8 */ 
+                            const startWeight1 = 1.0 - beta1 * k1;
+                            _vertex[v1].multiplyScalar(startWeight1);
+                            opposites.forEach((oppositeIndex)=>{
+                                _average.fromBufferAttribute(existingAttribute, oppositeIndex);
+                                _average.multiplyScalar(beta1);
+                                _vertex[v1].add(_average);
+                            });
+                        }
+                    }
+                }
+                // Add New Triangle Position
+                setTriangle(floatArray, index, flatAttribute.itemSize, _vertex[0], _vertex[1], _vertex[2]);
+                index += flatAttribute.itemSize * 3;
+            }
+            ///// Smooth 'normal' Values
+            if (attributeName === "normal") {
+                index = 0;
+                for(let i1 = 0; i1 < flat.attributes.position.count; i1 += 3){
+                    for(let v2 = 0; v2 < 3; v2++){
+                        _position[v2].fromBufferAttribute(flatPosition, i1 + v2);
+                        let positionHash1 = hashFromVector(_position[v2]);
+                        let positions = hashToIndex[positionHash1];
+                        const k2 = Object.keys(positions).length;
+                        const beta2 = 0.625 / k2; /* 5/8 */ 
+                        const startWeight2 = 1.0 - beta2 * k2;
+                        _vertex[v2].fromBufferAttribute(flatAttribute, i1 + v2);
+                        _vertex[v2].multiplyScalar(startWeight2);
+                        positions.forEach((positionIndex)=>{
+                            _average.fromBufferAttribute(flatAttribute, positionIndex);
+                            _average.multiplyScalar(beta2);
+                            _vertex[v2].add(_average);
+                        });
+                    }
+                    // Set Triangle
+                    setTriangle(floatArray, index, flatAttribute.itemSize, _vertex[0], _vertex[1], _vertex[2]);
+                    index += flatAttribute.itemSize * 3;
+                }
+                // Add New Triangle Position
+                setTriangle(floatArray, index, flatAttribute.itemSize, _vertex[0], _vertex[1], _vertex[2]);
+                index += flatAttribute.itemSize * 3;
+            }
+            return floatArray;
+        }
+    }
+}
+/////////////////////////////////////////////////////////////////////////////////////
+/////   Local Functions, Hash
+/////////////////////////////////////////////////////////////////////////////////////
+const _positionShift = Math.pow(10, POSITION_DECIMALS);
+/** Compares two numbers to see if they're almost the same */ function fuzzy(a, b, tolerance = 0.00001) {
+    return a < b + tolerance && a > b - tolerance;
+}
+/** Generates hash strong from Number */ function hashFromNumber(num, shift = _positionShift) {
+    let roundedNumber = round(num * shift);
+    if (roundedNumber == 0) roundedNumber = 0; /* prevent -0 (signed 0 can effect Math.atan2(), etc.) */ 
+    return `${roundedNumber}`;
+}
+/** Generates hash strong from Vector3 */ function hashFromVector(vector, shift = _positionShift) {
+    return `${hashFromNumber(vector.x, shift)},${hashFromNumber(vector.y, shift)},${hashFromNumber(vector.z, shift)}`;
+}
+function round(x) {
+    return x + (x > 0 ? 0.5 : -0.5) << 0;
+}
+/////////////////////////////////////////////////////////////////////////////////////
+/////   Local Functions, Geometry
+/////////////////////////////////////////////////////////////////////////////////////
+function calcNormal(target, vec1, vec2, vec3) {
+    _temp.subVectors(vec1, vec2);
+    target.subVectors(vec2, vec3);
+    target.cross(_temp).normalize();
+}
+function gatherAttributes(geometry) {
+    const desired = [
+        "position",
+        "normal",
+        "uv"
+    ];
+    const contains = Object.keys(geometry.attributes);
+    const attributeList = Array.from(new Set(desired.concat(contains)));
+    return attributeList;
+}
+function setTriangle(positions, index, step, vec0, vec1, vec2) {
+    if (step >= 1) {
+        positions[index + 0 + step * 0] = vec0.x;
+        positions[index + 0 + step * 1] = vec1.x;
+        positions[index + 0 + step * 2] = vec2.x;
+    }
+    if (step >= 2) {
+        positions[index + 1 + step * 0] = vec0.y;
+        positions[index + 1 + step * 1] = vec1.y;
+        positions[index + 1 + step * 2] = vec2.y;
+    }
+    if (step >= 3) {
+        positions[index + 2 + step * 0] = vec0.z;
+        positions[index + 2 + step * 1] = vec1.z;
+        positions[index + 2 + step * 2] = vec2.z;
+    }
+    if (step >= 4) {
+        positions[index + 3 + step * 0] = vec0.w;
+        positions[index + 3 + step * 1] = vec1.w;
+        positions[index + 3 + step * 2] = vec2.w;
+    }
+}
+function verifyGeometry(geometry) {
+    if (!geometry.isBufferGeometry) {
+        console.warn(`LoopSubdivision: Geometry must be 'BufferGeometry' type`);
+        return false;
+    }
+    if (geometry.attributes.position === undefined) {
+        console.warn(`LoopSubdivision: Missing required attribute - 'position'`);
+        return false;
+    }
+    if (geometry.attributes.normal === undefined) geometry.computeVertexNormals();
+    return true;
 }
 
 },{"three":"ktPTu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["euTuy","igcvL"], "igcvL", "parcelRequire2216")

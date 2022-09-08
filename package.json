@@ -20,7 +20,8 @@
   "dependencies": {
     "curtainsjs": "^8.1.3",
     "parcel": "^2.7.0",
-    "three": "^0.144.0"
+    "three": "^0.144.0",
+    "three-subdivide": "^1.1.0"
   },
   "devDependencies": {
     "assert": "^2.0.0",

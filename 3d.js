@@ -1,8 +1,7 @@
 import * as THREE from 'three'
-import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import svg from './icon.svg'
+import { LoopSubdivision } from 'three-subdivide';
 import glb from './icon.glb'
 
 const vs = `
@@ -64,19 +63,6 @@ class ThreeD {
 
     }
 
-    loadSvg(){
-        const loader = new SVGLoader();
-        return loader.loadAsync(svg).then((data) => {
-        const shape = SVGLoader.createShapes(data.paths[0])[0]; // create a shape from the first svg path
-        
-        this.geometry = new THREE.ShapeGeometry(shape)
-        this.mesh = new THREE.Mesh(this.geometry, this.material)
-		this.scene.add( this.mesh );
-        //this.mesh.rotation.z = Math.PI / 4 ;
-        this.ready()
-        })
-    }
-
     loadGlb(){
         // Instantiate a loader
         const loader = new GLTFLoader();
@@ -88,7 +74,11 @@ class ThreeD {
 
         return loader.loadAsync(glb).then((glb) => {
             console.log(glb.scene.children[0].geometry)
-            this.geometry = glb.scene.children[0].geometry
+
+             const geo = glb.scene.children[0].geometry
+            // const smoothGeo = LoopSubdivision.modify(geo, 1)
+            // this.geometry = smoothGeo
+            this.geometry = geo
             this.mesh = new THREE.Mesh(this.geometry, this.material)
             this.scene.add( this.mesh );
             this.mesh.rotation.x = Math.PI / 4 ;
