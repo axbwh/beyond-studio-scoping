@@ -230,7 +230,7 @@ window.addEventListener('load', () => {
 
                     // create our text planes
                     const textEls = document.querySelectorAll('.text-plane');
-                    
+
                     textEls.forEach(textEl => {
 
                         const textPlane = new Plane(curtains, textEl, {
@@ -249,42 +249,41 @@ window.addEventListener('load', () => {
                     });
 
 
-                    // create our shader pass
-                    const scrollPass = new ShaderPass(curtains, {
-                        fragmentShader: scrollFs,
-                        depth: false,
-                        uniforms: {
-                            scrollEffect: {
-                                name: "uScrollEffect",
-                                type: "1f",
-                                value: scroll.effect,
-                            },
-                            scrollStrength: {
-                                name: "uScrollStrength",
-                                type: "1f",
-                                value: 2.5,
-                            },
-                        }
-                    });
 
-                    threeD.ready()
-                    scrollPass.loadCanvas(threeD.canvas)
 
-                    // calculate the lerped scroll effect
-                    scrollPass.onRender(() => {
-                        threeD.move()
-                        threeD.render()
-                        scroll.lastValue = scroll.value;
-                        scroll.value = curtains.getScrollValues().y;
-
-                        // clamp delta
-                        scroll.delta = Math.max(-30, Math.min(30, scroll.lastValue - scroll.value));
-
-                        scroll.effect = curtains.lerp(scroll.effect, scroll.delta, 0.05);
-                        scrollPass.uniforms.scrollEffect.value = scroll.effect;
-                    });
-                    
-                    
+                    threeD.loadSvg().then(() => {
+                                            // create our shader pass
+                            const scrollPass = new ShaderPass(curtains, {
+                                fragmentShader: scrollFs,
+                                depth: false,
+                                uniforms: {
+                                    scrollEffect: {
+                                        name: "uScrollEffect",
+                                        type: "1f",
+                                        value: scroll.effect,
+                                    },
+                                    scrollStrength: {
+                                        name: "uScrollStrength",
+                                        type: "1f",
+                                        value: 2.5,
+                                    },
+                                }
+                            });
+                        scrollPass.loadCanvas(threeD.canvas)
+                        // calculate the lerped scroll effect
+                        scrollPass.onRender(() => {
+                            threeD.move()
+                            threeD.render()
+                            scroll.lastValue = scroll.value;
+                            scroll.value = curtains.getScrollValues().y;
+    
+                            // clamp delta
+                            scroll.delta = Math.max(-30, Math.min(30, scroll.lastValue - scroll.value));
+    
+                            scroll.effect = curtains.lerp(scroll.effect, scroll.delta, 0.05);
+                            scrollPass.uniforms.scrollEffect.value = scroll.effect;
+                        });
+                    })   
                 }
             })
         })

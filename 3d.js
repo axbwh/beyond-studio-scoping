@@ -1,5 +1,6 @@
-import * as THREE from 'three.js'
-
+import * as THREE from 'three'
+import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+import svg from './icon.svg'
 
 const vs = `
 varying vec4 mvPosition;
@@ -21,7 +22,7 @@ varying vec2 vUv;
 void main()
 {
 
-    vec2 uv = vUv;
+    vec2 uv = gl_FragCoord.xy;
 
     vec2 uvn=abs(uv-0.5)*2.0;
 
@@ -39,15 +40,12 @@ void main()
 class ThreeD {
     constructor(){
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        this.camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 1000 );
     
         this.renderer = new THREE.WebGLRenderer();
         this.renderer.setSize( window.innerWidth, window.innerHeight );
         this.canvas = this.renderer.domElement
         this.canvas.setAttribute('data-sampler', 'threeDTexture')
-        //document.body.appendChild( this.renderer.domElement );
-    
-        this.geometry = new THREE.PlaneGeometry( 1.5, 1.5 );
 
         this.material = new THREE.ShaderMaterial({
             vertexShader : vs,
@@ -55,14 +53,24 @@ class ThreeD {
             side : THREE.DoubleSide
         })
 
-        //this.material = new THREE.MeshBasicMaterial( { color: 0x00ff00, side: THREE.DoubleSide  } );
-        this.shape = new THREE.Mesh( this.geometry, this.material );
-        this.scene.add( this.shape );
-        this.camera.position.z = 2;
-        this.shape.rotation.z = Math.PI / 4 ;
+        this.camera.position.z = 10;
         this.mouse = { x : 0.5, y: 0.5};
+        window.addEventListener( 'resize', this.onWindowResize );
+        document.body.appendChild( this.renderer.domElement );
 
+    }
+
+    loadSvg(){
+        const loader = new SVGLoader();
+        return loader.loadAsync(svg).then((data) => {
+        const shape = SVGLoader.createShapes(data.paths[0])[0]; // create a shape from the first svg path
         
+        this.geometry = new THREE.ShapeGeometry(shape)
+        this.mesh = new THREE.Mesh(this.geometry, this.material)
+		this.scene.add( this.mesh );
+        this.mesh.rotation.z = Math.PI / 4 ;
+        this.ready()
+        })
     }
 
     mouseEvent(event){
@@ -83,18 +91,24 @@ class ThreeD {
         var dir = vector.sub( this.camera.position ).normalize();
         var distance = - this.camera.position.z / dir.z;
         var pos = this.camera.position.clone().add( dir.multiplyScalar( distance ) );
-        this.shape.position.lerp(pos, 0.02)
+        this.mesh.position.lerp(pos, 0.02)
 
-        this.shape.scale.x = 1 + Math.sin(this.shape.rotation.y) * 0.1
-        this.shape.scale.y = 1 + Math.sin(this.shape.rotation.y) * 0.1
-        this.shape.rotation.y += 0.005 + 0.01 * this.shape.position.distanceTo(pos)
+        this.mesh.scale.x = 1 + Math.sin(this.mesh.rotation.y) * 0.1
+        this.mesh.scale.y = 1 + Math.sin(this.mesh.rotation.y) * 0.1
+        this.mesh.rotation.y += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
+        //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
     }
 
 
 
     render() {
-
         this.renderer.render(this.scene, this.camera)
+    }
+
+    onWindowResize(){
+        this.camera.aspect = camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize( window.innerWidth, window.innerHeight)
     }
 
     
