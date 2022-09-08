@@ -251,7 +251,7 @@ window.addEventListener('load', () => {
 
 
 
-                    threeD.loadSvg().then(() => {
+                    threeD.loadGlb().then(() => {
                                             // create our shader pass
                             const scrollPass = new ShaderPass(curtains, {
                                 fragmentShader: scrollFs,

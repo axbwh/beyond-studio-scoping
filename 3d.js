@@ -1,6 +1,9 @@
 import * as THREE from 'three'
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import svg from './icon.svg'
+import glb from './icon.glb'
 
 const vs = `
 varying vec4 mvPosition;
@@ -22,7 +25,7 @@ varying vec2 vUv;
 void main()
 {
 
-    vec2 uv = gl_FragCoord.xy;
+    vec2 uv = vUv;
 
     vec2 uvn=abs(uv-0.5)*2.0;
 
@@ -52,11 +55,12 @@ class ThreeD {
             fragmentShader: fs,
             side : THREE.DoubleSide
         })
+        this.scale = 5;
 
         this.camera.position.z = 10;
         this.mouse = { x : 0.5, y: 0.5};
         window.addEventListener( 'resize', this.onWindowResize );
-        document.body.appendChild( this.renderer.domElement );
+        // document.body.appendChild( this.renderer.domElement );
 
     }
 
@@ -68,9 +72,29 @@ class ThreeD {
         this.geometry = new THREE.ShapeGeometry(shape)
         this.mesh = new THREE.Mesh(this.geometry, this.material)
 		this.scene.add( this.mesh );
-        this.mesh.rotation.z = Math.PI / 4 ;
+        //this.mesh.rotation.z = Math.PI / 4 ;
         this.ready()
         })
+    }
+
+    loadGlb(){
+        // Instantiate a loader
+        const loader = new GLTFLoader();
+
+        // Optional: Provide a DRACOLoader instance to decode compressed mesh data
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+        loader.setDRACOLoader( dracoLoader );
+
+        return loader.loadAsync(glb).then((glb) => {
+            console.log(glb.scene.children[0].geometry)
+            this.geometry = glb.scene.children[0].geometry
+            this.mesh = new THREE.Mesh(this.geometry, this.material)
+            this.scene.add( this.mesh );
+            this.mesh.rotation.x = Math.PI / 4 ;
+            this.ready()
+        })
+
     }
 
     mouseEvent(event){
@@ -93,9 +117,11 @@ class ThreeD {
         var pos = this.camera.position.clone().add( dir.multiplyScalar( distance ) );
         this.mesh.position.lerp(pos, 0.02)
 
-        this.mesh.scale.x = 1 + Math.sin(this.mesh.rotation.y) * 0.1
-        this.mesh.scale.y = 1 + Math.sin(this.mesh.rotation.y) * 0.1
-        this.mesh.rotation.y += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
+        this.mesh.scale.x = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
+        this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
+        this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
+        this.mesh.rotation.z += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
+        // console.log(this.mesh.position)
         //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
     }
 
