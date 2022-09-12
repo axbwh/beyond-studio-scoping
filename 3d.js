@@ -40,24 +40,27 @@ void main()
 
 
 class ThreeD {
-    constructor(){
+    constructor(){ //lets set up our three.js scene
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 1000 );
     
         this.renderer = new THREE.WebGLRenderer();
         this.renderer.setSize( window.innerWidth, window.innerHeight );
         this.canvas = this.renderer.domElement
-        this.canvas.setAttribute('data-sampler', 'threeDTexture')
+        this.canvas.setAttribute('data-sampler', 'threeDTexture') // this data attribute will automatically load our canvas 
+        // as a uniform sampler2D called threeDTexture when we call ShaderPass.loadCanvas(theeD.canvas)
 
         this.material = new THREE.ShaderMaterial({
             vertexShader : vs,
             fragmentShader: fs,
             side : THREE.DoubleSide
         })
+
         this.scale = 5;
 
         this.camera.position.z = 10;
         this.mouse = { x : 0.5, y: 0.5};
+
         window.addEventListener( 'resize', this.onWindowResize );
         // document.body.appendChild( this.renderer.domElement );
 
@@ -122,9 +125,9 @@ class ThreeD {
     }
 
     onWindowResize(){
-        this.camera.aspect = camera.aspect = window.innerWidth / window.innerHeight
-        camera.updateProjectionMatrix()
-        renderer.setSize( window.innerWidth, window.innerHeight)
+        this.camera.aspect = window.innerWidth / window.innerHeight
+        this.camera.updateProjectionMatrix()
+        this.renderer.setSize( window.innerWidth, window.innerHeight)
     }
 
     
