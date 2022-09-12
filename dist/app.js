@@ -614,7 +614,8 @@ window.addEventListener("load", ()=>{
         container: "canvas",
         pixelRatio: Math.min(1.5, window.devicePixelRatio)
     });
-    const sliderTarget = new (0, _curtainsjs.RenderTarget)(curtains);
+    const sliderTarget = new (0, _curtainsjs.RenderTarget)(curtains) // create a new render target for our slider
+    ;
     // track scroll values
     const scroll = {
         value: 0,
@@ -647,19 +648,16 @@ window.addEventListener("load", ()=>{
             }
         }
     };
-    const multiTexturesPlane = new (0, _curtainsjs.Plane)(curtains, planeElement, params);
-    multiTexturesPlane.setRenderTarget(sliderTarget);
+    const sliderPlane = new (0, _curtainsjs.Plane)(curtains, planeElement, params);
+    sliderPlane.setRenderTarget(sliderTarget);
+    const sliderPass = new (0, _curtainsjs.ShaderPass)(curtains, {
+        renderTarget: sliderTarget
+    }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
+    ;
     ////////////////////
     // on success
     curtains.onSuccess(()=>{
-        const fonts = {
-            list: [
-                'normal 400 1em "Archivo Black", sans-serif',
-                'normal 300 1em "Merriweather Sans", sans-serif', 
-            ],
-            loaded: 0
-        };
-        multiTexturesPlane.onLoading((texture)=>{
+        sliderPlane.onLoading((texture)=>{
             // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
             texture.setMinFilter(curtains.gl.LINEAR_MIPMAP_NEAREST);
         }).onReady(()=>{
@@ -668,20 +666,20 @@ window.addEventListener("load", ()=>{
             // the second one will contain our entering (next) image
             // that way we will deal with only activeTex and nextTex samplers in the fragment shader
             // and we could easily add more images in the slideshow...
-            const displacement = multiTexturesPlane.createTexture({
+            const displacement = sliderPlane.createTexture({
                 sampler: "displacement",
-                fromTexture: multiTexturesPlane.textures[0]
+                fromTexture: sliderPlane.textures[0]
             });
             // first we set our very first image as the active texture
-            const activeTex = multiTexturesPlane.createTexture({
+            const activeTex = sliderPlane.createTexture({
                 sampler: "activeTex",
-                fromTexture: multiTexturesPlane.textures[slideshowState.activeTextureIndex]
+                fromTexture: sliderPlane.textures[slideshowState.activeTextureIndex]
             });
             // next we set the second image as next texture but this is not mandatory
             // as we will reset the next texture on slide change
-            const nextTex = multiTexturesPlane.createTexture({
+            const nextTex = sliderPlane.createTexture({
                 sampler: "nextTex",
-                fromTexture: multiTexturesPlane.textures[slideshowState.nextTextureIndex]
+                fromTexture: sliderPlane.textures[slideshowState.nextTextureIndex]
             });
             planeElement.addEventListener("click", ()=>{
                 if (!slideshowState.isChanging) {
@@ -692,21 +690,21 @@ window.addEventListener("load", ()=>{
                     if (slideshowState.activeTextureIndex < slideshowState.maxTextures) slideshowState.nextTextureIndex = slideshowState.activeTextureIndex + 1;
                     else slideshowState.nextTextureIndex = 1;
                     // apply it to our next texture
-                    nextTex.setSource(multiTexturesPlane.images[slideshowState.nextTextureIndex]);
+                    nextTex.setSource(sliderPlane.images[slideshowState.nextTextureIndex]);
                     setTimeout(()=>{
                         // disable drawing now that the transition is over
                         //curtains.disableDrawing();
                         slideshowState.isChanging = false;
                         slideshowState.activeTextureIndex = slideshowState.nextTextureIndex;
                         // our next texture becomes our active texture
-                        activeTex.setSource(multiTexturesPlane.images[slideshowState.activeTextureIndex]);
+                        activeTex.setSource(sliderPlane.images[slideshowState.activeTextureIndex]);
                         // reset timer
                         slideshowState.transitionTimer = 0;
                     }, 1700); // add a bit of margin to the timer
                 }
             });
         });
-        multiTexturesPlane.onRender(()=>{
+        sliderPlane.onRender(()=>{
             // increase or decrease our timer based on the active texture value
             if (slideshowState.isChanging) {
                 // use damping to smoothen transition
@@ -715,12 +713,16 @@ window.addEventListener("load", ()=>{
                 if (slideshowState.transitionTimer >= 88.5 && slideshowState.transitionTimer !== 90) slideshowState.transitionTimer = 90;
             }
             // update our transition timer uniform
-            multiTexturesPlane.uniforms.transitionTimer.value = slideshowState.transitionTimer;
+            sliderPlane.uniforms.transitionTimer.value = slideshowState.transitionTimer;
         });
-        // const plane = new Plane(curtains, planeElement);
-        const sliderPass = new (0, _curtainsjs.ShaderPass)(curtains, {
-            renderTarget: sliderTarget
-        });
+        ///// this is our scroll code
+        const fonts = {
+            list: [
+                'normal 400 1em "Archivo Black", sans-serif',
+                'normal 300 1em "Merriweather Sans", sans-serif', 
+            ],
+            loaded: 0
+        };
         // load the fonts first
         fonts.list.forEach((font)=>{
             document.fonts.load(font).then(()=>{
