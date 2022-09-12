@@ -8403,7 +8403,9 @@ class ThreeD {
         this.renderer = new _three.WebGLRenderer();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.canvas = this.renderer.domElement;
-        this.canvas.setAttribute("data-sampler", "threeDTexture");
+        this.canvas.setAttribute("data-sampler", "threeDTexture") // this data attribute will automatically load our canvas 
+        ;
+        // as a uniform sampler2D called threeDTexture when we call ShaderPass.loadCanvas(theeD.canvas)
         this.material = new _three.ShaderMaterial({
             vertexShader: vs,
             fragmentShader: fs,
@@ -8465,9 +8467,9 @@ class ThreeD {
         this.renderer.render(this.scene, this.camera);
     }
     onWindowResize() {
-        this.camera.aspect = camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 }
 exports.default = ThreeD;
