@@ -249,7 +249,7 @@ window.addEventListener('load', () => {
                         });
                     });
 
-                    threeD.loadGlb().then(() => {
+                    threeD.loadGlb().then(() => { //wait for our glbs to load
                                             // create our shader pass
                             const scrollPass = new ShaderPass(curtains, {
                                 fragmentShader: scrollFs,
@@ -268,7 +268,7 @@ window.addEventListener('load', () => {
                                 }
                             });
 
-                        scrollPass.loadCanvas(threeD.canvas)
+                        scrollPass.loadCanvas(threeD.canvas) // creates a texture from our three.js canvas
                         // calculate the lerped scroll effect
                         scrollPass.onRender(() => {
                             threeD.move()
