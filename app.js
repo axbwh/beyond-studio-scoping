@@ -1,77 +1,16 @@
-import {Curtains, Plane, RenderTarget, ShaderPass} from 'curtainsjs';
+import {Curtains, Plane, RenderTarget, ShaderPass, TextureLoader} from 'curtainsjs';
 import {TextTexture} from './TextTexture';
-import sliderShader from './sliderShader';
+import sliderFrag from './shaders/slider.frag'
+import sliderVert from './shaders/slider.vert'
+import imgFrag from './shaders/img.frag'
 import textShader from './textShader';
+import pageFrag from './shaders/page.frag';
 import ThreeD from './3d';
+import {hexToRgb }from './utils'
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 
-const scrollFs = `
-    #ifdef GL_FRAGMENT_PRECISION_HIGH
-    precision highp float;
-    #else
-    precision mediump float;
-    #endif
 
-    varying vec3 vVertexPosition;
-    varying vec2 vTextureCoord;
-
-    uniform sampler2D uRenderTexture;
-    uniform sampler2D threeDTexture;
-
-    // lerped scroll deltas
-    // negative when scrolling down, positive when scrolling up
-    uniform float uScrollEffect;
-
-    // default to 2.5
-    uniform float uScrollStrength;
-
-
-    void main() {
-        vec2 scrollUv = vTextureCoord;
-        float horizontalStretch;
-        vec4 threeDCol = texture2D(threeDTexture, vTextureCoord);
-
-        // branching on an uniform is ok
-        if(uScrollEffect >= 0.0) {
-            scrollUv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
-            horizontalStretch = sin(scrollUv.y);
-        }
-        else if(uScrollEffect < 0.0) {
-            scrollUv.y += (scrollUv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
-            horizontalStretch = sin(-1.0 * (1.0 - scrollUv.y));
-        }
-
-        scrollUv.x = scrollUv.x * 2.0 - 1.0;
-        scrollUv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;
-        scrollUv.x = (scrollUv.x + 1.0) * 0.5;
-        // moving the content underneath the square
-
-        vec2 uvR = scrollUv;
-        vec2 uvG = scrollUv;
-        vec2 uvB = scrollUv;
-        uvR.x += threeDCol.r * 0.005;
-        uvR.y += threeDCol.r * 0.005;
-        uvG.x -= threeDCol.r * 0.005;
-        uvG.y += threeDCol.r * 0.005;
-        uvB.y -= threeDCol.r * 0.005;
-
-        vec4 colR =  texture2D(uRenderTexture, uvR);
-        vec4 colG =  texture2D(uRenderTexture, uvG);
-        vec4 colB =  texture2D(uRenderTexture, uvB);
-        float maxA = max(max(colR.a, colG.a), colB.a);
-
-        vec4 splitCol = vec4(colR.r, colG.g, colB.b, colR.a);
-
-        vec4 baseCol = texture2D(uRenderTexture, scrollUv);
-
-        vec4 mixCol = mix(baseCol, splitCol, threeDCol.g);
-        mixCol = mix(mixCol, vec4(0.8 ,0.8 ,0.8, 1.0), clamp(threeDCol.g - mixCol.a, 0.0, 1.0));
-
-        gl_FragColor = mixCol;
-        //gl_FragColor = texture2D(threeDTexture, scrollUv);
-    }
-`;
 
 window.addEventListener('load', () => {
     // create curtains instance
@@ -110,8 +49,8 @@ window.addEventListener('load', () => {
 //////////////////////
             // some basic parameters
         const params = {
-            vertexShader: sliderShader.vs,
-            fragmentShader: sliderShader.fs,
+            vertexShader: sliderVert,
+            fragmentShader: sliderFrag,
             uniforms: {
                 transitionTimer: {
                     name: "uTransitionTimer",
@@ -230,10 +169,11 @@ window.addEventListener('load', () => {
                 
 
                     // create our text planes
-                    const textEls = document.querySelectorAll('.text-plane');
+                    const textEls = document.querySelectorAll('[text]');
 
                     textEls.forEach(textEl => {
-
+                        
+                        
                         const textPlane = new Plane(curtains, textEl, {
                             vertexShader: textShader.vs,
                             fragmentShader: textShader.fs
@@ -247,12 +187,37 @@ window.addEventListener('load', () => {
                             resolution: 1.5,
                             skipFontLoading: true, // we've already loaded the fonts
                         });
+
+                        textEl.style.color = "#ff000000"
                     });
+
+                    //create our img elements
+                    const imgEls = document.querySelectorAll('img[gl]')
+                    const loader = new TextureLoader(curtains)
+                   
+
+                    imgEls.forEach( el => {
+                        console.log(loader)
+                        const plane = new Plane(curtains, el, {
+                            vertexShader: textShader.vs,
+                            fragmentShader: imgFrag
+                        })
+
+                       plane.loadImage(el, { sampler: 'uTexture'})
+                       el.style.opacity = 0;
+                    })
+                    
+                    console.log([...hexToRgb("#0F1212"), 1.0])
+                    console.log([...hexToRgb("#61FCC4"), 1.0])
+
+                    // hide gradient
+                    document.getElementById('gradient').style.display = 'none';
+
 
                     threeD.loadGlb().then(() => { //wait for our glbs to load
                                             // create our shader pass
                             const scrollPass = new ShaderPass(curtains, {
-                                fragmentShader: scrollFs,
+                                fragmentShader: pageFrag,
                                 depth: false,
                                 uniforms: {
                                     scrollEffect: {
@@ -265,22 +230,67 @@ window.addEventListener('load', () => {
                                         type: "1f",
                                         value: 2.5,
                                     },
+                                    bgCol:{
+                                        name: "uBgCol",
+                                        type: '4f',
+                                        value: [...hexToRgb("#0F1212"), 1.0],
+                                    },
+                                    fgCol:{
+                                        name: "uFgCol",
+                                        type: '4f',
+                                        value: [...hexToRgb("#FFF"), 1.0],
+                                    },
+                                    col1:{
+                                        name: "uCol1",
+                                        type: '4f',
+                                        value: [...hexToRgb("#F198C0"), 1.0],
+                                    },
+                                    col2:{
+                                        name: "uCol2",
+                                        type: '4f',
+                                        value: [...hexToRgb("#61FCC4"), 1.0],
+                                    },
+                                    col3:{
+                                        name: "uCol3",
+                                        type: '4f',
+                                        value: [...hexToRgb("#FFF"), 1.0],
+                                    },
+                                    mouse:{
+                                        name: "uMouse",
+                                        type: '2f',
+                                        value: [0, 0],
+                                    },
+                                    time:{
+                                        name: 'uTime',
+                                        type: '1f',
+                                        value: 0,
+                                    }
+                                    
                                 }
                             });
 
                         scrollPass.loadCanvas(threeD.canvas) // creates a texture from our three.js canvas
                         // calculate the lerped scroll effect
+
+                        let mouseLast = [0.5,0.5];
                         scrollPass.onRender(() => {
                             threeD.move()
                             threeD.render()
                             scroll.lastValue = scroll.value;
                             scroll.value = curtains.getScrollValues().y;
+                            
     
                             // clamp delta
                             scroll.delta = Math.max(-30, Math.min(30, scroll.lastValue - scroll.value));
     
                             scroll.effect = curtains.lerp(scroll.effect, scroll.delta, 0.05);
                             scrollPass.uniforms.scrollEffect.value = scroll.effect;
+
+                            mouseVal = scrollPass.uniforms.mouse.value;
+
+                            let mouseLerp = [curtains.lerp( mouseVal[0] ,threeD.mouse.x, 0.05), curtains.lerp( mouseVal[1] ,threeD.mouse.y, 0.05) ] 
+                            scrollPass.uniforms.mouse.value = mouseLerp;
+                            scrollPass.uniforms.time.value += 1;
                         });
                     })   
                 }

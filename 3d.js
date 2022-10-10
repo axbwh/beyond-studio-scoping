@@ -62,7 +62,7 @@ class ThreeD {
         this.mouse = { x : 0.5, y: 0.5};
 
         window.addEventListener( 'resize', this.onWindowResize );
-        // document.body.appendChild( this.renderer.domElement );
+        //document.body.appendChild( this.renderer.domElement );
 
     }
 
@@ -91,7 +91,7 @@ class ThreeD {
     }
 
     mouseEvent(event){
-        event.preventDefault();
+        //event.preventDefault();
 	    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
 	    this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
     }

@@ -535,79 +535,20 @@ function hmrAcceptRun(bundle, id) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 var _curtainsjs = require("curtainsjs");
 var _textTexture = require("./TextTexture");
-var _sliderShader = require("./sliderShader");
-var _sliderShaderDefault = parcelHelpers.interopDefault(_sliderShader);
+var _sliderFrag = require("./shaders/slider.frag");
+var _sliderFragDefault = parcelHelpers.interopDefault(_sliderFrag);
+var _sliderVert = require("./shaders/slider.vert");
+var _sliderVertDefault = parcelHelpers.interopDefault(_sliderVert);
+var _imgFrag = require("./shaders/img.frag");
+var _imgFragDefault = parcelHelpers.interopDefault(_imgFrag);
 var _textShader = require("./textShader");
 var _textShaderDefault = parcelHelpers.interopDefault(_textShader);
+var _pageFrag = require("./shaders/page.frag");
+var _pageFragDefault = parcelHelpers.interopDefault(_pageFrag);
 var _3D = require("./3d");
 var _3DDefault = parcelHelpers.interopDefault(_3D);
+var _utils = require("./utils");
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
-const scrollFs = `
-    #ifdef GL_FRAGMENT_PRECISION_HIGH
-    precision highp float;
-    #else
-    precision mediump float;
-    #endif
-
-    varying vec3 vVertexPosition;
-    varying vec2 vTextureCoord;
-
-    uniform sampler2D uRenderTexture;
-    uniform sampler2D threeDTexture;
-
-    // lerped scroll deltas
-    // negative when scrolling down, positive when scrolling up
-    uniform float uScrollEffect;
-
-    // default to 2.5
-    uniform float uScrollStrength;
-
-
-    void main() {
-        vec2 scrollUv = vTextureCoord;
-        float horizontalStretch;
-        vec4 threeDCol = texture2D(threeDTexture, vTextureCoord);
-
-        // branching on an uniform is ok
-        if(uScrollEffect >= 0.0) {
-            scrollUv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
-            horizontalStretch = sin(scrollUv.y);
-        }
-        else if(uScrollEffect < 0.0) {
-            scrollUv.y += (scrollUv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
-            horizontalStretch = sin(-1.0 * (1.0 - scrollUv.y));
-        }
-
-        scrollUv.x = scrollUv.x * 2.0 - 1.0;
-        scrollUv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;
-        scrollUv.x = (scrollUv.x + 1.0) * 0.5;
-        // moving the content underneath the square
-
-        vec2 uvR = scrollUv;
-        vec2 uvG = scrollUv;
-        vec2 uvB = scrollUv;
-        uvR.x += threeDCol.r * 0.005;
-        uvR.y += threeDCol.r * 0.005;
-        uvG.x -= threeDCol.r * 0.005;
-        uvG.y += threeDCol.r * 0.005;
-        uvB.y -= threeDCol.r * 0.005;
-
-        vec4 colR =  texture2D(uRenderTexture, uvR);
-        vec4 colG =  texture2D(uRenderTexture, uvG);
-        vec4 colB =  texture2D(uRenderTexture, uvB);
-        float maxA = max(max(colR.a, colG.a), colB.a);
-
-        vec4 splitCol = vec4(colR.r, colG.g, colB.b, colR.a);
-
-        vec4 baseCol = texture2D(uRenderTexture, scrollUv);
-
-        vec4 mixCol = mix(baseCol, splitCol, threeDCol.g);
-        mixCol = mix(mixCol, vec4(0.8 ,0.8 ,0.8, 1.0), clamp(threeDCol.g - mixCol.a, 0.0, 1.0));
-
-        gl_FragColor = mixCol;
-        //gl_FragColor = texture2D(threeDTexture, scrollUv);
-    }
-`;
 window.addEventListener("load", ()=>{
     // create curtains instance
     const curtains = new (0, _curtainsjs.Curtains)({
@@ -638,8 +579,8 @@ window.addEventListener("load", ()=>{
     //////////////////////
     // some basic parameters
     const params = {
-        vertexShader: (0, _sliderShaderDefault.default).vs,
-        fragmentShader: (0, _sliderShaderDefault.default).fs,
+        vertexShader: (0, _sliderVertDefault.default),
+        fragmentShader: (0, _sliderFragDefault.default),
         uniforms: {
             transitionTimer: {
                 name: "uTransitionTimer",
@@ -729,7 +670,7 @@ window.addEventListener("load", ()=>{
                 fonts.loaded++;
                 if (fonts.loaded === fonts.list.length) {
                     // create our text planes
-                    const textEls = document.querySelectorAll(".text-plane");
+                    const textEls = document.querySelectorAll("[text]");
                     textEls.forEach((textEl)=>{
                         const textPlane = new (0, _curtainsjs.Plane)(curtains, textEl, {
                             vertexShader: (0, _textShaderDefault.default).vs,
@@ -743,11 +684,36 @@ window.addEventListener("load", ()=>{
                             resolution: 1.5,
                             skipFontLoading: true
                         });
+                        textEl.style.color = "#ff000000";
                     });
+                    //create our img elements
+                    const imgEls = document.querySelectorAll("img[gl]");
+                    const loader = new (0, _curtainsjs.TextureLoader)(curtains);
+                    imgEls.forEach((el)=>{
+                        console.log(loader);
+                        const plane = new (0, _curtainsjs.Plane)(curtains, el, {
+                            vertexShader: (0, _textShaderDefault.default).vs,
+                            fragmentShader: (0, _imgFragDefault.default)
+                        });
+                        plane.loadImage(el, {
+                            sampler: "uTexture"
+                        });
+                        el.style.opacity = 0;
+                    });
+                    console.log([
+                        ...(0, _utils.hexToRgb)("#0F1212"),
+                        1.0
+                    ]);
+                    console.log([
+                        ...(0, _utils.hexToRgb)("#61FCC4"),
+                        1.0
+                    ]);
+                    // hide gradient
+                    document.getElementById("gradient").style.display = "none";
                     threeD.loadGlb().then(()=>{
                         // create our shader pass
                         const scrollPass = new (0, _curtainsjs.ShaderPass)(curtains, {
-                            fragmentShader: scrollFs,
+                            fragmentShader: (0, _pageFragDefault.default),
                             depth: false,
                             uniforms: {
                                 scrollEffect: {
@@ -759,11 +725,69 @@ window.addEventListener("load", ()=>{
                                     name: "uScrollStrength",
                                     type: "1f",
                                     value: 2.5
+                                },
+                                bgCol: {
+                                    name: "uBgCol",
+                                    type: "4f",
+                                    value: [
+                                        ...(0, _utils.hexToRgb)("#0F1212"),
+                                        1.0
+                                    ]
+                                },
+                                fgCol: {
+                                    name: "uFgCol",
+                                    type: "4f",
+                                    value: [
+                                        ...(0, _utils.hexToRgb)("#FFF"),
+                                        1.0
+                                    ]
+                                },
+                                col1: {
+                                    name: "uCol1",
+                                    type: "4f",
+                                    value: [
+                                        ...(0, _utils.hexToRgb)("#F198C0"),
+                                        1.0
+                                    ]
+                                },
+                                col2: {
+                                    name: "uCol2",
+                                    type: "4f",
+                                    value: [
+                                        ...(0, _utils.hexToRgb)("#61FCC4"),
+                                        1.0
+                                    ]
+                                },
+                                col3: {
+                                    name: "uCol3",
+                                    type: "4f",
+                                    value: [
+                                        ...(0, _utils.hexToRgb)("#FFF"),
+                                        1.0
+                                    ]
+                                },
+                                mouse: {
+                                    name: "uMouse",
+                                    type: "2f",
+                                    value: [
+                                        0,
+                                        0
+                                    ]
+                                },
+                                time: {
+                                    name: "uTime",
+                                    type: "1f",
+                                    value: 0
                                 }
                             }
                         });
-                        scrollPass.loadCanvas(threeD.canvas);
+                        scrollPass.loadCanvas(threeD.canvas) // creates a texture from our three.js canvas
+                        ;
                         // calculate the lerped scroll effect
+                        let mouseLast = [
+                            0.5,
+                            0.5
+                        ];
                         scrollPass.onRender(()=>{
                             threeD.move();
                             threeD.render();
@@ -773,6 +797,13 @@ window.addEventListener("load", ()=>{
                             scroll.delta = Math.max(-30, Math.min(30, scroll.lastValue - scroll.value));
                             scroll.effect = curtains.lerp(scroll.effect, scroll.delta, 0.05);
                             scrollPass.uniforms.scrollEffect.value = scroll.effect;
+                            mouseVal = scrollPass.uniforms.mouse.value;
+                            let mouseLerp = [
+                                curtains.lerp(mouseVal[0], threeD.mouse.x, 0.05),
+                                curtains.lerp(mouseVal[1], threeD.mouse.y, 0.05)
+                            ];
+                            scrollPass.uniforms.mouse.value = mouseLerp;
+                            scrollPass.uniforms.time.value += 1;
                         });
                     });
                 }
@@ -781,7 +812,7 @@ window.addEventListener("load", ()=>{
     });
 });
 
-},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./sliderShader":"3uSS1","./textShader":"l7Abs","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./3d":"didBu"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/slider.frag":"7aA3N","./shaders/slider.vert":"3Tkxq","./shaders/img.frag":"7dXWc","./utils":"bIDtH"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -8240,72 +8271,6 @@ class TextTexture {
     }
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"3uSS1":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-const vs = `
-precision mediump float;
-// default mandatory variables
-attribute vec3 aVertexPosition;
-attribute vec2 aTextureCoord;
-uniform mat4 uMVMatrix;
-uniform mat4 uPMatrix;
-// varyings : notice we've got 3 texture coords varyings
-// one for the displacement texture
-// one for our visible texture
-// and one for the upcoming texture
-varying vec3 vVertexPosition;
-varying vec2 vTextureCoord;
-varying vec2 vActiveTextureCoord;
-varying vec2 vNextTextureCoord;
-// textures matrices
-uniform mat4 activeTexMatrix;
-uniform mat4 nextTexMatrix;
-// custom uniforms
-uniform float uTransitionTimer;
-void main() {
-    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-    // varyings
-    vTextureCoord = aTextureCoord;
-    vActiveTextureCoord = (activeTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;
-    vNextTextureCoord = (nextTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;
-    vVertexPosition = aVertexPosition;
-}
-`;
-const fs = `
-precision mediump float;
-varying vec3 vVertexPosition;
-varying vec2 vTextureCoord;
-varying vec2 vActiveTextureCoord;
-varying vec2 vNextTextureCoord;
-// custom uniforms
-uniform float uTransitionTimer;
-// our textures samplers
-// notice how it matches the sampler attributes of the textures we created dynamically
-uniform sampler2D activeTex;
-uniform sampler2D nextTex;
-uniform sampler2D displacement;
-void main() {
-    // our displacement texture
-    vec4 displacementTexture = texture2D(displacement, vTextureCoord);
-    // slides transitions based on displacement and transition timer
-    vec2 firstDisplacementCoords = vActiveTextureCoord + displacementTexture.r * ((cos((uTransitionTimer + 90.0) / (90.0 / 3.141592)) + 1.0) / 1.25);
-    vec4 firstDistortedColor = texture2D(activeTex, vec2(vActiveTextureCoord.x, firstDisplacementCoords.y));
-    // same as above but we substract the effect
-    vec2 secondDisplacementCoords = vNextTextureCoord - displacementTexture.r * ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 1.25);
-    vec4 secondDistortedColor = texture2D(nextTex, vec2(vNextTextureCoord.x, secondDisplacementCoords.y));
-    // mix both texture
-    vec4 finalColor = mix(firstDistortedColor, secondDistortedColor, 1.0 - ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 2.0));
-    // handling premultiplied alpha
-    finalColor = vec4(finalColor.rgb * finalColor.a, finalColor.a);
-    gl_FragColor = finalColor;
-}
-`;
-exports.default = {
-    vs,
-    fs
-};
-
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"l7Abs":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
@@ -8418,7 +8383,7 @@ class ThreeD {
             y: 0.5
         };
         window.addEventListener("resize", this.onWindowResize);
-    // document.body.appendChild( this.renderer.domElement );
+    //document.body.appendChild( this.renderer.domElement );
     }
     loadGlb() {
         // Instantiate a loader
@@ -8440,7 +8405,7 @@ class ThreeD {
         });
     }
     mouseEvent(event) {
-        event.preventDefault();
+        //event.preventDefault();
         this.mouse.x = event.clientX / window.innerWidth * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     }
@@ -8474,7 +8439,7 @@ class ThreeD {
 }
 exports.default = ThreeD;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","three":"ktPTu","./icon.glb":"8EsCM","three/examples/jsm/loaders/GLTFLoader.js":"dVRsF","three/examples/jsm/loaders/DRACOLoader.js":"lkdU4","three-subdivide":"e6vhA"}],"ktPTu":[function(require,module,exports) {
+},{"three":"ktPTu","three/examples/jsm/loaders/GLTFLoader.js":"dVRsF","three/examples/jsm/loaders/DRACOLoader.js":"lkdU4","three-subdivide":"e6vhA","./icon.glb":"8EsCM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"ktPTu":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "ACESFilmicToneMapping", ()=>ACESFilmicToneMapping);
@@ -37468,44 +37433,7 @@ if (typeof window !== "undefined") {
     else window.__THREE__ = REVISION;
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"8EsCM":[function(require,module,exports) {
-module.exports = require("./helpers/bundle-url").getBundleURL("1G2bZ") + "icon.2fe26a74.glb" + "?" + Date.now();
-
-},{"./helpers/bundle-url":"lgJ39"}],"lgJ39":[function(require,module,exports) {
-"use strict";
-var bundleURL = {};
-function getBundleURLCached(id) {
-    var value = bundleURL[id];
-    if (!value) {
-        value = getBundleURL();
-        bundleURL[id] = value;
-    }
-    return value;
-}
-function getBundleURL() {
-    try {
-        throw new Error();
-    } catch (err) {
-        var matches = ("" + err.stack).match(/(https?|file|ftp|(chrome|moz|safari-web)-extension):\/\/[^)\n]+/g);
-        if (matches) // The first two stack frames will be this function and getBundleURLCached.
-        // Use the 3rd one, which will be a runtime in the original bundle.
-        return getBaseURL(matches[2]);
-    }
-    return "/";
-}
-function getBaseURL(url) {
-    return ("" + url).replace(/^((?:https?|file|ftp|(chrome|moz|safari-web)-extension):\/\/.+)\/[^/]+$/, "$1") + "/";
-} // TODO: Replace uses with `new URL(url).origin` when ie11 is no longer supported.
-function getOrigin(url) {
-    var matches = ("" + url).match(/(https?|file|ftp|(chrome|moz|safari-web)-extension):\/\/[^/]+/);
-    if (!matches) throw new Error("Origin not found");
-    return matches[0];
-}
-exports.getBundleURL = getBundleURLCached;
-exports.getBaseURL = getBaseURL;
-exports.getOrigin = getOrigin;
-
-},{}],"dVRsF":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dVRsF":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "GLTFLoader", ()=>GLTFLoader);
@@ -40947,6 +40875,61 @@ function verifyGeometry(geometry) {
     return true;
 }
 
-},{"three":"ktPTu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["euTuy","igcvL"], "igcvL", "parcelRequire2216")
+},{"three":"ktPTu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"8EsCM":[function(require,module,exports) {
+module.exports = require("./helpers/bundle-url").getBundleURL("1G2bZ") + "icon.2fe26a74.glb" + "?" + Date.now();
+
+},{"./helpers/bundle-url":"lgJ39"}],"lgJ39":[function(require,module,exports) {
+"use strict";
+var bundleURL = {};
+function getBundleURLCached(id) {
+    var value = bundleURL[id];
+    if (!value) {
+        value = getBundleURL();
+        bundleURL[id] = value;
+    }
+    return value;
+}
+function getBundleURL() {
+    try {
+        throw new Error();
+    } catch (err) {
+        var matches = ("" + err.stack).match(/(https?|file|ftp|(chrome|moz|safari-web)-extension):\/\/[^)\n]+/g);
+        if (matches) // The first two stack frames will be this function and getBundleURLCached.
+        // Use the 3rd one, which will be a runtime in the original bundle.
+        return getBaseURL(matches[2]);
+    }
+    return "/";
+}
+function getBaseURL(url) {
+    return ("" + url).replace(/^((?:https?|file|ftp|(chrome|moz|safari-web)-extension):\/\/.+)\/[^/]+$/, "$1") + "/";
+} // TODO: Replace uses with `new URL(url).origin` when ie11 is no longer supported.
+function getOrigin(url) {
+    var matches = ("" + url).match(/(https?|file|ftp|(chrome|moz|safari-web)-extension):\/\/[^/]+/);
+    if (!matches) throw new Error("Origin not found");
+    return matches[0];
+}
+exports.getBundleURL = getBundleURLCached;
+exports.getBaseURL = getBaseURL;
+exports.getOrigin = getOrigin;
+
+},{}],"i90JS":[function(require,module,exports) {
+module.exports = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#define GLSLIFY 1\n#endif\n\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g_0 = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g_0;\n  vec3 i1 = min( g_0.xyz, l.zxy );\n  vec3 i2 = max( g_0.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uRenderTexture;\nuniform sampler2D threeDTexture;\n\n// lerped scroll deltas\n// negative when scrolling down, positive when scrolling up\nuniform float uScrollEffect;\n\n// default to 2.5\nuniform float uScrollStrength;\n\nuniform vec4 uBgCol;\nuniform vec4 uFgCol;\nuniform vec4 uCol1;\nuniform vec4 uCol2;\nuniform vec4 uCol3;\nuniform vec2 uMouse;\nuniform float uTime;\nvoid main() {\n    vec2 uv = vTextureCoord;\n    float horizontalStretch;\n    vec4 threeDCol = texture2D(threeDTexture, vTextureCoord);\n\n    // branching on an uniform is ok\n    if(uScrollEffect >= 0.0) {\n        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(uv.y);\n    }\n    else if(uScrollEffect < 0.0) {\n        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(-1.0 * (1.0 - uv.y));\n    }\n\n    uv.x = uv.x * 2.0 - 1.0;\n    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;\n    uv.x = (uv.x + 1.0) * 0.5;\n    // moving the content underneath the square\n\n    // gradient bg\n\n    //\n\n    //rgb split\n    vec2 uvR = uv;\n    vec2 uvG = uv;\n    vec2 uvB = uv;\n    uvR.x += threeDCol.r * 0.01;\n    uvR.y += threeDCol.r * 0.01;\n    uvG.x -= threeDCol.r * 0.01;\n    uvG.y += threeDCol.r * 0.01;\n    uvB.y -= threeDCol.r * 0.01;\n\n    vec4 colR =  texture2D(uRenderTexture, uvR);\n    vec4 colG =  texture2D(uRenderTexture, uvG);\n    vec4 colB =  texture2D(uRenderTexture, uvB);\n    float maxA = max(max(colR.a, colG.a), colB.a);\n\n    vec4 splitCol = vec4(colR.r, colG.g, colB.b, colR.a);\n\n    vec4 baseCol = texture2D(uRenderTexture, uv); // baseColor\n\n    vec4 negCol = 1.0 - splitCol;\n    negCol.a = splitCol.a;\n\n    vec4 mixCol = mix(baseCol, negCol, threeDCol.g);\n\n    float t = uTime /500.0  ;\n    float noise = snoise(vec3(uv.x - uMouse.x / 10.0 + t, uv.y - uMouse.y, (uMouse.x + uMouse.y) / 10.0 + t));\n\n    float black = snoise(vec3(uv.y - uMouse.y / 10.0, uv.x - uMouse.x, t * 1.0));\n\n    vec4 gradient = mix(uCol1, uCol2, noise);\n    gradient = mix(gradient, uBgCol, black);\n\n    mixCol = mix(mixCol, uBgCol, clamp(threeDCol.g - mixCol.a, 0.0, 1.0));\n\n    mixCol = mix( gradient, mixCol, mixCol.a);\n\n    gl_FragColor = mixCol;\n\n    //gl_FragColor = gradient;\n    //gl_FragColor = texture2D(threeDTexture, uv);\n}";
+
+},{}],"7aA3N":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// custom uniforms\nuniform float uTransitionTimer;\n// our textures samplers\n// notice how it matches the sampler attributes of the textures we created dynamically\nuniform sampler2D activeTex;\nuniform sampler2D nextTex;\nuniform sampler2D displacement;\nvoid main() {\n    // our displacement texture\n    vec4 displacementTexture = texture2D(displacement, vTextureCoord);\n    // slides transitions based on displacement and transition timer\n    vec2 firstDisplacementCoords = vActiveTextureCoord + displacementTexture.r * ((cos((uTransitionTimer + 90.0) / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 firstDistortedColor = texture2D(activeTex, vec2(vActiveTextureCoord.x, firstDisplacementCoords.y));\n    // same as above but we substract the effect\n    vec2 secondDisplacementCoords = vNextTextureCoord - displacementTexture.r * ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 secondDistortedColor = texture2D(nextTex, vec2(vNextTextureCoord.x, secondDisplacementCoords.y));\n    // mix both texture\n    vec4 finalColor = mix(firstDistortedColor, secondDistortedColor, 1.0 - ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 2.0));\n    // handling premultiplied alpha\n    finalColor = vec4(finalColor.rgb * finalColor.a, finalColor.a);\n    gl_FragColor = finalColor;\n}";
+
+},{}],"3Tkxq":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\n// default mandatory variables\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\n// varyings : notice we've got 3 texture coords varyings\n// one for the displacement texture\n// one for our visible texture\n// and one for the upcoming texture\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// textures matrices\nuniform mat4 activeTexMatrix;\nuniform mat4 nextTexMatrix;\n// custom uniforms\nuniform float uTransitionTimer;\nvoid main() {\n    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n    // varyings\n    vTextureCoord = aTextureCoord;\n    vActiveTextureCoord = (activeTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vNextTextureCoord = (nextTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vVertexPosition = aVertexPosition;\n}";
+
+},{}],"7dXWc":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTexture;\n\nvoid main() {\n    // just display our texture\n    gl_FragColor = texture2D(uTexture, vTextureCoord);\n}";
+
+},{}],"bIDtH":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "hexToRgb", ()=>hexToRgb);
+const hexToRgb = (hex)=>hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b)=>"#" + r + r + g + g + b + b).substring(1).match(/.{2}/g).map((x)=>parseInt(x, 16) / 255);
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["euTuy","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map
