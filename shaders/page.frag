@@ -47,28 +47,34 @@ void main() {
     uv.x = (uv.x + 1.0) * 0.5;
     // moving the content underneath the square
 
-    // gradient bg
 
-
-    //
-
-
+    float morph = threeDCol.r * 0.5 + sin(threeDCol.b) * threeDCol.r * 1.0;
+    float morphStrength = 0.02;
     //rgb split
     vec2 uvR = uv;
     vec2 uvG = uv;
     vec2 uvB = uv;
-    uvR.x += threeDCol.r * 0.01;
-    uvR.y += threeDCol.r * 0.01;
-    uvG.x -= threeDCol.r * 0.01;
-    uvG.y += threeDCol.r * 0.01;
-    uvB.y -= threeDCol.r * 0.01;
+
+    uvR.x += morph * morphStrength;
+    uvR.y += morph * morphStrength;
+    uvG.x -= morph * morphStrength;
+    uvG.y += morph * morphStrength;
+    uvB.y -= morph * morphStrength;
+
+    // uvR.x += morph * morphStrength;
+    // uvR.y += morph * morphStrength;
+    // uvG.x += morph * morphStrength + threeDCol.b * morphStrength / 2.0 ;
+    // uvG.y += morph * morphStrength + threeDCol.b * morphStrength /2.0 ;
+    // uvB.y -= morph * morphStrength;
 
     vec4 colR =  texture2D(uRenderTexture, uvR);
     vec4 colG =  texture2D(uRenderTexture, uvG);
     vec4 colB =  texture2D(uRenderTexture, uvB);
     float maxA = max(max(colR.a, colG.a), colB.a);
+    maxA = max(colR.a, colG.a);
+    maxA = colR.a;
 
-    vec4 splitCol = vec4(colR.r, colG.g, colB.b, colR.a);
+    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);
 
     vec4 baseCol = texture2D(uRenderTexture, uv); // baseColor
 
@@ -78,12 +84,14 @@ void main() {
     vec4 mixCol = mix(baseCol, negCol, threeDCol.g);
 
     float t = uTime /500.0  ;
-    float noise = snoise3(vec3(uv.x - uMouse.x / 10.0 + t, uv.y - uMouse.y, (uMouse.x + uMouse.y) / 10.0 + t));
 
+    // gradient noise
+    float noise = snoise3(vec3(uv.x - uMouse.x / 10.0 + t, uv.y - uMouse.y, (uMouse.x + uMouse.y) / 10.0 + t));
     float black = snoise3(vec3(uv.y - uMouse.y / 10.0, uv.x - uMouse.x, t * 1.0));
 
     vec4 gradient = mix(uCol1, uCol2, noise);
     gradient = mix(gradient, uBgCol, black);
+    //
 
     mixCol = mix(mixCol, uBgCol, clamp(threeDCol.g - mixCol.a, 0.0, 1.0));
 

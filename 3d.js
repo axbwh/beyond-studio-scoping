@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { LoopSubdivision } from 'three-subdivide';
 import glb from './icon.glb'
+import frag from './shaders/mesh.frag'
 
 const vs = `
 varying vec4 mvPosition;
@@ -17,24 +18,6 @@ void main()
   mvPosition = modelViewMatrix * vec4(position, 1.0);
   vUv = uv;
   gl_Position = projectionMatrix * mvPosition;
-}`
-
-const fs = `
-varying vec2 vUv;
-void main()
-{
-
-    vec2 uv = vUv;
-
-    vec2 uvn=abs(uv-0.5)*2.0;
-
-    vec2 distV     = uvn;
-    float maxDist  = max(abs(distV.x), abs(distV.y));
-    float circular = length(distV);
-    float square   = maxDist;
-    float mix = mix(circular,square,maxDist);
-    mix = smoothstep(0.1, 1.0, mix);
-    gl_FragColor = vec4(mix, 1.0, 0.0, 1.0);
 }`
 
 
@@ -52,7 +35,7 @@ class ThreeD {
 
         this.material = new THREE.ShaderMaterial({
             vertexShader : vs,
-            fragmentShader: fs,
+            fragmentShader: frag,
             side : THREE.DoubleSide
         })
 
@@ -62,7 +45,7 @@ class ThreeD {
         this.mouse = { x : 0.5, y: 0.5};
 
         window.addEventListener( 'resize', this.onWindowResize );
-        //document.body.appendChild( this.renderer.domElement );
+        document.body.appendChild( this.renderer.domElement );
 
     }
 
