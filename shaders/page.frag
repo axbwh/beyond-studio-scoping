@@ -97,7 +97,7 @@ void main() {
 
     mixCol = mix(mixCol, uBgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
 
-    mixCol = mix( gradient + threeDCol.g / 2.0, mixCol, mixCol.a - threeDCol.g);
+    mixCol = mix( gradient + threeDCol.g *0.8, mixCol, mixCol.a - threeDCol.g);
 
     gl_FragColor = mixCol;
 
