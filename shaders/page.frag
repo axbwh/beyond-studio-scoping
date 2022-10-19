@@ -81,21 +81,23 @@ void main() {
     vec4 negCol = 1.0 - splitCol;
     negCol.a = splitCol.a;
 
-    vec4 mixCol = mix(baseCol, negCol, threeDCol.g);
+    float alpha = threeDCol.a;
 
-    float t = uTime /500.0  ;
+    vec4 mixCol = mix(baseCol, negCol, alpha);
+
+    float t = uTime /1000.0  ;
 
     // gradient noise
-    float noise = snoise3(vec3(uv.x - uMouse.x / 10.0 + t, uv.y - uMouse.y, (uMouse.x + uMouse.y) / 10.0 + t));
-    float black = snoise3(vec3(uv.y - uMouse.y / 10.0, uv.x - uMouse.x, t * 1.0));
+    float noise = snoise3(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));
+    float black = snoise3(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));
 
     vec4 gradient = mix(uCol1, uCol2, noise);
     gradient = mix(gradient, uBgCol, black);
     //
 
-    mixCol = mix(mixCol, uBgCol, clamp(threeDCol.g - mixCol.a, 0.0, 1.0));
+    mixCol = mix(mixCol, uBgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
 
-    mixCol = mix( gradient, mixCol, mixCol.a);
+    mixCol = mix( gradient + threeDCol.g / 2.0, mixCol, mixCol.a - threeDCol.g);
 
     gl_FragColor = mixCol;
 
