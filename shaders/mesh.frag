@@ -18,6 +18,7 @@ void main()
     //noise
      float noise = snoise3(vec3(uv.x * 2.0, uv.y * 2.0, 10.0));
     //
+    noise = 0.0;
 
     gl_FragColor = vec4(mix, 1.0, noise, 1.0);
 }
