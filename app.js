@@ -9,8 +9,7 @@ import ThreeD from './3d';
 import {hexToRgb }from './utils'
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
-
-
+const parceled = true
 
 window.addEventListener('load', () => {
     // create curtains instance
