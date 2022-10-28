@@ -5,6 +5,8 @@ precision mediump float;
 #endif
 
 #pragma glslify: snoise3 = require(glsl-noise/simplex/3d)
+#pragma glslify: ease = require(glsl-easings/elastic-in)
+
 
 varying vec3 vVertexPosition;
 varying vec2 vTextureCoord;
@@ -48,8 +50,12 @@ void main() {
     // moving the content underneath the square
 
 
-    float morph = threeDCol.r * 0.5 + sin(threeDCol.b) * threeDCol.r * 1.0;
-    float morphStrength = 0.02;
+    float baseMorph = threeDCol.r * 0.5 + sin(threeDCol.b) * threeDCol.r * 1.0;
+    float morphStrength = 0.005;
+    float morph = ease(threeDCol.r);
+    float baseStrength = 0.02;
+
+    uv += baseMorph * baseStrength;
     //rgb split
     vec2 uvR = uv;
     vec2 uvG = uv;
@@ -71,8 +77,8 @@ void main() {
     vec4 colG =  texture2D(uRenderTexture, uvG);
     vec4 colB =  texture2D(uRenderTexture, uvB);
     float maxA = max(max(colR.a, colG.a), colB.a);
-    maxA = max(colR.a, colG.a);
-    maxA = colR.a;
+    //maxA = max(colR.a, colG.a);
+    //maxA = colR.a;
 
     vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);
 
