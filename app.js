@@ -194,6 +194,7 @@ window.addEventListener('load', () => {
 
                     const puckTarget = new RenderTarget(curtains)
                     const bgTarget = new RenderTarget(curtains)
+                    const imgTarget = new RenderTarget(curtains)
 
 
                     //our img elements that will be in the puck & outside of it
@@ -212,6 +213,7 @@ window.addEventListener('load', () => {
                         fragmentShader: imgFrag,
                       })
                       plane.loadImage(el, { sampler: 'uTexture' })
+                      plane.setRenderTarget(imgTarget)
                       el.style.opacity = 0
                     })
 
@@ -307,6 +309,11 @@ window.addEventListener('load', () => {
                         scrollPass.createTexture({
                             sampler: "uBg",
                             fromTexture: bgTarget.getTexture()
+                        })
+
+                        scrollPass.createTexture({
+                            sampler: "uImg",
+                            fromTexture: imgTarget.getTexture()
                         })
 
                         // calculate the lerped scroll effect
