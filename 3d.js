@@ -80,8 +80,8 @@ class ThreeD {
 
         window.addEventListener( 'resize', this.onWindowResize )
         // this.domEl = document.body.appendChild( this.renderer.domElement )
-        // this.domEl.style.zIndex = 10000
-        // this.domEl.style.position = 'fixed'
+        //  this.domEl.style.zIndex = 10000
+        //  this.domEl.style.position = 'fixed'
         // this.domEl.style.top = 0
 
         this.lightTop = new THREE.PointLight( 0xffffff, 0.1, 0, 2);
