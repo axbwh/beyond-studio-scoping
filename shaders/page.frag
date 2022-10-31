@@ -11,6 +11,9 @@ varying vec2 vTextureCoord;
 
 uniform sampler2D uRenderTexture;
 uniform sampler2D threeDTexture;
+uniform sampler2D uPuck;
+uniform sampler2D uBg;
+
 
 // lerped scroll deltas
 // negative when scrolling down, positive when scrolling up
@@ -61,25 +64,25 @@ void main() {
     uvG.y += morph * morphStrength;
     uvB.y -= morph * morphStrength;
 
-    // uvR.x += morph * morphStrength;
-    // uvR.y += morph * morphStrength;
-    // uvG.x += morph * morphStrength + threeDCol.b * morphStrength / 2.0 ;
-    // uvG.y += morph * morphStrength + threeDCol.b * morphStrength /2.0 ;
-    // uvB.y -= morph * morphStrength;
 
     vec4 colR =  texture2D(uRenderTexture, uvR);
     vec4 colG =  texture2D(uRenderTexture, uvG);
     vec4 colB =  texture2D(uRenderTexture, uvB);
+
+    vec4 bgCol = texture2D(uBg, uv); // the bg
+    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images in the pcuk
+    puckCol.a = max(puckCol.r, max(puckCol.g, puckCol.b));
+
     float maxA = max(max(colR.a, colG.a), colB.a);
-    maxA = max(colR.a, colG.a);
-    maxA = colR.a;
+    //maxA = max(colR.a, colG.a);
+    //maxA = colR.a;
 
     vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);
+    vec4 baseCol =  texture2D(uBg, uv); // baseColor
 
-    vec4 baseCol = texture2D(uRenderTexture, uv); // baseColor
+    vec4 negCol = (1.0 - splitCol) + puckCol + bgCol ;
+    negCol.a = max(splitCol.a, puckCol.a);
 
-    vec4 negCol = 1.0 - splitCol;
-    negCol.a = splitCol.a;
 
     float alpha = threeDCol.a;
 
