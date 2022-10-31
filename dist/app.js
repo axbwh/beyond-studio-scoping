@@ -8420,7 +8420,7 @@ class ThreeD {
             x: 0.5,
             y: 0.5
         };
-        window.addEventListener("resize", this.onWindowResize);
+        window.addEventListener("resize", this.onWindowResize.bind(this));
         // this.domEl = document.body.appendChild( this.renderer.domElement )
         //  this.domEl.style.zIndex = 10000
         //  this.domEl.style.position = 'fixed'
