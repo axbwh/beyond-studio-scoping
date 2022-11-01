@@ -6,6 +6,7 @@ precision mediump float;
 
 #pragma glslify: snoise3 = require(glsl-noise/simplex/3d)
 #pragma glslify: ease = require(glsl-easings/elastic-in)
+#pragma glslify: blend = require(glsl-blend-overlay)
 
 
 varying vec3 vVertexPosition;
@@ -111,12 +112,19 @@ void main() {
 
     float alpha = threeDCol.a;
 
-    float gradientMix = 0.5;
+    float gradientMix = 1.0;
 
 
     //defCol = mix(defCol, gradient, gradientMix);
-    
+
+    defCol = vec4(blend(defCol.rgb, gradient.rgb), defCol.a);
+    //mix in gradient
     vec4 mixCol = mix(baseCol, defCol, alpha);
+
+    //overlay
+
+
+
     mixCol = mix(mixCol, uBgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
     mixCol = mix( gradient + threeDCol.g *0.8, mixCol, mixCol.a - threeDCol.g); // highlight
 
