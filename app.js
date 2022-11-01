@@ -228,6 +228,8 @@ window.addEventListener('load', () => {
                       el.style.opacity = 0
                     })
 
+                    console.log(puckImgs)
+
                     bgImgs.forEach((el) => {
                         const plane = new Plane(curtains, el, {
                           vertexShader: textShader.vs,
