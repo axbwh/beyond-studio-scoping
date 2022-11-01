@@ -552,7 +552,7 @@ var _utils = require("./utils");
 const parceled = true;
 window.addEventListener("load", ()=>{
     // create curtains instance
-    //console.log('localhost')
+    console.log("new");
     const curtains = new (0, _curtainsjs.Curtains)({
         container: "canvas",
         pixelRatio: Math.min(1.5, window.devicePixelRatio)
