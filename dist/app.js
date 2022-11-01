@@ -142,11 +142,11 @@
       this[globalName] = mainExports;
     }
   }
-})({"euTuy":[function(require,module,exports) {
+})({"4MuEU":[function(require,module,exports) {
 "use strict";
 var global = arguments[3];
 var HMR_HOST = null;
-var HMR_PORT = null;
+var HMR_PORT = 50619;
 var HMR_SECURE = false;
 var HMR_ENV_HASH = "d6ea1d42532a7575";
 module.bundle.HMR_BUNDLE_ID = "138b6a135baa4167";
@@ -552,7 +552,7 @@ var _utils = require("./utils");
 const parceled = true;
 window.addEventListener("load", ()=>{
     // create curtains instance
-    console.log("localhost");
+    //console.log('localhost')
     const curtains = new (0, _curtainsjs.Curtains)({
         container: "canvas",
         pixelRatio: Math.min(1.5, window.devicePixelRatio)
@@ -8440,7 +8440,6 @@ class ThreeD {
         dracoLoader.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/");
         loader.setDRACOLoader(dracoLoader);
         return loader.loadAsync((0, _iconGlbDefault.default)).then((glb)=>{
-            console.log(glb.scene.children[0].geometry);
             const geo = glb.scene.children[0].geometry;
             // const smoothGeo = LoopSubdivision.modify(geo, 1)
             // this.geometry = smoothGeo
@@ -40992,6 +40991,6 @@ parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "hexToRgb", ()=>hexToRgb);
 const hexToRgb = (hex)=>hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b)=>"#" + r + r + g + g + b + b).substring(1).match(/.{2}/g).map((x)=>parseInt(x, 16) / 255);
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["euTuy","igcvL"], "igcvL", "parcelRequire2216")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map

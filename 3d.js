@@ -105,7 +105,6 @@ class ThreeD {
         loader.setDRACOLoader( dracoLoader );
 
         return loader.loadAsync(glb).then((glb) => {
-            console.log(glb.scene.children[0].geometry)
 
              const geo = glb.scene.children[0].geometry
             // const smoothGeo = LoopSubdivision.modify(geo, 1)
