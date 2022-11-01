@@ -151,7 +151,6 @@ class ThreeD {
 
         // this.lightTop.lookAt(this.mesh.position)
         // this.lightBottom.lookAt(this.mesh.position)
-        // console.log(this.mesh.position)
         //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
     }
 

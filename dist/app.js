@@ -720,6 +720,7 @@ window.addEventListener("load", ()=>{
                         plane.setRenderTarget(puckTarget);
                         el.style.opacity = 0;
                     });
+                    console.log(puckImgs);
                     bgImgs.forEach((el)=>{
                         const plane = new (0, _curtainsjs.Plane)(curtains, el, {
                             vertexShader: (0, _textShaderDefault.default).vs,
@@ -8477,7 +8478,6 @@ class ThreeD {
         this.mesh.rotation.z += 0.005 + 0.01 * this.mesh.position.distanceTo(pos);
     // this.lightTop.lookAt(this.mesh.position)
     // this.lightBottom.lookAt(this.mesh.position)
-    // console.log(this.mesh.position)
     //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
     }
     render() {
