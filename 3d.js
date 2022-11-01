@@ -78,7 +78,7 @@ class ThreeD {
         this.camera.position.z = 10
         this.mouse = { x : 0.5, y: 0.5}
 
-        window.addEventListener( 'resize', this.onWindowResize )
+        window.addEventListener( 'resize', this.onWindowResize.bind(this) )
         // this.domEl = document.body.appendChild( this.renderer.domElement )
         //  this.domEl.style.zIndex = 10000
         //  this.domEl.style.position = 'fixed'
@@ -105,7 +105,6 @@ class ThreeD {
         loader.setDRACOLoader( dracoLoader );
 
         return loader.loadAsync(glb).then((glb) => {
-            console.log(glb.scene.children[0].geometry)
 
              const geo = glb.scene.children[0].geometry
             // const smoothGeo = LoopSubdivision.modify(geo, 1)

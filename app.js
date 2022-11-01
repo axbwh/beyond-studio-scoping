@@ -9,11 +9,12 @@ import ThreeD from './3d';
 import {hexToRgb }from './utils'
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
-
-
+const parceled = true
 
 window.addEventListener('load', () => {
     // create curtains instance
+
+    //console.log('localhost')
     const curtains = new Curtains({
         container: "canvas",
         pixelRatio: Math.min(1.5, window.devicePixelRatio)
@@ -191,24 +192,53 @@ window.addEventListener('load', () => {
                         textEl.style.color = "#ff000000"
                     });
 
-                    //create our img elements
-                    const imgEls = document.querySelectorAll('img[gl]')
+                    const puckTarget = new RenderTarget(curtains)
+                    const bgTarget = new RenderTarget(curtains)
+                    const imgTarget = new RenderTarget(curtains)
+
+
+                    //our img elements that will be in the puck & outside of it
+                    const imgs = document.querySelectorAll('img[gl]')
+                    // images that will be outside the puck
+                    const bgImgs = document.querySelectorAll('img[bg]')
+                    //images that will be inside the puck
+                    const puckImgs = document.querySelectorAll('img[puck]')
+
                     const loader = new TextureLoader(curtains)
                    
 
-                    imgEls.forEach( el => {
-                        console.log(loader)
-                        const plane = new Plane(curtains, el, {
-                            vertexShader: textShader.vs,
-                            fragmentShader: imgFrag
-                        })
-
-                       plane.loadImage(el, { sampler: 'uTexture'})
-                       el.style.opacity = 0;
+                    imgs.forEach((el) => {
+                      const plane = new Plane(curtains, el, {
+                        vertexShader: textShader.vs,
+                        fragmentShader: imgFrag,
+                      })
+                      plane.loadImage(el, { sampler: 'uTexture' })
+                      plane.setRenderTarget(imgTarget)
+                      el.style.opacity = 0
                     })
-                    
-                    console.log([...hexToRgb("#0F1212"), 1.0])
-                    console.log([...hexToRgb("#61FCC4"), 1.0])
+
+                    puckImgs.forEach((el) => {
+                      const plane = new Plane(curtains, el, {
+                        vertexShader: textShader.vs,
+                        fragmentShader: imgFrag,
+                      })
+
+                      plane.loadImage(el, { sampler: 'uTexture' })
+                      plane.setRenderTarget(puckTarget)
+                      el.style.opacity = 0
+                    })
+
+                    bgImgs.forEach((el) => {
+                        const plane = new Plane(curtains, el, {
+                          vertexShader: textShader.vs,
+                          fragmentShader: imgFrag,
+                        })
+  
+                        plane.loadImage(el, { sampler: 'uTexture' })
+                        plane.setRenderTarget(bgTarget)
+                        el.style.opacity = 0
+                      })
+
 
                     // hide gradient
                     document.getElementById('gradient').style.display = 'none';
@@ -270,6 +300,22 @@ window.addEventListener('load', () => {
                             });
 
                         scrollPass.loadCanvas(threeD.canvas) // creates a texture from our three.js canvas
+                        
+                        scrollPass.createTexture({
+                            sampler: "uPuck",
+                            fromTexture: puckTarget.getTexture()
+                        })
+
+                        scrollPass.createTexture({
+                            sampler: "uBg",
+                            fromTexture: bgTarget.getTexture()
+                        })
+
+                        scrollPass.createTexture({
+                            sampler: "uImg",
+                            fromTexture: imgTarget.getTexture()
+                        })
+
                         // calculate the lerped scroll effect
 
                         let mouseLast = [0.5,0.5];

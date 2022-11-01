@@ -13,6 +13,10 @@ varying vec2 vTextureCoord;
 
 uniform sampler2D uRenderTexture;
 uniform sampler2D threeDTexture;
+uniform sampler2D uPuck;
+uniform sampler2D uBg;
+uniform sampler2D uImg;
+
 
 // lerped scroll deltas
 // negative when scrolling down, positive when scrolling up
@@ -67,30 +71,7 @@ void main() {
     uvG.y += morph * morphStrength;
     uvB.y -= morph * morphStrength;
 
-    // uvR.x += morph * morphStrength;
-    // uvR.y += morph * morphStrength;
-    // uvG.x += morph * morphStrength + threeDCol.b * morphStrength / 2.0 ;
-    // uvG.y += morph * morphStrength + threeDCol.b * morphStrength /2.0 ;
-    // uvB.y -= morph * morphStrength;
-
-    vec4 colR =  texture2D(uRenderTexture, uvR);
-    vec4 colG =  texture2D(uRenderTexture, uvG);
-    vec4 colB =  texture2D(uRenderTexture, uvB);
-    float maxA = max(max(colR.a, colG.a), colB.a);
-    //maxA = max(colR.a, colG.a);
-    //maxA = colR.a;
-
-    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);
-
-    vec4 baseCol = texture2D(uRenderTexture, uv); // baseColor
-
-    vec4 negCol = 1.0 - splitCol;
-    negCol.a = splitCol.a;
-
-    float alpha = threeDCol.a;
-
-    vec4 mixCol = mix(baseCol, negCol, alpha);
-
+    
     float t = uTime /1000.0  ;
 
     // gradient noise
@@ -101,9 +82,42 @@ void main() {
     gradient = mix(gradient, uBgCol, black);
     //
 
-    mixCol = mix(mixCol, uBgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
 
-    mixCol = mix( gradient + threeDCol.g *0.8, mixCol, mixCol.a - threeDCol.g);
+    vec4 colR =  texture2D(uRenderTexture, uvR);
+    vec4 colG =  texture2D(uRenderTexture, uvG);
+    vec4 colB =  texture2D(uRenderTexture, uvB);
+
+    vec4 bgCol = texture2D(uBg, uv); // images not in the puck
+    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk
+
+    puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));
+
+    vec4 imgCol =  vec4(texture2D(uImg, uvR).r, texture2D(uImg, uvG).g, texture2D(uImg, uvB).b, 1.0); //images
+    imgCol.a = max( max(texture2D(uImg, uvR).a, texture2D(uImg, uvG).a), texture2D(uImg, uvB).a);
+ 
+    float maxA = max(max(colR.a, colG.a), colB.a);
+    //maxA = max(colR.a, colG.a);
+    //maxA = colR.a;
+
+    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);
+    vec4 baseCol =  texture2D(uRenderTexture, uv) + bgCol + imgCol; // baseColor
+
+    vec4 defCol = (1.0 - splitCol);
+    defCol.a = splitCol.a;
+    defCol =  mix(puckCol + imgCol, defCol, defCol.a);
+
+
+
+    float alpha = threeDCol.a;
+
+    float gradientMix = 0.5;
+
+
+    //defCol = mix(defCol, gradient, gradientMix);
+    
+    vec4 mixCol = mix(baseCol, defCol, alpha);
+    mixCol = mix(mixCol, uBgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
+    mixCol = mix( gradient + threeDCol.g *0.8, mixCol, mixCol.a - threeDCol.g); // highlight
 
     gl_FragColor = mixCol;
 

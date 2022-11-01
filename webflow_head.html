@@ -1,0 +1,25 @@
+<script src="http://localhost:1234/app.js"></script>
+<!-- tries to load from local host -->
+<!-- <script src="https://psychoactive-studios.github.io/beyond-studio-scoping/dist/app.js"></script> -->
+
+<script>
+	if(typeof parceled !== 'undefined') {
+		let script = document.createElement('script')
+		script.type = 'text/javascript'
+		script.src = 'https://psychoactive-studios.github.io/beyond-studio-scoping/dist/app.js';
+		document.head.appendChild(script)
+	}
+	//checks if the parceled variable from app.js is undefined- meaning local host isn't up and running
+	//if not loads from the github pages
+</script>
+
+<style>
+	.img-wrapper:not(:first-child) {
+		position: absolute;
+	}
+
+	::selection {
+		color: #0F1212 !important;
+		background: #61FCC4 !important;
+	}
+</style>
