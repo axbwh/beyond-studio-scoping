@@ -14,7 +14,7 @@ const parceled = true
 window.addEventListener('load', () => {
     // create curtains instance
 
-    //console.log('localhost')
+    console.log('new')
     const curtains = new Curtains({
         container: "canvas",
         pixelRatio: Math.min(1.5, window.devicePixelRatio)
