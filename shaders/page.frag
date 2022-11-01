@@ -36,7 +36,7 @@ uniform float uTime;
 void main() {
     vec2 uv = vTextureCoord;
     float horizontalStretch;
-    vec4 threeDCol = texture2D(threeDTexture, vTextureCoord);
+    vec4 threeDCol = texture2D(threeDTexture, uv);
 
     // branching on an uniform is ok
     if(uScrollEffect >= 0.0) {
@@ -53,17 +53,18 @@ void main() {
     uv.x = (uv.x + 1.0) * 0.5;
     // moving the content underneath the square
 
-
-    float baseMorph = threeDCol.r * 0.5 + sin(threeDCol.b) * threeDCol.r * 1.0;
+    float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;
+    //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);
     float morphStrength = 0.005;
     float morph = ease(threeDCol.r);
     float baseStrength = 0.02;
 
-    uv += baseMorph * baseStrength;
+    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);
+
     //rgb split
-    vec2 uvR = uv;
-    vec2 uvG = uv;
-    vec2 uvB = uv;
+    vec2 uvR = muv;
+    vec2 uvG = muv;
+    vec2 uvB = muv;
 
     uvR.x += morph * morphStrength;
     uvR.y += morph * morphStrength;
@@ -123,4 +124,7 @@ void main() {
 
     //gl_FragColor = gradient;
     //gl_FragColor = texture2D(threeDTexture, uv);
+    //gl_FragColor = vec4(texture2D(uImg, muv).rgb, 1.0);
+    //gl_FragColor = vec4(baseMorph, 0.0,0.0,1.0);
+    //gl_FragColor = threeDCol;
 }

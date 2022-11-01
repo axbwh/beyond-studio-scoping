@@ -75,7 +75,7 @@ window.addEventListener('load', () => {
         
         sliderPlane.onLoading((texture) => {
             // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
-            texture.setMinFilter(curtains.gl.LINEAR_MIPMAP_NEAREST);
+            texture.setMinFilter(curtains.gl.NEAREST);
         }).onReady(() => {
             // the idea here is to create two additionnal textures
             // the first one will contain our visible image
@@ -194,7 +194,21 @@ window.addEventListener('load', () => {
 
                     const puckTarget = new RenderTarget(curtains)
                     const bgTarget = new RenderTarget(curtains)
-                    const imgTarget = new RenderTarget(curtains)
+                    // const imgTarget = new RenderTarget(curtains, {
+                    //     depth: true,
+                    //     texturesOptions : {
+                    //         shouldUpdate : true,
+                    //         generateMipmap: false,
+                    //         premultiplyAlpha: true,
+                    //         clear: true,
+                    //         anisotropy: 16,
+                    //         wrapS : curtains.gl.REPEAT,
+                    //         wrapT : curtains.gl.REPEAT,
+                    //         minFilter: curtains.gl.NEAREST,
+                    //         maxFilter: curtains.gl.NEAREST,
+                    //         floatingPoint: 'float',
+                    //     }})
+                   const imgTarget = new RenderTarget(curtains)
 
 
                     //our img elements that will be in the puck & outside of it
@@ -250,7 +264,7 @@ window.addEventListener('load', () => {
                                             // create our shader pass
                             const scrollPass = new ShaderPass(curtains, {
                                 fragmentShader: pageFrag,
-                                depth: false,
+                                depth: true,
                                 uniforms: {
                                     scrollEffect: {
                                         name: "uScrollEffect",
@@ -315,7 +329,7 @@ window.addEventListener('load', () => {
 
                         scrollPass.createTexture({
                             sampler: "uImg",
-                            fromTexture: imgTarget.getTexture()
+                            fromTexture: imgTarget.getTexture(),
                         })
 
                         // calculate the lerped scroll effect
