@@ -121,12 +121,11 @@ void main() {
     //mix in gradient
     vec4 mixCol = mix(baseCol, defCol, alpha);
 
-    //overlay
-
 
 
     mixCol = mix(mixCol, uBgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
-    mixCol = mix( gradient + threeDCol.g *0.8, mixCol, mixCol.a - threeDCol.g); // highlight
+    mixCol = mix( gradient, mixCol, mixCol.a); // gradient
+    mixCol = mix( clamp(gradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights
 
     gl_FragColor = mixCol;
 
