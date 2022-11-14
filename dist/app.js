@@ -535,10 +535,6 @@ function hmrAcceptRun(bundle, id) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 var _curtainsjs = require("curtainsjs");
 var _textTexture = require("./TextTexture");
-var _sliderFrag = require("./shaders/slider.frag");
-var _sliderFragDefault = parcelHelpers.interopDefault(_sliderFrag);
-var _sliderVert = require("./shaders/slider.vert");
-var _sliderVertDefault = parcelHelpers.interopDefault(_sliderVert);
 var _imgFrag = require("./shaders/img.frag");
 var _imgFragDefault = parcelHelpers.interopDefault(_imgFrag);
 var _textShader = require("./textShader");
@@ -547,322 +543,196 @@ var _pageFrag = require("./shaders/page.frag");
 var _pageFragDefault = parcelHelpers.interopDefault(_pageFrag);
 var _3D = require("./3d");
 var _3DDefault = parcelHelpers.interopDefault(_3D);
+var _slider = require("./slider");
+var _sliderDefault = parcelHelpers.interopDefault(_slider);
 var _utils = require("./utils");
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
+class App {
+    constructor(){
+        this.mouse = {
+            x: 0.5,
+            y: 0.5
+        };
+        // track scroll values
+        this.scroll = {
+            value: 0,
+            lastValue: 0,
+            effect: 0
+        };
+        this.threeD = new (0, _3DDefault.default)();
+    }
+    init() {
+        // create curtains instance
+        this.curtains = new (0, _curtainsjs.Curtains)({
+            container: "canvas",
+            pixelRatio: Math.min(1.5, window.devicePixelRatio)
+        });
+        this.curtains.onSuccess(this.onSuccess.bind(this));
+    }
+    onSuccess() {
+        this.slider = new (0, _sliderDefault.default)(this.curtains, document.getElementById("slider"));
+        this.initText();
+        this.puckTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
+        this.bgTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
+        this.imgTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
+        Promise.all([
+            document.fonts.load('normal 400 1em "Archivo Black", sans-serif'),
+            document.fonts.load('normal 300 1em "Merriweather Sans", sans-serif'),
+            this.threeD.loadGlb()
+        ]).then(this.onLoaded.bind(this));
+    }
+    onLoaded() {
+        this.slider.init();
+        this.pass = new (0, _curtainsjs.ShaderPass)(this.curtains, {
+            fragmentShader: (0, _pageFragDefault.default),
+            depth: true,
+            uniforms: {
+                scrollEffect: {
+                    name: "uScrollEffect",
+                    type: "1f",
+                    value: this.scroll.effect
+                },
+                scrollStrength: {
+                    name: "uScrollStrength",
+                    type: "1f",
+                    value: 2.5
+                },
+                bgCol: {
+                    name: "uBgCol",
+                    type: "4f",
+                    value: [
+                        ...(0, _utils.hexToRgb)("#0F1212"),
+                        1.0
+                    ]
+                },
+                fgCol: {
+                    name: "uFgCol",
+                    type: "4f",
+                    value: [
+                        ...(0, _utils.hexToRgb)("#FFF"),
+                        1.0
+                    ]
+                },
+                col1: {
+                    name: "uCol1",
+                    type: "4f",
+                    value: [
+                        ...(0, _utils.hexToRgb)("#F198C0"),
+                        1.0
+                    ]
+                },
+                col2: {
+                    name: "uCol2",
+                    type: "4f",
+                    value: [
+                        ...(0, _utils.hexToRgb)("#61FCC4"),
+                        1.0
+                    ]
+                },
+                col3: {
+                    name: "uCol3",
+                    type: "4f",
+                    value: [
+                        ...(0, _utils.hexToRgb)("#FFF"),
+                        1.0
+                    ]
+                },
+                mouse: {
+                    name: "uMouse",
+                    type: "2f",
+                    value: [
+                        0,
+                        0
+                    ]
+                },
+                time: {
+                    name: "uTime",
+                    type: "1f",
+                    value: 0
+                }
+            }
+        });
+        this.pass.loadCanvas(this.threeD.canvas);
+        //our img elements that will be in the puck & outside of it
+        this.loadImg("img[gl]", this.puckTarget, "uImg");
+        // images that will be outside the puck
+        this.loadImg("img[bg]", this.bgTarget, "uBg");
+        //images that will be inside the puck
+        this.loadImg("img[puck]", this.imgTarget, "uPuck");
+        // hide gradient
+        document.getElementById("gradient").style.display = "none";
+        this.pass.onRender(this.onRender.bind(this));
+    }
+    onRender() {
+        this.threeD.move();
+        this.threeD.render();
+        this.scroll.lastValue = this.scroll.value;
+        this.scroll.value = this.curtains.getScrollValues().y;
+        // clamp delta
+        this.scroll.delta = Math.max(-30, Math.min(30, this.scroll.lastValue - this.scroll.value));
+        this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, 0.05);
+        this.pass.uniforms.scrollEffect.value = this.scroll.effect;
+        let mouseVal = this.pass.uniforms.mouse.value;
+        let mouseLerp = [
+            this.curtains.lerp(mouseVal[0], this.threeD.mouse.x, 0.05),
+            this.curtains.lerp(mouseVal[1], this.threeD.mouse.y, 0.05)
+        ];
+        this.pass.uniforms.mouse.value = mouseLerp;
+        this.pass.uniforms.time.value += 1;
+    }
+    loadImg(query, target, sampler) {
+        console.log(query);
+        const imgs = document.querySelectorAll(query);
+        imgs.forEach((el)=>{
+            const plane = new (0, _curtainsjs.Plane)(this.curtains, el, {
+                vertexShader: (0, _textShaderDefault.default).vs,
+                fragmentShader: (0, _imgFragDefault.default)
+            });
+            plane.loadImage(el, {
+                sampler: "uTexture"
+            });
+            plane.setRenderTarget(target);
+            el.style.opacity = 0;
+        });
+        this.pass.createTexture({
+            sampler: sampler,
+            fromTexture: target.getTexture()
+        });
+    }
+    initText() {
+        const textEls = document.querySelectorAll("[text]");
+        textEls.forEach((textEl)=>{
+            const textPlane = new (0, _curtainsjs.Plane)(this.curtains, textEl, {
+                vertexShader: (0, _textShaderDefault.default).vs,
+                fragmentShader: (0, _textShaderDefault.default).fs
+            });
+            // create the text texture and... that's it!
+            const textTexture = new (0, _textTexture.TextTexture)({
+                plane: textPlane,
+                textElement: textPlane.htmlElement,
+                sampler: "uTexture",
+                resolution: 1.5,
+                skipFontLoading: true
+            });
+            textEl.style.color = "#ff000000" //make text invisible bhut still highlightable
+            ;
+        });
+    }
+    onScroll() {}
+    onMove(event) {
+        //event.preventDefault();
+        this.mouse.x = event.clientX / window.innerWidth * 2 - 1;
+        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+}
 window.addEventListener("load", ()=>{
     // create curtains instance
-    console.log("new");
-    const curtains = new (0, _curtainsjs.Curtains)({
-        container: "canvas",
-        pixelRatio: Math.min(1.5, window.devicePixelRatio)
-    });
-    const sliderTarget = new (0, _curtainsjs.RenderTarget)(curtains) // create a new render target for our slider
-    ;
-    // track scroll values
-    const scroll = {
-        value: 0,
-        lastValue: 0,
-        effect: 0
-    };
-    // get our plane element
-    const planeElement = document.getElementById("slider");
-    const threeD = new (0, _3DDefault.default)();
-    // here we will handle which texture is visible and the timer to transition between images
-    const slideshowState = {
-        activeTextureIndex: 1,
-        nextTextureIndex: 2,
-        maxTextures: planeElement.querySelectorAll("img").length - 1,
-        isChanging: false,
-        transitionTimer: 0
-    };
-    // disable drawing for now
-    //curtains.disableDrawing();
-    //////////////////////
-    // some basic parameters
-    const params = {
-        vertexShader: (0, _sliderVertDefault.default),
-        fragmentShader: (0, _sliderFragDefault.default),
-        uniforms: {
-            transitionTimer: {
-                name: "uTransitionTimer",
-                type: "1f",
-                value: 0
-            }
-        }
-    };
-    const sliderPlane = new (0, _curtainsjs.Plane)(curtains, planeElement, params);
-    sliderPlane.setRenderTarget(sliderTarget);
-    const sliderPass = new (0, _curtainsjs.ShaderPass)(curtains, {
-        renderTarget: sliderTarget
-    }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
-    ;
-    ////////////////////
-    // on success
-    curtains.onSuccess(()=>{
-        sliderPlane.onLoading((texture)=>{
-            // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
-            texture.setMinFilter(curtains.gl.NEAREST);
-        }).onReady(()=>{
-            // the idea here is to create two additionnal textures
-            // the first one will contain our visible image
-            // the second one will contain our entering (next) image
-            // that way we will deal with only activeTex and nextTex samplers in the fragment shader
-            // and we could easily add more images in the slideshow...
-            const displacement = sliderPlane.createTexture({
-                sampler: "displacement",
-                fromTexture: sliderPlane.textures[0]
-            });
-            // first we set our very first image as the active texture
-            const activeTex = sliderPlane.createTexture({
-                sampler: "activeTex",
-                fromTexture: sliderPlane.textures[slideshowState.activeTextureIndex]
-            });
-            // next we set the second image as next texture but this is not mandatory
-            // as we will reset the next texture on slide change
-            const nextTex = sliderPlane.createTexture({
-                sampler: "nextTex",
-                fromTexture: sliderPlane.textures[slideshowState.nextTextureIndex]
-            });
-            planeElement.addEventListener("click", ()=>{
-                if (!slideshowState.isChanging) {
-                    // enable drawing for now
-                    //curtains.enableDrawing();
-                    slideshowState.isChanging = true;
-                    // check what will be next image
-                    if (slideshowState.activeTextureIndex < slideshowState.maxTextures) slideshowState.nextTextureIndex = slideshowState.activeTextureIndex + 1;
-                    else slideshowState.nextTextureIndex = 1;
-                    // apply it to our next texture
-                    nextTex.setSource(sliderPlane.images[slideshowState.nextTextureIndex]);
-                    setTimeout(()=>{
-                        // disable drawing now that the transition is over
-                        //curtains.disableDrawing();
-                        slideshowState.isChanging = false;
-                        slideshowState.activeTextureIndex = slideshowState.nextTextureIndex;
-                        // our next texture becomes our active texture
-                        activeTex.setSource(sliderPlane.images[slideshowState.activeTextureIndex]);
-                        // reset timer
-                        slideshowState.transitionTimer = 0;
-                    }, 1700); // add a bit of margin to the timer
-                }
-            });
-        });
-        sliderPlane.onRender(()=>{
-            // increase or decrease our timer based on the active texture value
-            if (slideshowState.isChanging) {
-                // use damping to smoothen transition
-                slideshowState.transitionTimer += (90 - slideshowState.transitionTimer) * 0.04;
-                // force end of animation as damping is slower the closer we get from the end value
-                if (slideshowState.transitionTimer >= 88.5 && slideshowState.transitionTimer !== 90) slideshowState.transitionTimer = 90;
-            }
-            // update our transition timer uniform
-            sliderPlane.uniforms.transitionTimer.value = slideshowState.transitionTimer;
-        });
-        ///// this is our scroll code
-        const fonts = {
-            list: [
-                'normal 400 1em "Archivo Black", sans-serif',
-                'normal 300 1em "Merriweather Sans", sans-serif', 
-            ],
-            loaded: 0
-        };
-        // load the fonts first
-        fonts.list.forEach((font)=>{
-            document.fonts.load(font).then(()=>{
-                fonts.loaded++;
-                if (fonts.loaded === fonts.list.length) {
-                    // create our text planes
-                    const textEls = document.querySelectorAll("[text]");
-                    textEls.forEach((textEl)=>{
-                        const textPlane = new (0, _curtainsjs.Plane)(curtains, textEl, {
-                            vertexShader: (0, _textShaderDefault.default).vs,
-                            fragmentShader: (0, _textShaderDefault.default).fs
-                        });
-                        // create the text texture and... that's it!
-                        const textTexture = new (0, _textTexture.TextTexture)({
-                            plane: textPlane,
-                            textElement: textPlane.htmlElement,
-                            sampler: "uTexture",
-                            resolution: 1.5,
-                            skipFontLoading: true
-                        });
-                        textEl.style.color = "#ff000000";
-                    });
-                    const puckTarget = new (0, _curtainsjs.RenderTarget)(curtains);
-                    const bgTarget = new (0, _curtainsjs.RenderTarget)(curtains);
-                    // const imgTarget = new RenderTarget(curtains, {
-                    //     depth: true,
-                    //     texturesOptions : {
-                    //         shouldUpdate : true,
-                    //         generateMipmap: false,
-                    //         premultiplyAlpha: true,
-                    //         clear: true,
-                    //         anisotropy: 16,
-                    //         wrapS : curtains.gl.REPEAT,
-                    //         wrapT : curtains.gl.REPEAT,
-                    //         minFilter: curtains.gl.NEAREST,
-                    //         maxFilter: curtains.gl.NEAREST,
-                    //         floatingPoint: 'float',
-                    //     }})
-                    const imgTarget = new (0, _curtainsjs.RenderTarget)(curtains);
-                    //our img elements that will be in the puck & outside of it
-                    const imgs = document.querySelectorAll("img[gl]");
-                    // images that will be outside the puck
-                    const bgImgs = document.querySelectorAll("img[bg]");
-                    //images that will be inside the puck
-                    const puckImgs = document.querySelectorAll("img[puck]");
-                    const loader = new (0, _curtainsjs.TextureLoader)(curtains);
-                    imgs.forEach((el)=>{
-                        const plane = new (0, _curtainsjs.Plane)(curtains, el, {
-                            vertexShader: (0, _textShaderDefault.default).vs,
-                            fragmentShader: (0, _imgFragDefault.default)
-                        });
-                        plane.loadImage(el, {
-                            sampler: "uTexture"
-                        });
-                        plane.setRenderTarget(imgTarget);
-                        el.style.opacity = 0;
-                    });
-                    puckImgs.forEach((el)=>{
-                        const plane = new (0, _curtainsjs.Plane)(curtains, el, {
-                            vertexShader: (0, _textShaderDefault.default).vs,
-                            fragmentShader: (0, _imgFragDefault.default)
-                        });
-                        plane.loadImage(el, {
-                            sampler: "uTexture"
-                        });
-                        plane.setRenderTarget(puckTarget);
-                        el.style.opacity = 0;
-                    });
-                    console.log(puckImgs);
-                    bgImgs.forEach((el)=>{
-                        const plane = new (0, _curtainsjs.Plane)(curtains, el, {
-                            vertexShader: (0, _textShaderDefault.default).vs,
-                            fragmentShader: (0, _imgFragDefault.default)
-                        });
-                        plane.loadImage(el, {
-                            sampler: "uTexture"
-                        });
-                        plane.setRenderTarget(bgTarget);
-                        el.style.opacity = 0;
-                    });
-                    // hide gradient
-                    document.getElementById("gradient").style.display = "none";
-                    threeD.loadGlb().then(()=>{
-                        // create our shader pass
-                        const scrollPass = new (0, _curtainsjs.ShaderPass)(curtains, {
-                            fragmentShader: (0, _pageFragDefault.default),
-                            depth: true,
-                            uniforms: {
-                                scrollEffect: {
-                                    name: "uScrollEffect",
-                                    type: "1f",
-                                    value: scroll.effect
-                                },
-                                scrollStrength: {
-                                    name: "uScrollStrength",
-                                    type: "1f",
-                                    value: 2.5
-                                },
-                                bgCol: {
-                                    name: "uBgCol",
-                                    type: "4f",
-                                    value: [
-                                        ...(0, _utils.hexToRgb)("#0F1212"),
-                                        1.0
-                                    ]
-                                },
-                                fgCol: {
-                                    name: "uFgCol",
-                                    type: "4f",
-                                    value: [
-                                        ...(0, _utils.hexToRgb)("#FFF"),
-                                        1.0
-                                    ]
-                                },
-                                col1: {
-                                    name: "uCol1",
-                                    type: "4f",
-                                    value: [
-                                        ...(0, _utils.hexToRgb)("#F198C0"),
-                                        1.0
-                                    ]
-                                },
-                                col2: {
-                                    name: "uCol2",
-                                    type: "4f",
-                                    value: [
-                                        ...(0, _utils.hexToRgb)("#61FCC4"),
-                                        1.0
-                                    ]
-                                },
-                                col3: {
-                                    name: "uCol3",
-                                    type: "4f",
-                                    value: [
-                                        ...(0, _utils.hexToRgb)("#FFF"),
-                                        1.0
-                                    ]
-                                },
-                                mouse: {
-                                    name: "uMouse",
-                                    type: "2f",
-                                    value: [
-                                        0,
-                                        0
-                                    ]
-                                },
-                                time: {
-                                    name: "uTime",
-                                    type: "1f",
-                                    value: 0
-                                }
-                            }
-                        });
-                        scrollPass.loadCanvas(threeD.canvas) // creates a texture from our three.js canvas
-                        ;
-                        scrollPass.createTexture({
-                            sampler: "uPuck",
-                            fromTexture: puckTarget.getTexture()
-                        });
-                        scrollPass.createTexture({
-                            sampler: "uBg",
-                            fromTexture: bgTarget.getTexture()
-                        });
-                        scrollPass.createTexture({
-                            sampler: "uImg",
-                            fromTexture: imgTarget.getTexture()
-                        });
-                        // calculate the lerped scroll effect
-                        let mouseLast = [
-                            0.5,
-                            0.5
-                        ];
-                        scrollPass.onRender(()=>{
-                            threeD.move();
-                            threeD.render();
-                            scroll.lastValue = scroll.value;
-                            scroll.value = curtains.getScrollValues().y;
-                            // clamp delta
-                            scroll.delta = Math.max(-30, Math.min(30, scroll.lastValue - scroll.value));
-                            scroll.effect = curtains.lerp(scroll.effect, scroll.delta, 0.05);
-                            scrollPass.uniforms.scrollEffect.value = scroll.effect;
-                            mouseVal = scrollPass.uniforms.mouse.value;
-                            let mouseLerp = [
-                                curtains.lerp(mouseVal[0], threeD.mouse.x, 0.05),
-                                curtains.lerp(mouseVal[1], threeD.mouse.y, 0.05)
-                            ];
-                            scrollPass.uniforms.mouse.value = mouseLerp;
-                            scrollPass.uniforms.time.value += 1;
-                        });
-                    });
-                }
-            });
-        });
-    });
+    const app = new App();
+    app.init();
 });
 
-},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/slider.frag":"7aA3N","./shaders/slider.vert":"3Tkxq","./shaders/img.frag":"7dXWc","./utils":"bIDtH"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -40990,12 +40860,6 @@ module.exports = "#define GLSLIFY 1\n//\n// Description : Array and textureless 
 },{}],"i90JS":[function(require,module,exports) {
 module.exports = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#define GLSLIFY 1\n#endif\n\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g_0 = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g_0;\n  vec3 i1 = min( g_0.xyz, l.zxy );\n  vec3 i2 = max( g_0.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#ifndef HALF_PI\n#define HALF_PI 1.5707963267948966\n#endif\n\nfloat elasticIn(float t) {\n  return sin(13.0 * t * HALF_PI) * pow(2.0, 10.0 * (t - 1.0));\n}\n\nvec3 blendOverlay(vec3 base, vec3 blend) {\n    return mix(1.0 - 2.0 * (1.0 - base) * (1.0 - blend), 2.0 * base * blend, step(base, vec3(0.5)));\n    // with conditionals, may be worth benchmarking\n    // return vec3(\n    //     base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r)),\n    //     base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g)),\n    //     base.b < 0.5 ? (2.0 * base.b * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b))\n    // );\n}\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uRenderTexture;\nuniform sampler2D threeDTexture;\nuniform sampler2D uPuck;\nuniform sampler2D uBg;\nuniform sampler2D uImg;\n\n// lerped scroll deltas\n// negative when scrolling down, positive when scrolling up\nuniform float uScrollEffect;\n\n// default to 2.5\nuniform float uScrollStrength;\n\nuniform vec4 uBgCol;\nuniform vec4 uFgCol;\nuniform vec4 uCol1;\nuniform vec4 uCol2;\nuniform vec4 uCol3;\nuniform vec2 uMouse;\nuniform float uTime;\nvoid main() {\n    vec2 uv = vTextureCoord;\n    float horizontalStretch;\n    vec4 threeDCol = texture2D(threeDTexture, uv);\n\n    // branching on an uniform is ok\n    if(uScrollEffect >= 0.0) {\n        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(uv.y);\n    }\n    else if(uScrollEffect < 0.0) {\n        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(-1.0 * (1.0 - uv.y));\n    }\n\n    uv.x = uv.x * 2.0 - 1.0;\n    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;\n    uv.x = (uv.x + 1.0) * 0.5;\n    // moving the content underneath the square\n\n    float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;\n    //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);\n    float morphStrength = 0.005;\n    float morph = elasticIn(threeDCol.r);\n    float baseStrength = 0.02;\n\n    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);\n\n    //rgb split\n    vec2 uvR = muv;\n    vec2 uvG = muv;\n    vec2 uvB = muv;\n\n    uvR.x += morph * morphStrength;\n    uvR.y += morph * morphStrength;\n    uvG.x -= morph * morphStrength;\n    uvG.y += morph * morphStrength;\n    uvB.y -= morph * morphStrength;\n\n    \n    float t = uTime /1000.0  ;\n\n    // gradient noise\n    float noise = snoise(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));\n    float black = snoise(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));\n\n    vec4 gradient = mix(uCol1, uCol2, noise);\n    gradient = mix(gradient, uBgCol, black);\n    //\n\n    vec4 colR =  texture2D(uRenderTexture, uvR);\n    vec4 colG =  texture2D(uRenderTexture, uvG);\n    vec4 colB =  texture2D(uRenderTexture, uvB);\n\n    vec4 bgCol = texture2D(uBg, uv); // images not in the puck\n    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk\n\n    puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));\n\n    vec4 imgCol =  vec4(texture2D(uImg, uvR).r, texture2D(uImg, uvG).g, texture2D(uImg, uvB).b, 1.0); //images\n    imgCol.a = max( max(texture2D(uImg, uvR).a, texture2D(uImg, uvG).a), texture2D(uImg, uvB).a);\n \n    float maxA = max(max(colR.a, colG.a), colB.a);\n    //maxA = max(colR.a, colG.a);\n    //maxA = colR.a;\n\n    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);\n    vec4 baseCol =  texture2D(uRenderTexture, uv) + bgCol + imgCol; // baseColor\n\n    vec4 defCol = (1.0 - splitCol);\n    defCol.a = splitCol.a;\n    defCol =  mix(puckCol + imgCol, defCol, defCol.a);\n\n    float alpha = threeDCol.a;\n\n    float gradientMix = 1.0;\n\n    //defCol = mix(defCol, gradient, gradientMix);\n\n    defCol = vec4(blendOverlay(defCol.rgb, gradient.rgb), defCol.a);\n    //mix in gradient\n    vec4 mixCol = mix(baseCol, defCol, alpha);\n\n    mixCol = mix(mixCol, uBgCol, clamp(alpha - mixCol.a, 0.0, 1.0));\n    mixCol = mix( gradient, mixCol, mixCol.a); // gradient\n    mixCol = mix( clamp(gradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights\n\n    gl_FragColor = mixCol;\n\n    //gl_FragColor = gradient;\n    //gl_FragColor = texture2D(threeDTexture, uv);\n    //gl_FragColor = vec4(texture2D(uImg, muv).rgb, 1.0);\n    //gl_FragColor = vec4(baseMorph, 0.0,0.0,1.0);\n    //gl_FragColor = threeDCol;\n}";
 
-},{}],"7aA3N":[function(require,module,exports) {
-module.exports = "precision mediump float;\n#define GLSLIFY 1\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// custom uniforms\nuniform float uTransitionTimer;\n// our textures samplers\n// notice how it matches the sampler attributes of the textures we created dynamically\nuniform sampler2D activeTex;\nuniform sampler2D nextTex;\nuniform sampler2D displacement;\nvoid main() {\n    // our displacement texture\n    vec4 displacementTexture = texture2D(displacement, vTextureCoord);\n    // slides transitions based on displacement and transition timer\n    vec2 firstDisplacementCoords = vActiveTextureCoord + displacementTexture.r * ((cos((uTransitionTimer + 90.0) / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 firstDistortedColor = texture2D(activeTex, vec2(vActiveTextureCoord.x, firstDisplacementCoords.y));\n    // same as above but we substract the effect\n    vec2 secondDisplacementCoords = vNextTextureCoord - displacementTexture.r * ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 secondDistortedColor = texture2D(nextTex, vec2(vNextTextureCoord.x, secondDisplacementCoords.y));\n    // mix both texture\n    vec4 finalColor = mix(firstDistortedColor, secondDistortedColor, 1.0 - ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 2.0));\n    // handling premultiplied alpha\n    finalColor = vec4(finalColor.rgb * finalColor.a, finalColor.a);\n    gl_FragColor = finalColor;\n}";
-
-},{}],"3Tkxq":[function(require,module,exports) {
-module.exports = "precision mediump float;\n#define GLSLIFY 1\n// default mandatory variables\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\n// varyings : notice we've got 3 texture coords varyings\n// one for the displacement texture\n// one for our visible texture\n// and one for the upcoming texture\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// textures matrices\nuniform mat4 activeTexMatrix;\nuniform mat4 nextTexMatrix;\n// custom uniforms\nuniform float uTransitionTimer;\nvoid main() {\n    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n    // varyings\n    vTextureCoord = aTextureCoord;\n    vActiveTextureCoord = (activeTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vNextTextureCoord = (nextTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vVertexPosition = aVertexPosition;\n}";
-
 },{}],"7dXWc":[function(require,module,exports) {
 module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTexture;\n\nvoid main() {\n    // just display our texture\n    gl_FragColor = texture2D(uTexture, vTextureCoord);\n}";
 
@@ -41005,6 +40869,120 @@ parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "hexToRgb", ()=>hexToRgb);
 const hexToRgb = (hex)=>hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b)=>"#" + r + r + g + g + b + b).substring(1).match(/.{2}/g).map((x)=>parseInt(x, 16) / 255);
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"807TH":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _curtainsjs = require("curtainsjs");
+var _sliderFrag = require("./shaders/slider.frag");
+var _sliderFragDefault = parcelHelpers.interopDefault(_sliderFrag);
+var _sliderVert = require("./shaders/slider.vert");
+var _sliderVertDefault = parcelHelpers.interopDefault(_sliderVert);
+class Slider {
+    constructor(curtains, el){
+        this.curtains = curtains;
+        this.element = el;
+        this.params = {
+            vertexShader: (0, _sliderVertDefault.default),
+            fragmentShader: (0, _sliderFragDefault.default),
+            uniforms: {
+                transitionTimer: {
+                    name: "uTransitionTimer",
+                    type: "1f",
+                    value: 0
+                }
+            }
+        };
+        // here we will handle which texture is visible and the timer to transition between images
+        this.state = {
+            activeIndex: 0,
+            nextIndex: 1,
+            maxTextures: this.element.querySelectorAll("img").length - 1,
+            isChanging: false,
+            transitionTimer: 0
+        };
+    }
+    init() {
+        this.target = new (0, _curtainsjs.RenderTarget)(this.curtains) //create a render target for our slider
+        ;
+        this.plane = new (0, _curtainsjs.Plane)(this.curtains, this.element, this.params) // create a plane for our slider
+        ;
+        this.plane.setRenderTarget(this.target);
+        this.pass = new (0, _curtainsjs.ShaderPass)(this.curtains, {
+            renderTarget: this.target
+        }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
+        ;
+        this.plane.onLoading((texture)=>{
+            // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
+            texture.setMinFilter(this.curtains.gl.NEAREST);
+        }).onReady(this.onReady.bind(this)).onRender(this.onRender.bind(this));
+    }
+    onReady() {
+        // the idea here is to create two additionnal textures
+        // the first one will contain our visible image
+        // the second one will contain our entering (next) image
+        // that way we will deal with only active and next samplers in the fragment shader
+        // and we could easily add more images in the slideshow...
+        this.displacement = this.plane.createTexture({
+            sampler: "displacement",
+            fromTexture: this.plane.textures[this.state.nextIndex]
+        });
+        // first we set our very first image as the active texture
+        this.active = this.plane.createTexture({
+            sampler: "activeTex",
+            fromTexture: this.plane.textures[this.state.activeIndex]
+        });
+        // next we set the second image as next texture but this is not mandatory
+        // as we will reset the next texture on slide change
+        this.next = this.plane.createTexture({
+            sampler: "nextTex",
+            fromTexture: this.plane.textures[this.state.activeIndex]
+        });
+        this.element.addEventListener("click", this.onClick.bind(this));
+    }
+    onClick() {
+        if (!this.state.isChanging) {
+            // enable drawing for now
+            //curtains.enableDrawing();
+            this.state.isChanging = true;
+            // check what will be next image
+            if (this.state.activeIndex < this.state.maxTextures) this.state.nextIndex = this.state.activeIndex + 1;
+            else this.state.nextIndex = 1;
+            // apply it to our next texture
+            this.next.setSource(this.plane.images[this.state.nextIndex]);
+            this.displacement.setSource(this.plane.images[this.state.activeIndex]);
+            setTimeout(()=>{
+                // disable drawing now that the transition is over
+                //curtains.disableDrawing();
+                this.state.isChanging = false;
+                this.state.activeIndex = this.state.nextIndex;
+                // our next texture becomes our active texture
+                this.active.setSource(this.plane.images[this.state.activeIndex]);
+                // reset timer
+                this.state.transitionTimer = 0;
+            }, 1700) // add a bit of margin to the timer
+            ;
+        }
+    }
+    onRender() {
+        // increase or decrease our timer based on the active texture value
+        if (this.state.isChanging) {
+            // use damping to smoothen transition
+            this.state.transitionTimer += (90 - this.state.transitionTimer) * 0.04;
+            // force end of animation as damping is slower the closer we get from the end value
+            if (this.state.transitionTimer >= 88.9 && this.state.transitionTimer !== 90) this.state.transitionTimer = 90;
+        }
+        // update our transition timer uniform
+        this.plane.uniforms.transitionTimer.value = this.state.transitionTimer;
+    }
+}
+exports.default = Slider;
+
+},{"curtainsjs":"9AjRS","./shaders/slider.frag":"7aA3N","./shaders/slider.vert":"3Tkxq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"7aA3N":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// custom uniforms\nuniform float uTransitionTimer;\n// our textures samplers\n// notice how it matches the sampler attributes of the textures we created dynamically\nuniform sampler2D activeTex;\nuniform sampler2D nextTex;\nuniform sampler2D displacement;\nvoid main() {\n    // our displacement texture\n    vec4 displacementTexture = texture2D(displacement, vTextureCoord);\n    // slides transitions based on displacement and transition timer\n    vec2 firstDisplacementCoords = vActiveTextureCoord + displacementTexture.r * ((cos((uTransitionTimer + 90.0) / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 firstDistortedColor = texture2D(activeTex, vec2(vActiveTextureCoord.x, firstDisplacementCoords.y));\n    // same as above but we substract the effect\n    vec2 secondDisplacementCoords = vNextTextureCoord - displacementTexture.r * ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 secondDistortedColor = texture2D(nextTex, vec2(vNextTextureCoord.x, secondDisplacementCoords.y));\n    // mix both texture\n    vec4 finalColor = mix(firstDistortedColor, secondDistortedColor, 1.0 - ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 2.0));\n    // handling premultiplied alpha\n    finalColor = vec4(finalColor.rgb * finalColor.a, finalColor.a);\n    gl_FragColor = finalColor;\n}";
+
+},{}],"3Tkxq":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\n// default mandatory variables\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\n// varyings : notice we've got 3 texture coords varyings\n// one for the displacement texture\n// one for our visible texture\n// and one for the upcoming texture\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// textures matrices\nuniform mat4 activeTexMatrix;\nuniform mat4 nextTexMatrix;\n// custom uniforms\nuniform float uTransitionTimer;\nvoid main() {\n    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n    // varyings\n    vTextureCoord = aTextureCoord;\n    vActiveTextureCoord = (activeTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vNextTextureCoord = (nextTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vVertexPosition = aVertexPosition;\n}";
+
+},{}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map
