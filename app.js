@@ -185,7 +185,6 @@ class App {
 	    this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
     }
 
-
 }
 
 window.addEventListener('load', () => {
