@@ -23,14 +23,13 @@ void main()
 }`
 
 
-const screenToPos = (mouse, pos) => {
-
-}
+const clamp = (num, min, max) => Math.min(Math.max(num, min), max)
 
 class ThreeD {
     constructor(){ //lets set up our three.js scene
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        this.bbox = new THREE.Vector3()
     
         this.renderer = new THREE.WebGLRenderer({ alpha: true });
         this.renderer.setSize( window.innerWidth, window.innerHeight );
@@ -112,6 +111,7 @@ class ThreeD {
             this.geometry = geo
             this.mesh = new THREE.Mesh(this.geometry, this.material)
             this.scene.add( this.mesh );
+            this.mesh.geometry.computeBoundingBox()
             this.mesh.rotation.x = Math.PI / 4 ;
             this.ready()
         })
@@ -135,18 +135,35 @@ class ThreeD {
 
     ready(){
         document.addEventListener('mousemove',this.mouseEvent.bind(this), false);
-        this.move();
+        this.move({ range: 0, x: 0, y: 0, size: 20});
         this.render();
     }
 
-    move(){
-        let pos = this.screenToPos(this.mouse.x, this.mouse.y)
+    setScale(size){
+        let dist = this.camera.position.distanceTo(this.mesh.position)
+        let vFOV = this.camera.fov * Math.PI / 180;        // convert vertical fov to radians
+        let vHeight = 2 * Math.tan( vFOV / 2 ) * dist; // visible height
+        // this.mesh.geometry.boundingBox.getSize(this.bbox)
+        // console.log(vHeight, this.bbox)
+        this.mesh.scale.x = vHeight * (size/ window.innerHeight);
+        this.mesh.scale.y = vHeight * (size/ window.innerHeight);
+        this.mesh.scale.z = vHeight * (size/ window.innerHeight);
+    }
+
+    move(axes){
+        
+        let mpos = this.screenToPos(this.mouse.x, this.mouse.y)
+        let pos = this.screenToPos(axes.x, axes.y)
+
+        this.setScale(axes.size)
+
+        pos.lerp(mpos, axes.range)
 
         this.mesh.position.lerp(pos, 0.02)
 
-        this.mesh.scale.x = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
-        this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
-        this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
+        // this.mesh.scale.x = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
+        // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
+        // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         this.mesh.rotation.z += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
 
         // this.lightTop.lookAt(this.mesh.position)

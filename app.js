@@ -6,9 +6,50 @@ import pageFrag from './shaders/page.frag';
 import ThreeD from './3d';
 import Slider from './slider';
 import {hexToRgb }from './utils'
+import anime from 'animejs';
+import _ from 'lodash';
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true
+
+const normX = (x) =>{
+    return (x / window.innerWidth) * 2 - 1
+}
+
+const normY = (y) =>{
+    return -(y/ window.innerHeight) * 2 + 1
+}
+
+const normCoord = (x, y) => {
+    nx = normX(x)
+    ny = normY(y)
+    return { x: nx, y: ny}
+}
+const getCoord = (el) => {
+    let rect = el.getBoundingClientRect()
+    let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2
+    keyframe = keyframe < 0 ? 0 : keyframe;
+    let stick = el.getAttribute('stick')
+    let scale = el.getAttribute('scale') ? el.getAttribute('scale') : 1
+    let range = isNaN(stick) ? 1 : 1 - stick
+    console.log(el.getAttribute('yoffset'))
+
+    return {
+        x: normX(rect.x + rect.width / 2) - window.scrollX,
+        y: el.getAttribute('yoffset') ? normY(el.offsetTop + rect.height/2 + el.parentElement.offsetTop) : 0,
+        size: rect.width > rect.height ? rect.height * scale: rect.width * scale,
+        h: rect.height,
+        w: rect.width,
+        keyframe: keyframe,
+        range: range
+        //keyframed when the element y center is half way down the screen
+    }
+}
+axes = {
+    range: 0,
+    x: 0,
+    y: 0,
+}
 
 class App {
     constructor(){
@@ -20,7 +61,16 @@ class App {
             effect: 0,
         }
         this.threeD = new ThreeD()
+        this.axes = {
+            range: 0,
+            x: 0,
+            y: 0,
+            size: 0,
+        }
+
+
     }
+
     init(){
         // create curtains instance
         this.curtains = new Curtains({
@@ -29,6 +79,59 @@ class App {
         })
 
         this.curtains.onSuccess(this.onSuccess.bind(this))
+        this.curtains.onError(this.onError.bind(this))
+    }
+
+    onError(){
+        document.querySelectorAll('img[puck]').forEach((el)=>{
+            el.style.display = "none"
+        })
+    }
+
+    initTimeline(){
+
+        let frames = [...document.querySelectorAll('[stick]')].map(el => {
+            return {el: el, coord: getCoord(el)}
+        })
+
+        this.axes = {
+            range: frames[0].coord.range,
+            x: frames[0].coord.x,
+            y: frames[0].coord.y,
+            size: frames[0].coord.size
+        }
+
+
+        let timeline = anime.timeline({
+            targets: this.axes,
+            easing: "linear",
+            autoplay:false,
+            loop: false
+        })
+
+        frames.forEach((frame, index)=>{
+            let previousTime = index > 0 ? frames[index - 1].coord.keyframe : 0
+            let duration = index > 0 ? frame.coord.keyframe - frames[index - 1].coord.keyframe : 0.00001
+            timeline.add({
+                range: frame.coord.range,
+                x: frame.coord.x,
+                y: frame.coord.y,
+                size: frame.coord.size,
+                duration: duration
+            }, previousTime)
+        })
+
+        timeline.add({
+            duration: 0.00001
+        }, document.body.offsetHeight - window.innerHeight - 0.00001)
+
+
+        this.timeline = timeline
+    }
+
+    onScroll(){
+            let y = window.scrollY / (document.body.offsetHeight - window.innerHeight)
+            this.timeline.seek(this.timeline.duration * y)
     }
 
     onSuccess(){
@@ -47,6 +150,8 @@ class App {
     }
 
     onLoaded(){
+        this.initTimeline()
+
         this.slider.init()
         this.pass = new ShaderPass(this.curtains, {
             fragmentShader: pageFrag,
@@ -112,12 +217,19 @@ class App {
         // hide gradient
         document.getElementById('gradient').style.display = 'none';
 
-        
         this.pass.onRender(this.onRender.bind(this))
+
+        let _scroll = _.throttle(this.onScroll.bind(this), 10 ,{
+            trailing: true,
+            leading: true,
+        })
+
+
+       window.addEventListener("scroll", _scroll.bind(this));
     }
 
     onRender(){
-        this.threeD.move()
+        this.threeD.move(this.axes)
         this.threeD.render()
 
         this.scroll.lastValue = this.scroll.value;
@@ -138,7 +250,6 @@ class App {
     }
 
     loadImg(query, target, sampler){
-        console.log(query)
         const imgs = document.querySelectorAll(query)
         imgs.forEach((el) => {
             const plane = new Plane(this.curtains, el, {
@@ -175,9 +286,7 @@ class App {
         })
     }
 
-    onScroll(){
 
-    }
     
     onMove(event){
         //event.preventDefault();
