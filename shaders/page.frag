@@ -29,11 +29,14 @@ uniform float uScrollStrength;
 
 uniform vec4 uBgCol;
 uniform vec4 uFgCol;
-uniform vec4 uCol1;
-uniform vec4 uCol2;
-uniform vec4 uCol3;
+uniform vec4 uColA;
+uniform vec4 uColB;
+uniform vec4 uColC;
+uniform vec4 uColD;
 uniform vec2 uMouse;
 uniform float uTime;
+uniform float uGradientOpacity;
+
 void main() {
     vec2 uv = vTextureCoord;
     float horizontalStretch;
@@ -80,8 +83,10 @@ void main() {
     float noise = snoise3(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));
     float black = snoise3(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));
 
-    vec4 gradient = mix(uCol1, uCol2, noise);
+    vec4 gradient = mix(uColA, uColB, noise);
     gradient = mix(gradient, uBgCol, black);
+    vec4 puckGradient = mix(uColC, uColD, noise);
+    puckGradient = mix(puckGradient, uBgCol, black);
     //
 
 
@@ -89,7 +94,7 @@ void main() {
     vec4 colG =  texture2D(uRenderTexture, uvG);
     vec4 colB =  texture2D(uRenderTexture, uvB);
 
-    vec4 bgCol = texture2D(uBg, uv); // images not in the puck
+    vec4 bg = texture2D(uBg, uv); // images not in the puck
     vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk
 
     puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));
@@ -102,7 +107,7 @@ void main() {
     //maxA = colR.a;
 
     vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);
-    vec4 baseCol =  texture2D(uRenderTexture, uv) + bgCol + imgCol; // baseColor
+    vec4 baseCol =  texture2D(uRenderTexture, uv) + bg + imgCol; // baseColor
 
     vec4 defCol = (1.0 - splitCol);
     defCol.a = splitCol.a;
@@ -112,20 +117,15 @@ void main() {
 
     float alpha = threeDCol.a;
 
-    float gradientMix = 1.0;
-
-
-    //defCol = mix(defCol, gradient, gradientMix);
-
-    defCol = vec4(blend(defCol.rgb, gradient.rgb), defCol.a);
+    defCol = vec4(blend(defCol.rgb, puckGradient.rgb), defCol.a);
     //mix in gradient
     vec4 mixCol = mix(baseCol, defCol, alpha);
 
+    vec4 bgCol = mix(uBgCol, puckGradient, uGradientOpacity);
 
-
-    mixCol = mix(mixCol, uBgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
+    mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
     mixCol = mix( gradient, mixCol, mixCol.a); // gradient
-    mixCol = mix( clamp(gradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights
+    mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights
 
     gl_FragColor = mixCol;
 

@@ -5,51 +5,14 @@ import textShader from './textShader';
 import pageFrag from './shaders/page.frag';
 import ThreeD from './3d';
 import Slider from './slider';
-import {hexToRgb }from './utils'
+import {hexToRgb, getCoord, rgbaToArray }from './utils'
 import anime from 'animejs';
 import _ from 'lodash';
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true
 
-const normX = (x) =>{
-    return (x / window.innerWidth) * 2 - 1
-}
 
-const normY = (y) =>{
-    return -(y/ window.innerHeight) * 2 + 1
-}
-
-const normCoord = (x, y) => {
-    nx = normX(x)
-    ny = normY(y)
-    return { x: nx, y: ny}
-}
-const getCoord = (el) => {
-    let rect = el.getBoundingClientRect()
-    let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2
-    keyframe = keyframe < 0 ? 0 : keyframe;
-    let stick = el.getAttribute('stick')
-    let scale = el.getAttribute('scale') ? el.getAttribute('scale') : 1
-    let range = isNaN(stick) ? 1 : 1 - stick
-    console.log(el.getAttribute('yoffset'))
-
-    return {
-        x: normX(rect.x + rect.width / 2) - window.scrollX,
-        y: el.getAttribute('yoffset') ? normY(el.offsetTop + rect.height/2 + el.parentElement.offsetTop) : 0,
-        size: rect.width > rect.height ? rect.height * scale: rect.width * scale,
-        h: rect.height,
-        w: rect.width,
-        keyframe: keyframe,
-        range: range
-        //keyframed when the element y center is half way down the screen
-    }
-}
-axes = {
-    range: 0,
-    x: 0,
-    y: 0,
-}
 
 class App {
     constructor(){
@@ -66,6 +29,14 @@ class App {
             x: 0,
             y: 0,
             size: 0,
+        }
+
+        this.colors = {
+            a: '#F198C0',
+            b: "#61FCC4",
+            c: '#F198C0',
+            d: "#61FCC4",
+            opacity: 0,
         }
 
 
@@ -94,6 +65,10 @@ class App {
             return {el: el, coord: getCoord(el)}
         })
 
+        let colorFrames = [...document.querySelectorAll('[colora], [colorb], [colorc], [colord], [opacity]')].map(el =>{
+            return {el:el, coord: getCoord(el)}
+        })
+
         this.axes = {
             range: frames[0].coord.range,
             x: frames[0].coord.x,
@@ -117,7 +92,8 @@ class App {
                 x: frame.coord.x,
                 y: frame.coord.y,
                 size: frame.coord.size,
-                duration: duration
+                duration: duration,
+                easing: 'easeInOutSine'
             }, previousTime)
         })
 
@@ -125,13 +101,25 @@ class App {
             duration: 0.00001
         }, document.body.offsetHeight - window.innerHeight - 0.00001)
 
+        colorFrames.forEach( (frame, index) => {
+            let previousTime = index > 0 ? frames[index - 1].coord.keyframe : 0
+            let duration = index > 0 ? frame.coord.keyframe - frames[index - 1].coord.keyframe : 0.00001
+            timeline.add({
+                targets: this.colors,
+                ...frame.coord.colors,
+                duration: duration,
+            }, previousTime)
+        })
 
         this.timeline = timeline
+        this.onScroll()
     }
 
     onScroll(){
             let y = window.scrollY / (document.body.offsetHeight - window.innerHeight)
             this.timeline.seek(this.timeline.duration * y)
+
+            console.log(rgbaToArray(this.colors.a))
     }
 
     onSuccess(){
@@ -177,20 +165,25 @@ class App {
                     type: '4f',
                     value: [...hexToRgb("#FFF"), 1.0],
                 },
-                col1:{
-                    name: "uCol1",
+                colA:{
+                    name: "uColA",
                     type: '4f',
-                    value: [...hexToRgb("#F198C0"), 1.0],
+                    value: rgbaToArray(this.colors.a),
                 },
-                col2:{
-                    name: "uCol2",
+                colB:{
+                    name: "uColB",
                     type: '4f',
-                    value: [...hexToRgb("#61FCC4"), 1.0],
+                    value: rgbaToArray(this.colors.b),
                 },
-                col3:{
-                    name: "uCol3",
+                colC:{
+                    name: "uColC",
                     type: '4f',
-                    value: [...hexToRgb("#FFF"), 1.0],
+                    value: rgbaToArray(this.colors.c),
+                },
+                colD:{
+                    name: "uColD",
+                    type: '4f',
+                    value: rgbaToArray(this.colors.d),
                 },
                 mouse:{
                     name: "uMouse",
@@ -199,6 +192,11 @@ class App {
                 },
                 time:{
                     name: 'uTime',
+                    type: '1f',
+                    value: 0,
+                },
+                gradientOpacity:{
+                    name: 'uGradientOpacity',
                     type: '1f',
                     value: 0,
                 }
@@ -247,6 +245,12 @@ class App {
         let mouseLerp = [this.curtains.lerp( mouseVal[0] ,this.threeD.mouse.x, 0.05), this.curtains.lerp( mouseVal[1] ,this.threeD.mouse.y, 0.05) ] 
         this.pass.uniforms.mouse.value = mouseLerp;
         this.pass.uniforms.time.value += 1;
+
+        this.pass.uniforms.colA.value = rgbaToArray(this.colors.a)
+        this.pass.uniforms.colB.value = rgbaToArray(this.colors.b)
+        this.pass.uniforms.colC.value = rgbaToArray(this.colors.c)
+        this.pass.uniforms.colD.value = rgbaToArray(this.colors.d)
+        this.pass.uniforms.gradientOpacity.value = this.colors.opacity
     }
 
     loadImg(query, target, sampler){

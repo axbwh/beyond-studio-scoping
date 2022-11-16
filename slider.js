@@ -42,6 +42,7 @@ class Slider {
       })
       .onReady(this.onReady.bind(this))
       .onRender(this.onRender.bind(this))
+      this.element.style.opacity = 0
   }
 
   onReady() {

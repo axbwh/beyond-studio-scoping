@@ -552,43 +552,6 @@ var _lodash = require("lodash");
 var _lodashDefault = parcelHelpers.interopDefault(_lodash);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
-const normX = (x)=>{
-    return x / window.innerWidth * 2 - 1;
-};
-const normY = (y)=>{
-    return -(y / window.innerHeight) * 2 + 1;
-};
-const normCoord = (x, y)=>{
-    nx = normX(x);
-    ny = normY(y);
-    return {
-        x: nx,
-        y: ny
-    };
-};
-const getCoord = (el)=>{
-    let rect = el.getBoundingClientRect();
-    let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2;
-    keyframe = keyframe < 0 ? 0 : keyframe;
-    let stick = el.getAttribute("stick");
-    let scale = el.getAttribute("scale") ? el.getAttribute("scale") : 1;
-    let range = isNaN(stick) ? 1 : 1 - stick;
-    console.log(el.getAttribute("yoffset"));
-    return {
-        x: normX(rect.x + rect.width / 2) - window.scrollX,
-        y: el.getAttribute("yoffset") ? normY(el.offsetTop + rect.height / 2 + el.parentElement.offsetTop) : 0,
-        size: rect.width > rect.height ? rect.height * scale : rect.width * scale,
-        h: rect.height,
-        w: rect.width,
-        keyframe: keyframe,
-        range: range
-    };
-};
-axes = {
-    range: 0,
-    x: 0,
-    y: 0
-};
 class App {
     constructor(){
         this.mouse = {
@@ -607,6 +570,13 @@ class App {
             x: 0,
             y: 0,
             size: 0
+        };
+        this.colors = {
+            a: "#F198C0",
+            b: "#61FCC4",
+            c: "#F198C0",
+            d: "#61FCC4",
+            opacity: 0
         };
     }
     init() {
@@ -629,7 +599,15 @@ class App {
         ].map((el)=>{
             return {
                 el: el,
-                coord: getCoord(el)
+                coord: (0, _utils.getCoord)(el)
+            };
+        });
+        let colorFrames = [
+            ...document.querySelectorAll("[colora], [colorb], [colorc], [colord], [opacity]")
+        ].map((el)=>{
+            return {
+                el: el,
+                coord: (0, _utils.getCoord)(el)
             };
         });
         this.axes = {
@@ -652,17 +630,29 @@ class App {
                 x: frame.coord.x,
                 y: frame.coord.y,
                 size: frame.coord.size,
-                duration: duration
+                duration: duration,
+                easing: "easeInOutSine"
             }, previousTime);
         });
         timeline.add({
             duration: 0.00001
         }, document.body.offsetHeight - window.innerHeight - 0.00001);
+        colorFrames.forEach((frame, index)=>{
+            let previousTime = index > 0 ? frames[index - 1].coord.keyframe : 0;
+            let duration = index > 0 ? frame.coord.keyframe - frames[index - 1].coord.keyframe : 0.00001;
+            timeline.add({
+                targets: this.colors,
+                ...frame.coord.colors,
+                duration: duration
+            }, previousTime);
+        });
         this.timeline = timeline;
+        this.onScroll();
     }
     onScroll() {
         let y = window.scrollY / (document.body.offsetHeight - window.innerHeight);
         this.timeline.seek(this.timeline.duration * y);
+        console.log((0, _utils.rgbaToArray)(this.colors.a));
     }
     onSuccess() {
         this.slider = new (0, _sliderDefault.default)(this.curtains, document.getElementById("slider"));
@@ -709,29 +699,25 @@ class App {
                         1.0
                     ]
                 },
-                col1: {
-                    name: "uCol1",
+                colA: {
+                    name: "uColA",
                     type: "4f",
-                    value: [
-                        ...(0, _utils.hexToRgb)("#F198C0"),
-                        1.0
-                    ]
+                    value: (0, _utils.rgbaToArray)(this.colors.a)
                 },
-                col2: {
-                    name: "uCol2",
+                colB: {
+                    name: "uColB",
                     type: "4f",
-                    value: [
-                        ...(0, _utils.hexToRgb)("#61FCC4"),
-                        1.0
-                    ]
+                    value: (0, _utils.rgbaToArray)(this.colors.b)
                 },
-                col3: {
-                    name: "uCol3",
+                colC: {
+                    name: "uColC",
                     type: "4f",
-                    value: [
-                        ...(0, _utils.hexToRgb)("#FFF"),
-                        1.0
-                    ]
+                    value: (0, _utils.rgbaToArray)(this.colors.c)
+                },
+                colD: {
+                    name: "uColD",
+                    type: "4f",
+                    value: (0, _utils.rgbaToArray)(this.colors.d)
                 },
                 mouse: {
                     name: "uMouse",
@@ -743,6 +729,11 @@ class App {
                 },
                 time: {
                     name: "uTime",
+                    type: "1f",
+                    value: 0
+                },
+                gradientOpacity: {
+                    name: "uGradientOpacity",
                     type: "1f",
                     value: 0
                 }
@@ -780,6 +771,11 @@ class App {
         ];
         this.pass.uniforms.mouse.value = mouseLerp;
         this.pass.uniforms.time.value += 1;
+        this.pass.uniforms.colA.value = (0, _utils.rgbaToArray)(this.colors.a);
+        this.pass.uniforms.colB.value = (0, _utils.rgbaToArray)(this.colors.b);
+        this.pass.uniforms.colC.value = (0, _utils.rgbaToArray)(this.colors.c);
+        this.pass.uniforms.colD.value = (0, _utils.rgbaToArray)(this.colors.d);
+        this.pass.uniforms.gradientOpacity.value = this.colors.opacity;
     }
     loadImg(query, target, sampler) {
         const imgs = document.querySelectorAll(query);
@@ -40976,7 +40972,7 @@ module.exports = "#define GLSLIFY 1\n    #include <dithering_fragment>\n    vec2
 module.exports = "#define GLSLIFY 1\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#define PHONG";
 
 },{}],"i90JS":[function(require,module,exports) {
-module.exports = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#define GLSLIFY 1\n#endif\n\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g_0 = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g_0;\n  vec3 i1 = min( g_0.xyz, l.zxy );\n  vec3 i2 = max( g_0.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#ifndef HALF_PI\n#define HALF_PI 1.5707963267948966\n#endif\n\nfloat elasticIn(float t) {\n  return sin(13.0 * t * HALF_PI) * pow(2.0, 10.0 * (t - 1.0));\n}\n\nvec3 blendOverlay(vec3 base, vec3 blend) {\n    return mix(1.0 - 2.0 * (1.0 - base) * (1.0 - blend), 2.0 * base * blend, step(base, vec3(0.5)));\n    // with conditionals, may be worth benchmarking\n    // return vec3(\n    //     base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r)),\n    //     base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g)),\n    //     base.b < 0.5 ? (2.0 * base.b * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b))\n    // );\n}\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uRenderTexture;\nuniform sampler2D threeDTexture;\nuniform sampler2D uPuck;\nuniform sampler2D uBg;\nuniform sampler2D uImg;\n\n// lerped scroll deltas\n// negative when scrolling down, positive when scrolling up\nuniform float uScrollEffect;\n\n// default to 2.5\nuniform float uScrollStrength;\n\nuniform vec4 uBgCol;\nuniform vec4 uFgCol;\nuniform vec4 uCol1;\nuniform vec4 uCol2;\nuniform vec4 uCol3;\nuniform vec2 uMouse;\nuniform float uTime;\nvoid main() {\n    vec2 uv = vTextureCoord;\n    float horizontalStretch;\n    vec4 threeDCol = texture2D(threeDTexture, uv);\n\n    // branching on an uniform is ok\n    if(uScrollEffect >= 0.0) {\n        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(uv.y);\n    }\n    else if(uScrollEffect < 0.0) {\n        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(-1.0 * (1.0 - uv.y));\n    }\n\n    uv.x = uv.x * 2.0 - 1.0;\n    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;\n    uv.x = (uv.x + 1.0) * 0.5;\n    // moving the content underneath the square\n\n    float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;\n    //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);\n    float morphStrength = 0.005;\n    float morph = elasticIn(threeDCol.r);\n    float baseStrength = 0.02;\n\n    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);\n\n    //rgb split\n    vec2 uvR = muv;\n    vec2 uvG = muv;\n    vec2 uvB = muv;\n\n    uvR.x += morph * morphStrength;\n    uvR.y += morph * morphStrength;\n    uvG.x -= morph * morphStrength;\n    uvG.y += morph * morphStrength;\n    uvB.y -= morph * morphStrength;\n\n    \n    float t = uTime /1000.0  ;\n\n    // gradient noise\n    float noise = snoise(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));\n    float black = snoise(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));\n\n    vec4 gradient = mix(uCol1, uCol2, noise);\n    gradient = mix(gradient, uBgCol, black);\n    //\n\n    vec4 colR =  texture2D(uRenderTexture, uvR);\n    vec4 colG =  texture2D(uRenderTexture, uvG);\n    vec4 colB =  texture2D(uRenderTexture, uvB);\n\n    vec4 bgCol = texture2D(uBg, uv); // images not in the puck\n    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk\n\n    puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));\n\n    vec4 imgCol =  vec4(texture2D(uImg, uvR).r, texture2D(uImg, uvG).g, texture2D(uImg, uvB).b, 1.0); //images\n    imgCol.a = max( max(texture2D(uImg, uvR).a, texture2D(uImg, uvG).a), texture2D(uImg, uvB).a);\n \n    float maxA = max(max(colR.a, colG.a), colB.a);\n    //maxA = max(colR.a, colG.a);\n    //maxA = colR.a;\n\n    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);\n    vec4 baseCol =  texture2D(uRenderTexture, uv) + bgCol + imgCol; // baseColor\n\n    vec4 defCol = (1.0 - splitCol);\n    defCol.a = splitCol.a;\n    defCol =  mix(puckCol + imgCol, defCol, defCol.a);\n\n    float alpha = threeDCol.a;\n\n    float gradientMix = 1.0;\n\n    //defCol = mix(defCol, gradient, gradientMix);\n\n    defCol = vec4(blendOverlay(defCol.rgb, gradient.rgb), defCol.a);\n    //mix in gradient\n    vec4 mixCol = mix(baseCol, defCol, alpha);\n\n    mixCol = mix(mixCol, uBgCol, clamp(alpha - mixCol.a, 0.0, 1.0));\n    mixCol = mix( gradient, mixCol, mixCol.a); // gradient\n    mixCol = mix( clamp(gradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights\n\n    gl_FragColor = mixCol;\n\n    //gl_FragColor = gradient;\n    //gl_FragColor = texture2D(threeDTexture, uv);\n    //gl_FragColor = vec4(texture2D(uImg, muv).rgb, 1.0);\n    //gl_FragColor = vec4(baseMorph, 0.0,0.0,1.0);\n    //gl_FragColor = threeDCol;\n}";
+module.exports = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#define GLSLIFY 1\n#endif\n\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g_0 = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g_0;\n  vec3 i1 = min( g_0.xyz, l.zxy );\n  vec3 i2 = max( g_0.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#ifndef HALF_PI\n#define HALF_PI 1.5707963267948966\n#endif\n\nfloat elasticIn(float t) {\n  return sin(13.0 * t * HALF_PI) * pow(2.0, 10.0 * (t - 1.0));\n}\n\nvec3 blendOverlay(vec3 base, vec3 blend) {\n    return mix(1.0 - 2.0 * (1.0 - base) * (1.0 - blend), 2.0 * base * blend, step(base, vec3(0.5)));\n    // with conditionals, may be worth benchmarking\n    // return vec3(\n    //     base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r)),\n    //     base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g)),\n    //     base.b < 0.5 ? (2.0 * base.b * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b))\n    // );\n}\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uRenderTexture;\nuniform sampler2D threeDTexture;\nuniform sampler2D uPuck;\nuniform sampler2D uBg;\nuniform sampler2D uImg;\n\n// lerped scroll deltas\n// negative when scrolling down, positive when scrolling up\nuniform float uScrollEffect;\n\n// default to 2.5\nuniform float uScrollStrength;\n\nuniform vec4 uBgCol;\nuniform vec4 uFgCol;\nuniform vec4 uColA;\nuniform vec4 uColB;\nuniform vec4 uColC;\nuniform vec4 uColD;\nuniform vec2 uMouse;\nuniform float uTime;\nuniform float uGradientOpacity;\n\nvoid main() {\n    vec2 uv = vTextureCoord;\n    float horizontalStretch;\n    vec4 threeDCol = texture2D(threeDTexture, uv);\n\n    // branching on an uniform is ok\n    if(uScrollEffect >= 0.0) {\n        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(uv.y);\n    }\n    else if(uScrollEffect < 0.0) {\n        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(-1.0 * (1.0 - uv.y));\n    }\n\n    uv.x = uv.x * 2.0 - 1.0;\n    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;\n    uv.x = (uv.x + 1.0) * 0.5;\n    // moving the content underneath the square\n\n    float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;\n    //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);\n    float morphStrength = 0.005;\n    float morph = elasticIn(threeDCol.r);\n    float baseStrength = 0.02;\n\n    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);\n\n    //rgb split\n    vec2 uvR = muv;\n    vec2 uvG = muv;\n    vec2 uvB = muv;\n\n    uvR.x += morph * morphStrength;\n    uvR.y += morph * morphStrength;\n    uvG.x -= morph * morphStrength;\n    uvG.y += morph * morphStrength;\n    uvB.y -= morph * morphStrength;\n\n    \n    float t = uTime /1000.0  ;\n\n    // gradient noise\n    float noise = snoise(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));\n    float black = snoise(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));\n\n    vec4 gradient = mix(uColA, uColB, noise);\n    gradient = mix(gradient, uBgCol, black);\n    vec4 puckGradient = mix(uColC, uColD, noise);\n    puckGradient = mix(puckGradient, uBgCol, black);\n    //\n\n    vec4 colR =  texture2D(uRenderTexture, uvR);\n    vec4 colG =  texture2D(uRenderTexture, uvG);\n    vec4 colB =  texture2D(uRenderTexture, uvB);\n\n    vec4 bg = texture2D(uBg, uv); // images not in the puck\n    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk\n\n    puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));\n\n    vec4 imgCol =  vec4(texture2D(uImg, uvR).r, texture2D(uImg, uvG).g, texture2D(uImg, uvB).b, 1.0); //images\n    imgCol.a = max( max(texture2D(uImg, uvR).a, texture2D(uImg, uvG).a), texture2D(uImg, uvB).a);\n \n    float maxA = max(max(colR.a, colG.a), colB.a);\n    //maxA = max(colR.a, colG.a);\n    //maxA = colR.a;\n\n    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);\n    vec4 baseCol =  texture2D(uRenderTexture, uv) + bg + imgCol; // baseColor\n\n    vec4 defCol = (1.0 - splitCol);\n    defCol.a = splitCol.a;\n    defCol =  mix(puckCol + imgCol, defCol, defCol.a);\n\n    float alpha = threeDCol.a;\n\n    defCol = vec4(blendOverlay(defCol.rgb, puckGradient.rgb), defCol.a);\n    //mix in gradient\n    vec4 mixCol = mix(baseCol, defCol, alpha);\n\n    vec4 bgCol = mix(uBgCol, puckGradient, uGradientOpacity);\n\n    mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0, 1.0));\n    mixCol = mix( gradient, mixCol, mixCol.a); // gradient\n    mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights\n\n    gl_FragColor = mixCol;\n\n    //gl_FragColor = gradient;\n    //gl_FragColor = texture2D(threeDTexture, uv);\n    //gl_FragColor = vec4(texture2D(uImg, muv).rgb, 1.0);\n    //gl_FragColor = vec4(baseMorph, 0.0,0.0,1.0);\n    //gl_FragColor = threeDCol;\n}";
 
 },{}],"7dXWc":[function(require,module,exports) {
 module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTexture;\n\nvoid main() {\n    // just display our texture\n    gl_FragColor = texture2D(uTexture, vTextureCoord);\n}";
@@ -40985,7 +40981,67 @@ module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vV
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "hexToRgb", ()=>hexToRgb);
+parcelHelpers.export(exports, "rgbaToArray", ()=>rgbaToArray);
+parcelHelpers.export(exports, "normCoord", ()=>normCoord);
+parcelHelpers.export(exports, "normX", ()=>normX);
+parcelHelpers.export(exports, "normY", ()=>normY);
+parcelHelpers.export(exports, "getCoord", ()=>getCoord);
 const hexToRgb = (hex)=>hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b)=>"#" + r + r + g + g + b + b).substring(1).match(/.{2}/g).map((x)=>parseInt(x, 16) / 255);
+const rgbaToArray = (string)=>string.replace(/[^\d,]/g, "").split(",").map((x, i)=>i < 3 ? parseInt(x) / 255 : parseInt(x));
+const normX = (x)=>{
+    return x / window.innerWidth * 2 - 1;
+};
+const normY = (y)=>{
+    return -(y / window.innerHeight) * 2 + 1;
+};
+const normCoord = (x, y)=>{
+    nx = normX(x);
+    ny = normY(y);
+    return {
+        x: nx,
+        y: ny
+    };
+};
+const getCoord = (el)=>{
+    let rect = el.getBoundingClientRect();
+    let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2;
+    keyframe = keyframe < 0 ? 0 : keyframe;
+    let stick = el.getAttribute("stick");
+    let scale = el.getAttribute("scale") ? el.getAttribute("scale") : 1;
+    let colora = el.getAttribute("colora") ? el.getAttribute("colora") : false;
+    let colorb = el.getAttribute("colorb") ? el.getAttribute("colorb") : false;
+    let colorc = el.getAttribute("colorc") ? el.getAttribute("colorc") : false;
+    let colord = el.getAttribute("colord") ? el.getAttribute("colord") : false;
+    let opacity = el.getAttribute("opacity") ? el.getAttribute("opacity") : false;
+    let range = isNaN(stick) ? 1 : 1 - stick;
+    console.log(el.getAttribute("yoffset"));
+    return {
+        x: normX(rect.x + rect.width / 2) - window.scrollX,
+        y: el.getAttribute("yoffset") ? normY(el.offsetTop + rect.height / 2 + el.parentElement.offsetTop) : 0,
+        size: rect.width > rect.height ? rect.height * scale : rect.width * scale,
+        h: rect.height,
+        w: rect.width,
+        keyframe: keyframe,
+        range: range,
+        colors: {
+            ...colora && {
+                a: colora
+            },
+            ...colorb && {
+                b: colorb
+            },
+            ...colorc && {
+                c: colorc
+            },
+            ...colord && {
+                d: colord
+            },
+            ...opacity && {
+                opacity: opacity
+            }
+        }
+    };
+};
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"807TH":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -41033,6 +41089,7 @@ class Slider {
             // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
             texture.setMinFilter(this.curtains.gl.NEAREST);
         }).onReady(this.onReady.bind(this)).onRender(this.onRender.bind(this));
+        this.element.style.opacity = 0;
     }
     onReady() {
         // the idea here is to create two additionnal textures
