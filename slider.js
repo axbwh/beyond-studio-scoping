@@ -30,11 +30,13 @@ class Slider {
     }
   }
 
-  init() {
-    this.target = new RenderTarget(this.curtains) //create a render target for our slider
+  init(target, callback) {
+    this.callback = callback
+    //this.target = new RenderTarget(this.curtains) //create a render target for our slider
+    this.target = target
     this.plane = new Plane(this.curtains, this.element, this.params) // create a plane for our slider
-    this.plane.setRenderTarget(this.target)
-    this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
+    this.plane.setRenderTarget(target)
+    //this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
 
     this.plane.onLoading((texture) => {
         // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
@@ -102,6 +104,8 @@ class Slider {
         // reset timer
         this.state.transitionTimer = 0
       }, 1700) // add a bit of margin to the timer
+
+      this.callback()
     }
   }
 
