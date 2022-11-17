@@ -30,6 +30,7 @@ const getCoord = (el) => {
     let colorc = el.getAttribute('colorc') ? el.getAttribute('colorc') : false
     let colord = el.getAttribute('colord') ? el.getAttribute('colord') : false
     let opacity = el.getAttribute('opacity') ? el.getAttribute('opacity') : false
+    let rotation = el.getAttribute('rotation') ? parseInt(el.getAttribute('rotation') ): 0
     let range = isNaN(stick) ? 1 : 1 - stick
     console.log(el.getAttribute('yoffset'))
 
@@ -39,6 +40,7 @@ const getCoord = (el) => {
         size: rect.width > rect.height ? rect.height * scale: rect.width * scale,
         h: rect.height,
         w: rect.width,
+        rotation: rotation,
         keyframe: keyframe,
         range: range,
         colors: {

@@ -8,6 +8,7 @@ import Slider from './slider';
 import {hexToRgb, getCoord, rgbaToArray }from './utils'
 import anime from 'animejs';
 import _ from 'lodash';
+import * as THREE from 'three'
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true
@@ -29,6 +30,7 @@ class App {
             x: 0,
             y: 0,
             size: 0,
+            rotation: 0,
         }
 
         this.colors = {
@@ -38,6 +40,13 @@ class App {
             d: "#61FCC4",
             opacity: 0,
         }
+
+        this.impulses = {
+            acceleration: 0.005,
+            rotation: 0,
+        }
+
+        this.lastFrame = 0
 
 
     }
@@ -73,7 +82,8 @@ class App {
             range: frames[0].coord.range,
             x: frames[0].coord.x,
             y: frames[0].coord.y,
-            size: frames[0].coord.size
+            size: frames[0].coord.size,
+            rotation: 0
         }
 
 
@@ -92,6 +102,7 @@ class App {
                 x: frame.coord.x,
                 y: frame.coord.y,
                 size: frame.coord.size,
+                rotation: frame.coord.rotation,
                 duration: duration,
                 easing: 'easeInOutSine'
             }, previousTime)
@@ -115,32 +126,61 @@ class App {
         this.onScroll()
     }
 
+    
+    initText(target){
+
+        const textEls = document.querySelectorAll('[text]')
+        textEls.forEach(textEl => {            
+            const plane = new Plane(this.curtains, textEl, {
+                vertexShader: textShader.vs,
+                fragmentShader: textShader.fs
+            })
+            // create the text texture and... that's it!
+            const textTexture = new TextTexture({
+                plane: plane,
+                textElement: plane.htmlElement,
+                sampler: "uTexture",
+                resolution: 1.5,
+                skipFontLoading: true, // we've already loaded the fonts
+            })
+
+            plane.setRenderTarget(target)
+            textEl.style.color = "#ff000000"//make text invisible bhut still highlightable
+        })
+
+        this.pass.createTexture({
+            sampler: 'uTxt',
+            fromTexture: target.getTexture()
+        })
+    }
+
+
     onScroll(){
             let y = window.scrollY / (document.body.offsetHeight - window.innerHeight)
             this.timeline.seek(this.timeline.duration * y)
-
-            console.log(rgbaToArray(this.colors.a))
     }
 
     onSuccess(){
         this.slider = new Slider(this.curtains, document.getElementById('slider'))
-        this.initText()
-
         this.puckTarget = new RenderTarget(this.curtains)
         this.bgTarget = new RenderTarget(this.curtains)
         this.imgTarget = new RenderTarget(this.curtains)
+        this.textTarget = new RenderTarget(this.curtains)
+
 
         Promise.all([
-            document.fonts.load('normal 400 1em "Archivo Black", sans-serif'),
-            document.fonts.load('normal 300 1em "Merriweather Sans", sans-serif'),
+            document.fonts.load('normal 700 1em "Arial", sans-serif'),
+            document.fonts.load('normal 400 1em "Arial", sans-serif'),
             this.threeD.loadGlb()
         ]).then(this.onLoaded.bind(this))
+
+        
     }
 
     onLoaded(){
         this.initTimeline()
 
-        this.slider.init()
+
         this.pass = new ShaderPass(this.curtains, {
             fragmentShader: pageFrag,
             depth: true,
@@ -204,13 +244,14 @@ class App {
         })
 
         this.pass.loadCanvas(this.threeD.canvas)
-
+        this.initText(this.textTarget)
         //our img elements that will be in the puck & outside of it
-        this.loadImg('img[gl]', this.puckTarget, 'uImg')
+        this.loadImg('img[gl]', this.imgTarget, 'uImg')
         // images that will be outside the puck
         this.loadImg('img[bg]', this.bgTarget, 'uBg')
         //images that will be inside the puck
-        this.loadImg('img[puck]', this.imgTarget, 'uPuck')
+        this.loadImg('img[puck]', this.puckTarget, 'uPuck')
+        this.slider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
 
         // hide gradient
         document.getElementById('gradient').style.display = 'none';
@@ -224,11 +265,22 @@ class App {
 
 
        window.addEventListener("scroll", _scroll.bind(this));
+       document.addEventListener('mousemove',this.mouseEvent.bind(this), false);
+    }
+
+    onFlip(impulses){
+        impulses.rotation += 180;
+    }
+
+    getDelta(){
+        let delta = (performance.now() - this.lastFrame) / 1000
+        this.lastFrame = performance.now()
+        return delta
     }
 
     onRender(){
-        this.threeD.move(this.axes)
-        this.threeD.render()
+
+        let delta = this.getDelta()
 
         this.scroll.lastValue = this.scroll.value;
         this.scroll.value = this.curtains.getScrollValues().y;
@@ -240,9 +292,21 @@ class App {
         this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, 0.05);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
 
+
+            anime.set('.container', {
+                translateY: -this.scroll.effect *5
+            })
+
+
         let mouseVal = this.pass.uniforms.mouse.value;
 
-        let mouseLerp = [this.curtains.lerp( mouseVal[0] ,this.threeD.mouse.x, 0.05), this.curtains.lerp( mouseVal[1] ,this.threeD.mouse.y, 0.05) ] 
+        //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
+
+        this.threeD.move(this.axes, this.mouse, this.impulses.rotation, delta)
+        this.threeD.render()
+
+
+        let mouseLerp = [this.curtains.lerp( mouseVal[0] ,this.mouse.x, 0.05), this.curtains.lerp( mouseVal[1] ,this.mouse.y, 0.05) ] 
         this.pass.uniforms.mouse.value = mouseLerp;
         this.pass.uniforms.time.value += 1;
 
@@ -271,28 +335,7 @@ class App {
         })
     }
 
-    initText(){
-        const textEls = document.querySelectorAll('[text]')
-        textEls.forEach(textEl => {            
-            const textPlane = new Plane(this.curtains, textEl, {
-                vertexShader: textShader.vs,
-                fragmentShader: textShader.fs
-            })
-            // create the text texture and... that's it!
-            const textTexture = new TextTexture({
-                plane: textPlane,
-                textElement: textPlane.htmlElement,
-                sampler: "uTexture",
-                resolution: 1.5,
-                skipFontLoading: true, // we've already loaded the fonts
-            })
-            textEl.style.color = "#ff000000"//make text invisible bhut still highlightable
-        })
-    }
-
-
-    
-    onMove(event){
+    mouseEvent(event){
         //event.preventDefault();
 	    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
 	    this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;

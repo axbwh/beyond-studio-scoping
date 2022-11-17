@@ -550,6 +550,7 @@ var _animejs = require("animejs");
 var _animejsDefault = parcelHelpers.interopDefault(_animejs);
 var _lodash = require("lodash");
 var _lodashDefault = parcelHelpers.interopDefault(_lodash);
+var _three = require("three");
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -569,7 +570,8 @@ class App {
             range: 0,
             x: 0,
             y: 0,
-            size: 0
+            size: 0,
+            rotation: 0
         };
         this.colors = {
             a: "#F198C0",
@@ -578,6 +580,11 @@ class App {
             d: "#61FCC4",
             opacity: 0
         };
+        this.impulses = {
+            acceleration: 0.005,
+            rotation: 0
+        };
+        this.lastFrame = 0;
     }
     init() {
         // create curtains instance
@@ -614,7 +621,8 @@ class App {
             range: frames[0].coord.range,
             x: frames[0].coord.x,
             y: frames[0].coord.y,
-            size: frames[0].coord.size
+            size: frames[0].coord.size,
+            rotation: 0
         };
         let timeline = (0, _animejsDefault.default).timeline({
             targets: this.axes,
@@ -630,6 +638,7 @@ class App {
                 x: frame.coord.x,
                 y: frame.coord.y,
                 size: frame.coord.size,
+                rotation: frame.coord.rotation,
                 duration: duration,
                 easing: "easeInOutSine"
             }, previousTime);
@@ -649,26 +658,48 @@ class App {
         this.timeline = timeline;
         this.onScroll();
     }
+    initText(target) {
+        const textEls = document.querySelectorAll("[text]");
+        textEls.forEach((textEl)=>{
+            const plane = new (0, _curtainsjs.Plane)(this.curtains, textEl, {
+                vertexShader: (0, _textShaderDefault.default).vs,
+                fragmentShader: (0, _textShaderDefault.default).fs
+            });
+            // create the text texture and... that's it!
+            const textTexture = new (0, _textTexture.TextTexture)({
+                plane: plane,
+                textElement: plane.htmlElement,
+                sampler: "uTexture",
+                resolution: 1.5,
+                skipFontLoading: true
+            });
+            plane.setRenderTarget(target);
+            textEl.style.color = "#ff000000" //make text invisible bhut still highlightable
+            ;
+        });
+        this.pass.createTexture({
+            sampler: "uTxt",
+            fromTexture: target.getTexture()
+        });
+    }
     onScroll() {
         let y = window.scrollY / (document.body.offsetHeight - window.innerHeight);
         this.timeline.seek(this.timeline.duration * y);
-        console.log((0, _utils.rgbaToArray)(this.colors.a));
     }
     onSuccess() {
         this.slider = new (0, _sliderDefault.default)(this.curtains, document.getElementById("slider"));
-        this.initText();
         this.puckTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
         this.bgTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
         this.imgTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
+        this.textTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
         Promise.all([
-            document.fonts.load('normal 400 1em "Archivo Black", sans-serif'),
-            document.fonts.load('normal 300 1em "Merriweather Sans", sans-serif'),
+            document.fonts.load('normal 700 1em "Arial", sans-serif'),
+            document.fonts.load('normal 400 1em "Arial", sans-serif'),
             this.threeD.loadGlb()
         ]).then(this.onLoaded.bind(this));
     }
     onLoaded() {
         this.initTimeline();
-        this.slider.init();
         this.pass = new (0, _curtainsjs.ShaderPass)(this.curtains, {
             fragmentShader: (0, _pageFragDefault.default),
             depth: true,
@@ -740,12 +771,14 @@ class App {
             }
         });
         this.pass.loadCanvas(this.threeD.canvas);
+        this.initText(this.textTarget);
         //our img elements that will be in the puck & outside of it
-        this.loadImg("img[gl]", this.puckTarget, "uImg");
+        this.loadImg("img[gl]", this.imgTarget, "uImg");
         // images that will be outside the puck
         this.loadImg("img[bg]", this.bgTarget, "uBg");
         //images that will be inside the puck
-        this.loadImg("img[puck]", this.imgTarget, "uPuck");
+        this.loadImg("img[puck]", this.puckTarget, "uPuck");
+        this.slider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         // hide gradient
         document.getElementById("gradient").style.display = "none";
         this.pass.onRender(this.onRender.bind(this));
@@ -754,20 +787,34 @@ class App {
             leading: true
         });
         window.addEventListener("scroll", _scroll.bind(this));
+        document.addEventListener("mousemove", this.mouseEvent.bind(this), false);
+    }
+    onFlip(impulses) {
+        impulses.rotation += 180;
+    }
+    getDelta() {
+        let delta = (performance.now() - this.lastFrame) / 1000;
+        this.lastFrame = performance.now();
+        return delta;
     }
     onRender() {
-        this.threeD.move(this.axes);
-        this.threeD.render();
+        let delta = this.getDelta();
         this.scroll.lastValue = this.scroll.value;
         this.scroll.value = this.curtains.getScrollValues().y;
         // clamp delta
         this.scroll.delta = Math.max(-30, Math.min(30, this.scroll.lastValue - this.scroll.value));
         this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, 0.05);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
+        (0, _animejsDefault.default).set(".container", {
+            translateY: -this.scroll.effect * 5
+        });
         let mouseVal = this.pass.uniforms.mouse.value;
+        //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
+        this.threeD.move(this.axes, this.mouse, this.impulses.rotation, delta);
+        this.threeD.render();
         let mouseLerp = [
-            this.curtains.lerp(mouseVal[0], this.threeD.mouse.x, 0.05),
-            this.curtains.lerp(mouseVal[1], this.threeD.mouse.y, 0.05)
+            this.curtains.lerp(mouseVal[0], this.mouse.x, 0.05),
+            this.curtains.lerp(mouseVal[1], this.mouse.y, 0.05)
         ];
         this.pass.uniforms.mouse.value = mouseLerp;
         this.pass.uniforms.time.value += 1;
@@ -795,26 +842,7 @@ class App {
             fromTexture: target.getTexture()
         });
     }
-    initText() {
-        const textEls = document.querySelectorAll("[text]");
-        textEls.forEach((textEl)=>{
-            const textPlane = new (0, _curtainsjs.Plane)(this.curtains, textEl, {
-                vertexShader: (0, _textShaderDefault.default).vs,
-                fragmentShader: (0, _textShaderDefault.default).fs
-            });
-            // create the text texture and... that's it!
-            const textTexture = new (0, _textTexture.TextTexture)({
-                plane: textPlane,
-                textElement: textPlane.htmlElement,
-                sampler: "uTexture",
-                resolution: 1.5,
-                skipFontLoading: true
-            });
-            textEl.style.color = "#ff000000" //make text invisible bhut still highlightable
-            ;
-        });
-    }
-    onMove(event) {
+    mouseEvent(event) {
         //event.preventDefault();
         this.mouse.x = event.clientX / window.innerWidth * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -826,7 +854,7 @@ window.addEventListener("load", ()=>{
     app.init();
 });
 
-},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -8411,6 +8439,8 @@ class ThreeD {
         this.scene.add(this.lightBottom);
         this.lightTop.position.set(-5, 40, 3);
         this.lightBottom.position.set(10, -40, 50);
+        this.rotationTarget = new _three.Quaternion();
+        this.rotTdeg = new _three.Euler();
     }
     loadGlb() {
         // Instantiate a loader
@@ -8431,11 +8461,6 @@ class ThreeD {
             this.ready();
         });
     }
-    mouseEvent(event) {
-        //event.preventDefault();
-        this.mouse.x = event.clientX / window.innerWidth * 2 - 1;
-        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    }
     screenToPos(x, y) {
         var vector = new _three.Vector3(x, y, 0);
         vector.unproject(this.camera);
@@ -8445,12 +8470,15 @@ class ThreeD {
         return pos;
     }
     ready() {
-        document.addEventListener("mousemove", this.mouseEvent.bind(this), false);
         this.move({
             range: 0,
             x: 0,
             y: 0,
-            size: 20
+            size: 20,
+            rotation: 0
+        }, {
+            x: 0,
+            y: 0
         });
         this.render();
     }
@@ -8464,8 +8492,8 @@ class ThreeD {
         this.mesh.scale.y = vHeight * (size / window.innerHeight);
         this.mesh.scale.z = vHeight * (size / window.innerHeight);
     }
-    move(axes) {
-        let mpos = this.screenToPos(this.mouse.x, this.mouse.y);
+    move(axes, mouse, rotation = 0, delta = 1) {
+        let mpos = this.screenToPos(mouse.x, mouse.y);
         let pos = this.screenToPos(axes.x, axes.y);
         this.setScale(axes.size);
         pos.lerp(mpos, axes.range);
@@ -8473,7 +8501,14 @@ class ThreeD {
         // this.mesh.scale.x = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
-        this.mesh.rotation.z += 0.005 + 0.01 * this.mesh.position.distanceTo(pos);
+        this.mesh.rotation.z += (0.005 + this.mesh.position.distanceTo(pos)) * delta * axes.range;
+        console.log(this.mesh.rotation.z, rotation, axes.rotation + rotation);
+        this.rotTdeg.copy(this.mesh.rotation);
+        this.rotTdeg.z = _three.MathUtils.degToRad(axes.rotation + rotation);
+        console.log(this.mesh.rotation, this.rotTdeg);
+        this.rotationTarget.setFromEuler(this.rotTdeg);
+        //console.log(rot, this.mesh.rotation.z, axes.range, (acceleration + this.mesh.position.distanceTo(pos)) * delta)
+        this.mesh.quaternion.slerp(this.rotationTarget, delta * 2 * (1.0 - axes.range));
     // this.lightTop.lookAt(this.mesh.position)
     // this.lightBottom.lookAt(this.mesh.position)
     //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
@@ -40972,7 +41007,7 @@ module.exports = "#define GLSLIFY 1\n    #include <dithering_fragment>\n    vec2
 module.exports = "#define GLSLIFY 1\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#define PHONG";
 
 },{}],"i90JS":[function(require,module,exports) {
-module.exports = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#define GLSLIFY 1\n#endif\n\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g_0 = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g_0;\n  vec3 i1 = min( g_0.xyz, l.zxy );\n  vec3 i2 = max( g_0.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#ifndef HALF_PI\n#define HALF_PI 1.5707963267948966\n#endif\n\nfloat elasticIn(float t) {\n  return sin(13.0 * t * HALF_PI) * pow(2.0, 10.0 * (t - 1.0));\n}\n\nvec3 blendOverlay(vec3 base, vec3 blend) {\n    return mix(1.0 - 2.0 * (1.0 - base) * (1.0 - blend), 2.0 * base * blend, step(base, vec3(0.5)));\n    // with conditionals, may be worth benchmarking\n    // return vec3(\n    //     base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r)),\n    //     base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g)),\n    //     base.b < 0.5 ? (2.0 * base.b * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b))\n    // );\n}\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uRenderTexture;\nuniform sampler2D threeDTexture;\nuniform sampler2D uPuck;\nuniform sampler2D uBg;\nuniform sampler2D uImg;\n\n// lerped scroll deltas\n// negative when scrolling down, positive when scrolling up\nuniform float uScrollEffect;\n\n// default to 2.5\nuniform float uScrollStrength;\n\nuniform vec4 uBgCol;\nuniform vec4 uFgCol;\nuniform vec4 uColA;\nuniform vec4 uColB;\nuniform vec4 uColC;\nuniform vec4 uColD;\nuniform vec2 uMouse;\nuniform float uTime;\nuniform float uGradientOpacity;\n\nvoid main() {\n    vec2 uv = vTextureCoord;\n    float horizontalStretch;\n    vec4 threeDCol = texture2D(threeDTexture, uv);\n\n    // branching on an uniform is ok\n    if(uScrollEffect >= 0.0) {\n        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(uv.y);\n    }\n    else if(uScrollEffect < 0.0) {\n        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(-1.0 * (1.0 - uv.y));\n    }\n\n    uv.x = uv.x * 2.0 - 1.0;\n    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;\n    uv.x = (uv.x + 1.0) * 0.5;\n    // moving the content underneath the square\n\n    float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;\n    //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);\n    float morphStrength = 0.005;\n    float morph = elasticIn(threeDCol.r);\n    float baseStrength = 0.02;\n\n    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);\n\n    //rgb split\n    vec2 uvR = muv;\n    vec2 uvG = muv;\n    vec2 uvB = muv;\n\n    uvR.x += morph * morphStrength;\n    uvR.y += morph * morphStrength;\n    uvG.x -= morph * morphStrength;\n    uvG.y += morph * morphStrength;\n    uvB.y -= morph * morphStrength;\n\n    \n    float t = uTime /1000.0  ;\n\n    // gradient noise\n    float noise = snoise(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));\n    float black = snoise(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));\n\n    vec4 gradient = mix(uColA, uColB, noise);\n    gradient = mix(gradient, uBgCol, black);\n    vec4 puckGradient = mix(uColC, uColD, noise);\n    puckGradient = mix(puckGradient, uBgCol, black);\n    //\n\n    vec4 colR =  texture2D(uRenderTexture, uvR);\n    vec4 colG =  texture2D(uRenderTexture, uvG);\n    vec4 colB =  texture2D(uRenderTexture, uvB);\n\n    vec4 bg = texture2D(uBg, uv); // images not in the puck\n    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk\n\n    puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));\n\n    vec4 imgCol =  vec4(texture2D(uImg, uvR).r, texture2D(uImg, uvG).g, texture2D(uImg, uvB).b, 1.0); //images\n    imgCol.a = max( max(texture2D(uImg, uvR).a, texture2D(uImg, uvG).a), texture2D(uImg, uvB).a);\n \n    float maxA = max(max(colR.a, colG.a), colB.a);\n    //maxA = max(colR.a, colG.a);\n    //maxA = colR.a;\n\n    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);\n    vec4 baseCol =  texture2D(uRenderTexture, uv) + bg + imgCol; // baseColor\n\n    vec4 defCol = (1.0 - splitCol);\n    defCol.a = splitCol.a;\n    defCol =  mix(puckCol + imgCol, defCol, defCol.a);\n\n    float alpha = threeDCol.a;\n\n    defCol = vec4(blendOverlay(defCol.rgb, puckGradient.rgb), defCol.a);\n    //mix in gradient\n    vec4 mixCol = mix(baseCol, defCol, alpha);\n\n    vec4 bgCol = mix(uBgCol, puckGradient, uGradientOpacity);\n\n    mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0, 1.0));\n    mixCol = mix( gradient, mixCol, mixCol.a); // gradient\n    mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights\n\n    gl_FragColor = mixCol;\n\n    //gl_FragColor = gradient;\n    //gl_FragColor = texture2D(threeDTexture, uv);\n    //gl_FragColor = vec4(texture2D(uImg, muv).rgb, 1.0);\n    //gl_FragColor = vec4(baseMorph, 0.0,0.0,1.0);\n    //gl_FragColor = threeDCol;\n}";
+module.exports = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#define GLSLIFY 1\n#endif\n\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g_0 = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g_0;\n  vec3 i1 = min( g_0.xyz, l.zxy );\n  vec3 i2 = max( g_0.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#ifndef HALF_PI\n#define HALF_PI 1.5707963267948966\n#endif\n\nfloat elasticIn(float t) {\n  return sin(13.0 * t * HALF_PI) * pow(2.0, 10.0 * (t - 1.0));\n}\n\nvec3 blendOverlay(vec3 base, vec3 blend) {\n    return mix(1.0 - 2.0 * (1.0 - base) * (1.0 - blend), 2.0 * base * blend, step(base, vec3(0.5)));\n    // with conditionals, may be worth benchmarking\n    // return vec3(\n    //     base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r)),\n    //     base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g)),\n    //     base.b < 0.5 ? (2.0 * base.b * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b))\n    // );\n}\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTxt;\nuniform sampler2D threeDTexture;\nuniform sampler2D uPuck;\nuniform sampler2D uBg;\nuniform sampler2D uImg;\n\n// lerped scroll deltas\n// negative when scrolling down, positive when scrolling up\nuniform float uScrollEffect;\n\n// default to 2.5\nuniform float uScrollStrength;\n\nuniform vec4 uBgCol;\nuniform vec4 uFgCol;\nuniform vec4 uColA;\nuniform vec4 uColB;\nuniform vec4 uColC;\nuniform vec4 uColD;\nuniform vec2 uMouse;\nuniform float uTime;\nuniform float uGradientOpacity;\n\nvoid main() {\n    vec2 uv = vTextureCoord;\n    float horizontalStretch;\n    vec4 threeDCol = texture2D(threeDTexture, uv);\n\n    // branching on an uniform is ok\n    if(uScrollEffect >= 0.0) {\n        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(uv.y);\n    }\n    else if(uScrollEffect < 0.0) {\n        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(-1.0 * (1.0 - uv.y));\n    }\n\n    uv.x = uv.x * 2.0 - 1.0;\n    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;\n    uv.x = (uv.x + 1.0) * 0.5;\n    // moving the content underneath the square\n\n    float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;\n    //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);\n    float morphStrength = 0.005;\n    float morph = elasticIn(threeDCol.r);\n    float baseStrength = 0.02;\n\n    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);\n\n    //rgb split\n    vec2 uvR = muv;\n    vec2 uvG = muv;\n    vec2 uvB = muv;\n\n    uvR.x += morph * morphStrength;\n    uvR.y += morph * morphStrength;\n    uvG.x -= morph * morphStrength;\n    uvG.y += morph * morphStrength;\n    uvB.y -= morph * morphStrength;\n\n    \n    float t = uTime /1000.0  ;\n\n    // gradient noise\n    float noise = snoise(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));\n    float black = snoise(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));\n\n    vec4 gradient = mix(uColA, uColB, noise);\n    gradient = mix(gradient, uBgCol, black);\n    vec4 puckGradient = mix(uColC, uColD, noise);\n    puckGradient = mix(puckGradient, uBgCol, black);\n    //\n\n    vec4 colR =  texture2D(uTxt, uvR);\n    vec4 colG =  texture2D(uTxt, uvG);\n    vec4 colB =  texture2D(uTxt, uvB);\n\n    vec4 bg = texture2D(uBg, uv); // images not in the puck\n    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk\n\n    puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));\n\n    vec4 imgCol =  vec4(texture2D(uImg, uvR).r, texture2D(uImg, uvG).g, texture2D(uImg, uvB).b, 1.0); //images\n    imgCol.a = max( max(texture2D(uImg, uvR).a, texture2D(uImg, uvG).a), texture2D(uImg, uvB).a);\n \n    float maxA = max(max(colR.a, colG.a), colB.a);\n    //maxA = max(colR.a, colG.a);\n    //maxA = colR.a;\n\n    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);\n    vec4 baseCol =  texture2D(uTxt, uv) + bg + imgCol; // baseColor\n\n    vec4 defCol = (1.0 - splitCol);\n    defCol.a = splitCol.a;\n    defCol =  mix(puckCol + imgCol, defCol, defCol.a);\n\n    float alpha = threeDCol.a;\n\n    defCol = vec4(blendOverlay(defCol.rgb, puckGradient.rgb), defCol.a);\n    //mix in gradient\n    vec4 mixCol = mix(baseCol, defCol, alpha);\n\n    vec4 bgCol = mix(uBgCol, puckGradient, uGradientOpacity);\n\n    mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0, 1.0));\n    mixCol = mix( gradient, mixCol, mixCol.a); // gradient\n    mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights\n\n    gl_FragColor = mixCol;\n\n    //gl_FragColor = gradient;\n    //gl_FragColor = texture2D(threeDTexture, uv);\n    //gl_FragColor = vec4(texture2D(uImg, muv).rgb, 1.0);\n    //gl_FragColor = vec4(baseMorph, 0.0,0.0,1.0);\n    //gl_FragColor = threeDCol;\n}";
 
 },{}],"7dXWc":[function(require,module,exports) {
 module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTexture;\n\nvoid main() {\n    // just display our texture\n    gl_FragColor = texture2D(uTexture, vTextureCoord);\n}";
@@ -41013,6 +41048,7 @@ const getCoord = (el)=>{
     let colorc = el.getAttribute("colorc") ? el.getAttribute("colorc") : false;
     let colord = el.getAttribute("colord") ? el.getAttribute("colord") : false;
     let opacity = el.getAttribute("opacity") ? el.getAttribute("opacity") : false;
+    let rotation = el.getAttribute("rotation") ? parseInt(el.getAttribute("rotation")) : 0;
     let range = isNaN(stick) ? 1 : 1 - stick;
     console.log(el.getAttribute("yoffset"));
     return {
@@ -41021,6 +41057,7 @@ const getCoord = (el)=>{
         size: rect.width > rect.height ? rect.height * scale : rect.width * scale,
         h: rect.height,
         w: rect.width,
+        rotation: rotation,
         keyframe: keyframe,
         range: range,
         colors: {
@@ -41075,16 +41112,14 @@ class Slider {
             transitionTimer: 0
         };
     }
-    init() {
-        this.target = new (0, _curtainsjs.RenderTarget)(this.curtains) //create a render target for our slider
-        ;
+    init(target, callback) {
+        this.callback = callback;
+        //this.target = new RenderTarget(this.curtains) //create a render target for our slider
+        this.target = target;
         this.plane = new (0, _curtainsjs.Plane)(this.curtains, this.element, this.params) // create a plane for our slider
         ;
-        this.plane.setRenderTarget(this.target);
-        this.pass = new (0, _curtainsjs.ShaderPass)(this.curtains, {
-            renderTarget: this.target
-        }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
-        ;
+        this.plane.setRenderTarget(target);
+        //this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
         this.plane.onLoading((texture)=>{
             // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
             texture.setMinFilter(this.curtains.gl.NEAREST);
@@ -41136,6 +41171,7 @@ class Slider {
                 this.state.transitionTimer = 0;
             }, 1700) // add a bit of margin to the timer
             ;
+            this.callback();
         }
     }
     onRender() {

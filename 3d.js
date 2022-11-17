@@ -90,6 +90,9 @@ class ThreeD {
         this.lightTop.position.set(-5, 40, 3)
         this.lightBottom.position.set(10, -40, 50)
 
+        this.rotationTarget = new THREE.Quaternion()
+        this.rotTdeg = new THREE.Euler()
+
     }
     
 
@@ -118,11 +121,7 @@ class ThreeD {
 
     }
 
-    mouseEvent(event){
-        //event.preventDefault();
-	    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-	    this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-    }
+
 
     screenToPos(x, y){
         var vector = new THREE.Vector3(x, y, 0);
@@ -134,8 +133,7 @@ class ThreeD {
     }
 
     ready(){
-        document.addEventListener('mousemove',this.mouseEvent.bind(this), false);
-        this.move({ range: 0, x: 0, y: 0, size: 20});
+        this.move({ range: 0, x: 0, y: 0, size: 20, rotation: 0}, {x: 0, y:0});
         this.render();
     }
 
@@ -150,9 +148,9 @@ class ThreeD {
         this.mesh.scale.z = vHeight * (size/ window.innerHeight);
     }
 
-    move(axes){
+    move(axes, mouse, rotation = 0, delta=1){
         
-        let mpos = this.screenToPos(this.mouse.x, this.mouse.y)
+        let mpos = this.screenToPos(mouse.x, mouse.y)
         let pos = this.screenToPos(axes.x, axes.y)
 
         this.setScale(axes.size)
@@ -164,8 +162,23 @@ class ThreeD {
         // this.mesh.scale.x = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
-        this.mesh.rotation.z += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
+        this.mesh.rotation.z += (0.005 + this.mesh.position.distanceTo(pos)) * delta * axes.range
 
+        console.log(this.mesh.rotation.z, rotation, axes.rotation + rotation)
+
+        this.rotTdeg.copy(this.mesh.rotation)
+        this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation + rotation)
+
+        console.log(this.mesh.rotation, this.rotTdeg)
+
+        this.rotationTarget.setFromEuler(this.rotTdeg)
+
+
+        //console.log(rot, this.mesh.rotation.z, axes.range, (acceleration + this.mesh.position.distanceTo(pos)) * delta)
+
+
+        this.mesh.quaternion.slerp(this.rotationTarget, delta* 2 * (1.0 -axes.range))
+        
         // this.lightTop.lookAt(this.mesh.position)
         // this.lightBottom.lookAt(this.mesh.position)
         //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)

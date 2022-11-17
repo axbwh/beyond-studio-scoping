@@ -12,7 +12,7 @@ precision mediump float;
 varying vec3 vVertexPosition;
 varying vec2 vTextureCoord;
 
-uniform sampler2D uRenderTexture;
+uniform sampler2D uTxt;
 uniform sampler2D threeDTexture;
 uniform sampler2D uPuck;
 uniform sampler2D uBg;
@@ -90,9 +90,9 @@ void main() {
     //
 
 
-    vec4 colR =  texture2D(uRenderTexture, uvR);
-    vec4 colG =  texture2D(uRenderTexture, uvG);
-    vec4 colB =  texture2D(uRenderTexture, uvB);
+    vec4 colR =  texture2D(uTxt, uvR);
+    vec4 colG =  texture2D(uTxt, uvG);
+    vec4 colB =  texture2D(uTxt, uvB);
 
     vec4 bg = texture2D(uBg, uv); // images not in the puck
     vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk
@@ -107,7 +107,7 @@ void main() {
     //maxA = colR.a;
 
     vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);
-    vec4 baseCol =  texture2D(uRenderTexture, uv) + bg + imgCol; // baseColor
+    vec4 baseCol =  texture2D(uTxt, uv) + bg + imgCol; // baseColor
 
     vec4 defCol = (1.0 - splitCol);
     defCol.a = splitCol.a;
