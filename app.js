@@ -83,8 +83,16 @@ class App {
             x: frames[0].coord.x,
             y: frames[0].coord.y,
             size: frames[0].coord.size,
-            rotation: 0
+            rotation: frames[0].coord.rotation
         }
+
+        colorFrames.slice().reverse().forEach(f =>{
+            this.colors = {
+                ...this.colors,
+                ...f.coord.colors
+            }
+        }) // iterate backwards through array to reset colors to first value
+
 
 
         let timeline = anime.timeline({
@@ -112,6 +120,9 @@ class App {
             duration: 0.00001
         }, document.body.offsetHeight - window.innerHeight - 0.00001)
 
+
+
+        //console.log(this.colors)
         colorFrames.forEach( (frame, index) => {
             let previousTime = index > 0 ? frames[index - 1].coord.keyframe : 0
             let duration = index > 0 ? frame.coord.keyframe - frames[index - 1].coord.keyframe : 0.00001
@@ -124,6 +135,7 @@ class App {
 
         this.timeline = timeline
         this.onScroll()
+        //console.log(this.colors)
     }
 
     
@@ -158,6 +170,10 @@ class App {
     onScroll(){
             let y = window.scrollY / (document.body.offsetHeight - window.innerHeight)
             this.timeline.seek(this.timeline.duration * y)
+    }
+    onResize(){
+        this.initTimeline()
+
     }
 
     onSuccess(){
@@ -266,6 +282,7 @@ class App {
 
        window.addEventListener("scroll", _scroll.bind(this));
        document.addEventListener('mousemove',this.mouseEvent.bind(this), false);
+       this.curtains.onAfterResize(this.onResize.bind(this))
     }
 
     onFlip(impulses){

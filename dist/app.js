@@ -622,8 +622,15 @@ class App {
             x: frames[0].coord.x,
             y: frames[0].coord.y,
             size: frames[0].coord.size,
-            rotation: 0
+            rotation: frames[0].coord.rotation
         };
+        colorFrames.slice().reverse().forEach((f)=>{
+            this.colors = {
+                ...this.colors,
+                ...f.coord.colors
+            };
+        }) // iterate backwards through array to reset colors to first value
+        ;
         let timeline = (0, _animejsDefault.default).timeline({
             targets: this.axes,
             easing: "linear",
@@ -646,6 +653,7 @@ class App {
         timeline.add({
             duration: 0.00001
         }, document.body.offsetHeight - window.innerHeight - 0.00001);
+        //console.log(this.colors)
         colorFrames.forEach((frame, index)=>{
             let previousTime = index > 0 ? frames[index - 1].coord.keyframe : 0;
             let duration = index > 0 ? frame.coord.keyframe - frames[index - 1].coord.keyframe : 0.00001;
@@ -657,6 +665,7 @@ class App {
         });
         this.timeline = timeline;
         this.onScroll();
+    //console.log(this.colors)
     }
     initText(target) {
         const textEls = document.querySelectorAll("[text]");
@@ -685,6 +694,9 @@ class App {
     onScroll() {
         let y = window.scrollY / (document.body.offsetHeight - window.innerHeight);
         this.timeline.seek(this.timeline.duration * y);
+    }
+    onResize() {
+        this.initTimeline();
     }
     onSuccess() {
         this.slider = new (0, _sliderDefault.default)(this.curtains, document.getElementById("slider"));
@@ -788,6 +800,7 @@ class App {
         });
         window.addEventListener("scroll", _scroll.bind(this));
         document.addEventListener("mousemove", this.mouseEvent.bind(this), false);
+        this.curtains.onAfterResize(this.onResize.bind(this));
     }
     onFlip(impulses) {
         impulses.rotation += 180;
@@ -8502,10 +8515,8 @@ class ThreeD {
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         this.mesh.rotation.z += (0.005 + this.mesh.position.distanceTo(pos)) * delta * axes.range;
-        console.log(this.mesh.rotation.z, rotation, axes.rotation + rotation);
         this.rotTdeg.copy(this.mesh.rotation);
         this.rotTdeg.z = _three.MathUtils.degToRad(axes.rotation + rotation);
-        console.log(this.mesh.rotation, this.rotTdeg);
         this.rotationTarget.setFromEuler(this.rotTdeg);
         //console.log(rot, this.mesh.rotation.z, axes.range, (acceleration + this.mesh.position.distanceTo(pos)) * delta)
         this.mesh.quaternion.slerp(this.rotationTarget, delta * 2 * (1.0 - axes.range));

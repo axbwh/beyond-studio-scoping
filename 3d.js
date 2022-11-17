@@ -164,12 +164,8 @@ class ThreeD {
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         this.mesh.rotation.z += (0.005 + this.mesh.position.distanceTo(pos)) * delta * axes.range
 
-        console.log(this.mesh.rotation.z, rotation, axes.rotation + rotation)
-
         this.rotTdeg.copy(this.mesh.rotation)
         this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation + rotation)
-
-        console.log(this.mesh.rotation, this.rotTdeg)
 
         this.rotationTarget.setFromEuler(this.rotTdeg)
 
