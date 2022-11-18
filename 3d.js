@@ -6,6 +6,7 @@ import glb from './icon.glb'
 import frag from './shaders/mesh.frag'
 import meshdither from './shaders/mesh.glsl'
 import headfrag from'./shaders/head.glsl'
+import { times } from 'lodash';
 
 const vs = `
 varying vec4 mvPosition;
@@ -141,11 +142,16 @@ class ThreeD {
         let dist = this.camera.position.distanceTo(this.mesh.position)
         let vFOV = this.camera.fov * Math.PI / 180;        // convert vertical fov to radians
         let vHeight = 2 * Math.tan( vFOV / 2 ) * dist; // visible height
-        // this.mesh.geometry.boundingBox.getSize(this.bbox)
-        // console.log(vHeight, this.bbox)
         this.mesh.scale.x = vHeight * (size/ window.innerHeight);
         this.mesh.scale.y = vHeight * (size/ window.innerHeight);
         this.mesh.scale.z = vHeight * (size/ window.innerHeight);
+    }
+
+    setPos(axes){
+        this.setScale(axes.size)
+        this.mesh.rotation.z = axes.rotation
+        let pos = this.screenToPos(axes.x, axes.y)
+        this.mesh.position.copy(pos)
     }
 
     move(axes, mouse, rotation = 0, delta=1){
@@ -168,9 +174,6 @@ class ThreeD {
         this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation + rotation)
 
         this.rotationTarget.setFromEuler(this.rotTdeg)
-
-
-        //console.log(rot, this.mesh.rotation.z, axes.range, (acceleration + this.mesh.position.distanceTo(pos)) * delta)
 
 
         this.mesh.quaternion.slerp(this.rotationTarget, delta* 2 * (1.0 -axes.range))
