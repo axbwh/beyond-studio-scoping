@@ -5,6 +5,7 @@ import textShader from './textShader';
 import pageFrag from './shaders/page.frag';
 import ThreeD from './3d';
 import Slider from './slider';
+import HoverSlider from './hoverSlider';
 import {hexToRgb, getCoord, rgbaToArray }from './utils'
 import anime from 'animejs';
 import _, { delay } from 'lodash';
@@ -197,6 +198,7 @@ class App {
 
     onSuccess(){
         this.slider = new Slider(this.curtains, document.getElementById('slider'))
+        this.hoverSlider = new HoverSlider(this.curtains, document.getElementById('hover-slider'), document.getElementById('hover-slider-trigger'))
         this.puckTarget = new RenderTarget(this.curtains)
         this.bgTarget = new RenderTarget(this.curtains)
         this.imgTarget = new RenderTarget(this.curtains)
@@ -288,6 +290,7 @@ class App {
         this.loadImg('img[puck]', this.puckTarget, 'uPuck')
         this.slider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
 
+        this.hoverSlider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
         // hide gradient
         document.getElementById('gradient').style.display = 'none';
 

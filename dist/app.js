@@ -545,6 +545,8 @@ var _3D = require("./3d");
 var _3DDefault = parcelHelpers.interopDefault(_3D);
 var _slider = require("./slider");
 var _sliderDefault = parcelHelpers.interopDefault(_slider);
+var _hoverSlider = require("./hoverSlider");
+var _hoverSliderDefault = parcelHelpers.interopDefault(_hoverSlider);
 var _utils = require("./utils");
 var _animejs = require("animejs");
 var _animejsDefault = parcelHelpers.interopDefault(_animejs);
@@ -715,6 +717,7 @@ class App {
     }
     onSuccess() {
         this.slider = new (0, _sliderDefault.default)(this.curtains, document.getElementById("slider"));
+        this.hoverSlider = new (0, _hoverSliderDefault.default)(this.curtains, document.getElementById("hover-slider"), document.getElementById("hover-slider-trigger"));
         this.puckTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
         this.bgTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
         this.imgTarget = new (0, _curtainsjs.RenderTarget)(this.curtains);
@@ -806,6 +809,7 @@ class App {
         //images that will be inside the puck
         this.loadImg("img[puck]", this.puckTarget, "uPuck");
         this.slider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
+        this.hoverSlider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         // hide gradient
         document.getElementById("gradient").style.display = "none";
         this.pass.onRender(this.onRender.bind(this));
@@ -910,7 +914,7 @@ window.addEventListener("load", ()=>{
     app.init();
 });
 
-},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -56759,6 +56763,104 @@ anime.random = function(min, max) {
 };
 exports.default = anime;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4BH5P":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _curtainsjs = require("curtainsjs");
+var _sliderFrag = require("./shaders/slider.frag");
+var _sliderFragDefault = parcelHelpers.interopDefault(_sliderFrag);
+var _sliderVert = require("./shaders/slider.vert");
+var _sliderVertDefault = parcelHelpers.interopDefault(_sliderVert);
+class HoverSlider {
+    constructor(curtains, el, trigger){
+        this.curtains = curtains;
+        this.element = el;
+        this.triggers = trigger.querySelectorAll("a");
+        this.params = {
+            vertexShader: (0, _sliderVertDefault.default),
+            fragmentShader: (0, _sliderFragDefault.default),
+            uniforms: {
+                transitionTimer: {
+                    name: "uTransitionTimer",
+                    type: "1f",
+                    value: 0
+                }
+            }
+        };
+        // here we will handle which texture is visible and the timer to transition between images
+        this.state = {
+            activeIndex: 0,
+            nextIndex: 1,
+            maxTextures: this.element.querySelectorAll("img").length - 1,
+            isChanging: false,
+            transitionTimer: 0
+        };
+    }
+    init(target, callback) {
+        this.callback = callback;
+        //this.target = new RenderTarget(this.curtains) //create a render target for our slider
+        this.target = target;
+        this.plane = new (0, _curtainsjs.Plane)(this.curtains, this.element, this.params) // create a plane for our slider
+        ;
+        this.plane.setRenderTarget(target);
+        //this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
+        this.plane.onLoading((texture)=>{
+            // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
+            texture.setMinFilter(this.curtains.gl.NEAREST);
+        }).onReady(this.onReady.bind(this)).onRender(this.onRender.bind(this));
+        this.element.style.opacity = 0;
+    }
+    onReady() {
+        // the idea here is to create two additionnal textures
+        // the first one will contain our visible image
+        // the second one will contain our entering (next) image
+        // that way we will deal with only active and next samplers in the fragment shader
+        // and we could easily add more images in the slideshow...
+        this.displacement = this.plane.createTexture({
+            sampler: "displacement",
+            fromTexture: this.plane.textures[this.state.nextIndex]
+        });
+        // first we set our very first image as the active texture
+        this.active = this.plane.createTexture({
+            sampler: "activeTex",
+            fromTexture: this.plane.textures[this.state.activeIndex]
+        });
+        // next we set the second image as next texture but this is not mandatory
+        // as we will reset the next texture on slide change
+        this.next = this.plane.createTexture({
+            sampler: "nextTex",
+            fromTexture: this.plane.textures[this.state.activeIndex]
+        });
+        this.triggers.forEach((e, i)=>{
+            console;
+            e.addEventListener("mouseenter", ()=>{
+                this.onEnter(i);
+            });
+        });
+    }
+    onEnter(i) {
+        this.state.activeIndex = this.state.nextIndex;
+        this.active.setSource(this.plane.images[this.state.activeIndex]);
+        this.displacement.setSource(this.plane.images[this.state.activeIndex]);
+        this.next.setSource(this.plane.images[i]);
+        this.state.nextIndex = i;
+        this.state.isChanging = true;
+        this.state.transitionTimer = 0;
+    }
+    onRender() {
+        // increase or decrease our timer based on the active texture value
+        if (this.state.isChanging) {
+            // use damping to smoothen transition
+            this.state.transitionTimer += (90 - this.state.transitionTimer) * 0.06;
+            // force end of animation as damping is slower the closer we get from the end value
+            if (this.state.transitionTimer >= 88.9 && this.state.transitionTimer !== 90) this.state.transitionTimer = 90;
+        }
+        // update our transition timer uniform
+        this.plane.uniforms.transitionTimer.value = this.state.transitionTimer;
+    }
+}
+exports.default = HoverSlider;
+
+},{"curtainsjs":"9AjRS","./shaders/slider.frag":"7aA3N","./shaders/slider.vert":"3Tkxq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map
