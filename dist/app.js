@@ -55448,7 +55448,7 @@ class Slider {
             this.state.isChanging = true;
             // check what will be next image
             if (this.state.activeIndex < this.state.maxTextures) this.state.nextIndex = this.state.activeIndex + 1;
-            else this.state.nextIndex = 1;
+            else this.state.nextIndex = 0;
             // apply it to our next texture
             this.next.setSource(this.plane.images[this.state.nextIndex]);
             this.displacement.setSource(this.plane.images[this.state.activeIndex]);

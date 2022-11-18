@@ -84,7 +84,7 @@ class Slider {
       if (this.state.activeIndex < this.state.maxTextures) {
         this.state.nextIndex = this.state.activeIndex + 1
       } else {
-        this.state.nextIndex = 1
+        this.state.nextIndex = 0
       }
 
       // apply it to our next texture
