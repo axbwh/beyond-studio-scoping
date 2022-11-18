@@ -7,7 +7,7 @@ import ThreeD from './3d';
 import Slider from './slider';
 import {hexToRgb, getCoord, rgbaToArray }from './utils'
 import anime from 'animejs';
-import _ from 'lodash';
+import _, { delay } from 'lodash';
 import * as THREE from 'three'
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -33,6 +33,15 @@ class App {
             rotation: 0,
         }
 
+        this.origin = {
+            x: 0,
+            y: 0,
+            rotation: 0,
+            size:0,
+            range: 0,
+            intro: false
+        }
+
         this.colors = {
             a: '#F198C0',
             b: "#61FCC4",
@@ -47,7 +56,6 @@ class App {
         }
 
         this.lastFrame = 0
-
 
     }
 
@@ -70,6 +78,17 @@ class App {
 
     initTimeline(){
 
+        let origin =  getCoord(document.querySelector('[origin]'))
+
+        this.origin = origin ? {
+            x: origin.x,
+            y: origin.y,
+            size: origin.size,
+            rotation: origin.rotation,
+            range: this.origin.range,
+            intro: this.origin.intro,
+        } : this.origin
+
         let frames = [...document.querySelectorAll('[stick]')].map(el => {
             return {el: el, coord: getCoord(el)}
         })
@@ -86,12 +105,13 @@ class App {
             rotation: frames[0].coord.rotation
         }
 
-        colorFrames.slice().reverse().forEach(f =>{
-            this.colors = {
-                ...this.colors,
-                ...f.coord.colors
-            }
-        }) // iterate backwards through array to reset colors to first value
+        // colorFrames.slice().reverse().forEach(f =>{
+        //     this.colors = {
+        //         ...this.colors,
+        //         ...f.coord.colors
+        //     }
+        //     console.log(this.colors, f)
+        // }) // iterate backwards through array to reset colors to first value
 
 
 
@@ -122,10 +142,9 @@ class App {
 
 
 
-        //console.log(this.colors)
         colorFrames.forEach( (frame, index) => {
-            let previousTime = index > 0 ? frames[index - 1].coord.keyframe : 0
-            let duration = index > 0 ? frame.coord.keyframe - frames[index - 1].coord.keyframe : 0.00001
+            let previousTime = index > 0 ? colorFrames[index - 1].coord.keyframe : 0
+            let duration = index > 0 ? frame.coord.keyframe - colorFrames[index - 1].coord.keyframe : 0.00001
             timeline.add({
                 targets: this.colors,
                 ...frame.coord.colors,
@@ -135,7 +154,7 @@ class App {
 
         this.timeline = timeline
         this.onScroll()
-        //console.log(this.colors)
+  
     }
 
     
@@ -283,6 +302,27 @@ class App {
        window.addEventListener("scroll", _scroll.bind(this));
        document.addEventListener('mousemove',this.mouseEvent.bind(this), false);
        this.curtains.onAfterResize(this.onResize.bind(this))
+       this.threeD.setPos(this.origin)
+
+       document.addEventListener('click', this.startAnim.bind(this))
+       window.addEventListener("scroll", this.startAnim.bind(this))
+        //this.loadAnim()
+       
+    }
+
+    startAnim(){
+        if(!this.origin.loaded){
+            anime({
+                targets: this.origin,
+                range: 1,
+                duration: 2000,
+                easing: 'easeOutBounce',
+                delay: 0,
+               })
+               this.origin.loaded = true
+               document.removeEventListener('click', this.startAnim.bind(this))
+               window.removeEventListener("scroll", this.startAnim.bind(this))
+        }
     }
 
     onFlip(impulses){
@@ -310,20 +350,28 @@ class App {
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
 
 
-            anime.set('.container', {
-                translateY: -this.scroll.effect *5
-            })
+        anime.set('.container', {
+            translateY: -this.scroll.effect *5
+        }) //smoothscroll
 
 
         let mouseVal = this.pass.uniforms.mouse.value;
 
         //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
-
-        this.threeD.move(this.axes, this.mouse, this.impulses.rotation, delta)
+        /// axes mixed with origin
+        let ax = {
+            ...this.axes,
+            x: this.curtains.lerp(this.origin.x, this.axes.x, this.origin.range),
+            y: this.curtains.lerp(this.origin.y, this.axes.y, this.origin.range),
+            size: this.curtains.lerp(this.origin.size, this.axes.size, this.origin.range),
+            range: this.curtains.lerp(this.origin.range, this.axes.range, this.origin.range),
+        }
+        ///
+        this.threeD.move(ax, this.mouse, this.impulses.rotation, delta)
         this.threeD.render()
 
 
-        let mouseLerp = [this.curtains.lerp( mouseVal[0] ,this.mouse.x, 0.05), this.curtains.lerp( mouseVal[1] ,this.mouse.y, 0.05) ] 
+        let mouseLerp = [this.curtains.lerp( mouseVal[0] ,this.mouse.x, delta * 3.125), this.curtains.lerp( mouseVal[1] ,this.mouse.y, delta * 3.125) ] 
         this.pass.uniforms.mouse.value = mouseLerp;
         this.pass.uniforms.time.value += 1;
 

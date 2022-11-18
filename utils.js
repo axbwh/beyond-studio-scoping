@@ -20,6 +20,7 @@ const normCoord = (x, y) => {
     return { x: nx, y: ny}
 }
 const getCoord = (el) => {
+    if(!el) return false
     let rect = el.getBoundingClientRect()
     let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2
     keyframe = keyframe < 0 ? 0 : keyframe;
@@ -32,7 +33,6 @@ const getCoord = (el) => {
     let opacity = el.getAttribute('opacity') ? el.getAttribute('opacity') : false
     let rotation = el.getAttribute('rotation') ? parseInt(el.getAttribute('rotation') ): 0
     let range = isNaN(stick) ? 1 : 1 - stick
-    console.log(el.getAttribute('yoffset'))
 
     return {
         x: normX(rect.x + rect.width / 2) - window.scrollX,

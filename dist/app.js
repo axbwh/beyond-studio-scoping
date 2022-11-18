@@ -573,6 +573,14 @@ class App {
             size: 0,
             rotation: 0
         };
+        this.origin = {
+            x: 0,
+            y: 0,
+            rotation: 0,
+            size: 0,
+            range: 0,
+            intro: false
+        };
         this.colors = {
             a: "#F198C0",
             b: "#61FCC4",
@@ -601,6 +609,15 @@ class App {
         });
     }
     initTimeline() {
+        let origin = (0, _utils.getCoord)(document.querySelector("[origin]"));
+        this.origin = origin ? {
+            x: origin.x,
+            y: origin.y,
+            size: origin.size,
+            rotation: origin.rotation,
+            range: this.origin.range,
+            intro: this.origin.intro
+        } : this.origin;
         let frames = [
             ...document.querySelectorAll("[stick]")
         ].map((el)=>{
@@ -624,13 +641,13 @@ class App {
             size: frames[0].coord.size,
             rotation: frames[0].coord.rotation
         };
-        colorFrames.slice().reverse().forEach((f)=>{
-            this.colors = {
-                ...this.colors,
-                ...f.coord.colors
-            };
-        }) // iterate backwards through array to reset colors to first value
-        ;
+        // colorFrames.slice().reverse().forEach(f =>{
+        //     this.colors = {
+        //         ...this.colors,
+        //         ...f.coord.colors
+        //     }
+        //     console.log(this.colors, f)
+        // }) // iterate backwards through array to reset colors to first value
         let timeline = (0, _animejsDefault.default).timeline({
             targets: this.axes,
             easing: "linear",
@@ -653,10 +670,9 @@ class App {
         timeline.add({
             duration: 0.00001
         }, document.body.offsetHeight - window.innerHeight - 0.00001);
-        //console.log(this.colors)
         colorFrames.forEach((frame, index)=>{
-            let previousTime = index > 0 ? frames[index - 1].coord.keyframe : 0;
-            let duration = index > 0 ? frame.coord.keyframe - frames[index - 1].coord.keyframe : 0.00001;
+            let previousTime = index > 0 ? colorFrames[index - 1].coord.keyframe : 0;
+            let duration = index > 0 ? frame.coord.keyframe - colorFrames[index - 1].coord.keyframe : 0.00001;
             timeline.add({
                 targets: this.colors,
                 ...frame.coord.colors,
@@ -665,7 +681,6 @@ class App {
         });
         this.timeline = timeline;
         this.onScroll();
-    //console.log(this.colors)
     }
     initText(target) {
         const textEls = document.querySelectorAll("[text]");
@@ -801,6 +816,24 @@ class App {
         window.addEventListener("scroll", _scroll.bind(this));
         document.addEventListener("mousemove", this.mouseEvent.bind(this), false);
         this.curtains.onAfterResize(this.onResize.bind(this));
+        this.threeD.setPos(this.origin);
+        document.addEventListener("click", this.startAnim.bind(this));
+        window.addEventListener("scroll", this.startAnim.bind(this));
+    //this.loadAnim()
+    }
+    startAnim() {
+        if (!this.origin.loaded) {
+            (0, _animejsDefault.default)({
+                targets: this.origin,
+                range: 1,
+                duration: 2000,
+                easing: "easeOutBounce",
+                delay: 0
+            });
+            this.origin.loaded = true;
+            document.removeEventListener("click", this.startAnim.bind(this));
+            window.removeEventListener("scroll", this.startAnim.bind(this));
+        }
     }
     onFlip(impulses) {
         impulses.rotation += 180;
@@ -820,14 +853,24 @@ class App {
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
         (0, _animejsDefault.default).set(".container", {
             translateY: -this.scroll.effect * 5
-        });
+        }) //smoothscroll
+        ;
         let mouseVal = this.pass.uniforms.mouse.value;
         //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
-        this.threeD.move(this.axes, this.mouse, this.impulses.rotation, delta);
+        /// axes mixed with origin
+        let ax = {
+            ...this.axes,
+            x: this.curtains.lerp(this.origin.x, this.axes.x, this.origin.range),
+            y: this.curtains.lerp(this.origin.y, this.axes.y, this.origin.range),
+            size: this.curtains.lerp(this.origin.size, this.axes.size, this.origin.range),
+            range: this.curtains.lerp(this.origin.range, this.axes.range, this.origin.range)
+        };
+        ///
+        this.threeD.move(ax, this.mouse, this.impulses.rotation, delta);
         this.threeD.render();
         let mouseLerp = [
-            this.curtains.lerp(mouseVal[0], this.mouse.x, 0.05),
-            this.curtains.lerp(mouseVal[1], this.mouse.y, 0.05)
+            this.curtains.lerp(mouseVal[0], this.mouse.x, delta * 3.125),
+            this.curtains.lerp(mouseVal[1], this.mouse.y, delta * 3.125)
         ];
         this.pass.uniforms.mouse.value = mouseLerp;
         this.pass.uniforms.time.value += 1;
@@ -8391,6 +8434,7 @@ var _meshGlsl = require("./shaders/mesh.glsl");
 var _meshGlslDefault = parcelHelpers.interopDefault(_meshGlsl);
 var _headGlsl = require("./shaders/head.glsl");
 var _headGlslDefault = parcelHelpers.interopDefault(_headGlsl);
+var _lodash = require("lodash");
 const vs = `
 varying vec4 mvPosition;
 varying mat3 vNormalMatrix;
@@ -8499,11 +8543,15 @@ class ThreeD {
         let dist = this.camera.position.distanceTo(this.mesh.position);
         let vFOV = this.camera.fov * Math.PI / 180; // convert vertical fov to radians
         let vHeight = 2 * Math.tan(vFOV / 2) * dist; // visible height
-        // this.mesh.geometry.boundingBox.getSize(this.bbox)
-        // console.log(vHeight, this.bbox)
         this.mesh.scale.x = vHeight * (size / window.innerHeight);
         this.mesh.scale.y = vHeight * (size / window.innerHeight);
         this.mesh.scale.z = vHeight * (size / window.innerHeight);
+    }
+    setPos(axes) {
+        this.setScale(axes.size);
+        this.mesh.rotation.z = axes.rotation;
+        let pos = this.screenToPos(axes.x, axes.y);
+        this.mesh.position.copy(pos);
     }
     move(axes, mouse, rotation = 0, delta = 1) {
         let mpos = this.screenToPos(mouse.x, mouse.y);
@@ -8518,7 +8566,6 @@ class ThreeD {
         this.rotTdeg.copy(this.mesh.rotation);
         this.rotTdeg.z = _three.MathUtils.degToRad(axes.rotation + rotation);
         this.rotationTarget.setFromEuler(this.rotTdeg);
-        //console.log(rot, this.mesh.rotation.z, axes.range, (acceleration + this.mesh.position.distanceTo(pos)) * delta)
         this.mesh.quaternion.slerp(this.rotationTarget, delta * 2 * (1.0 - axes.range));
     // this.lightTop.lookAt(this.mesh.position)
     // this.lightBottom.lookAt(this.mesh.position)
@@ -8535,7 +8582,7 @@ class ThreeD {
 }
 exports.default = ThreeD;
 
-},{"three":"ktPTu","three/examples/jsm/loaders/GLTFLoader.js":"dVRsF","three/examples/jsm/loaders/DRACOLoader.js":"lkdU4","three-subdivide":"e6vhA","./icon.glb":"8EsCM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/mesh.frag":"6rbg6","./shaders/mesh.glsl":"4WpWv","./shaders/head.glsl":"jmFLf"}],"ktPTu":[function(require,module,exports) {
+},{"three":"ktPTu","three/examples/jsm/loaders/GLTFLoader.js":"dVRsF","three/examples/jsm/loaders/DRACOLoader.js":"lkdU4","three-subdivide":"e6vhA","./icon.glb":"8EsCM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/mesh.frag":"6rbg6","./shaders/mesh.glsl":"4WpWv","./shaders/head.glsl":"jmFLf","lodash":"3qBDj"}],"ktPTu":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "ACESFilmicToneMapping", ()=>ACESFilmicToneMapping);
@@ -41017,1472 +41064,7 @@ module.exports = "#define GLSLIFY 1\n    #include <dithering_fragment>\n    vec2
 },{}],"jmFLf":[function(require,module,exports) {
 module.exports = "#define GLSLIFY 1\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#define PHONG";
 
-},{}],"i90JS":[function(require,module,exports) {
-module.exports = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#define GLSLIFY 1\n#endif\n\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g_0 = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g_0;\n  vec3 i1 = min( g_0.xyz, l.zxy );\n  vec3 i2 = max( g_0.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#ifndef HALF_PI\n#define HALF_PI 1.5707963267948966\n#endif\n\nfloat elasticIn(float t) {\n  return sin(13.0 * t * HALF_PI) * pow(2.0, 10.0 * (t - 1.0));\n}\n\nvec3 blendOverlay(vec3 base, vec3 blend) {\n    return mix(1.0 - 2.0 * (1.0 - base) * (1.0 - blend), 2.0 * base * blend, step(base, vec3(0.5)));\n    // with conditionals, may be worth benchmarking\n    // return vec3(\n    //     base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r)),\n    //     base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g)),\n    //     base.b < 0.5 ? (2.0 * base.b * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b))\n    // );\n}\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTxt;\nuniform sampler2D threeDTexture;\nuniform sampler2D uPuck;\nuniform sampler2D uBg;\nuniform sampler2D uImg;\n\n// lerped scroll deltas\n// negative when scrolling down, positive when scrolling up\nuniform float uScrollEffect;\n\n// default to 2.5\nuniform float uScrollStrength;\n\nuniform vec4 uBgCol;\nuniform vec4 uFgCol;\nuniform vec4 uColA;\nuniform vec4 uColB;\nuniform vec4 uColC;\nuniform vec4 uColD;\nuniform vec2 uMouse;\nuniform float uTime;\nuniform float uGradientOpacity;\n\nvoid main() {\n    vec2 uv = vTextureCoord;\n    float horizontalStretch;\n    vec4 threeDCol = texture2D(threeDTexture, uv);\n\n    // branching on an uniform is ok\n    if(uScrollEffect >= 0.0) {\n        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(uv.y);\n    }\n    else if(uScrollEffect < 0.0) {\n        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(-1.0 * (1.0 - uv.y));\n    }\n\n    uv.x = uv.x * 2.0 - 1.0;\n    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;\n    uv.x = (uv.x + 1.0) * 0.5;\n    // moving the content underneath the square\n\n    float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;\n    //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);\n    float morphStrength = 0.005;\n    float morph = elasticIn(threeDCol.r);\n    float baseStrength = 0.02;\n\n    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);\n\n    //rgb split\n    vec2 uvR = muv;\n    vec2 uvG = muv;\n    vec2 uvB = muv;\n\n    uvR.x += morph * morphStrength;\n    uvR.y += morph * morphStrength;\n    uvG.x -= morph * morphStrength;\n    uvG.y += morph * morphStrength;\n    uvB.y -= morph * morphStrength;\n\n    \n    float t = uTime /1000.0  ;\n\n    // gradient noise\n    float noise = snoise(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));\n    float black = snoise(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));\n\n    vec4 gradient = mix(uColA, uColB, noise);\n    gradient = mix(gradient, uBgCol, black);\n    vec4 puckGradient = mix(uColC, uColD, noise);\n    puckGradient = mix(puckGradient, uBgCol, black);\n    //\n\n    vec4 colR =  texture2D(uTxt, uvR);\n    vec4 colG =  texture2D(uTxt, uvG);\n    vec4 colB =  texture2D(uTxt, uvB);\n\n    vec4 bg = texture2D(uBg, uv); // images not in the puck\n    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk\n\n    puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));\n\n    vec4 imgCol =  vec4(texture2D(uImg, uvR).r, texture2D(uImg, uvG).g, texture2D(uImg, uvB).b, 1.0); //images\n    imgCol.a = max( max(texture2D(uImg, uvR).a, texture2D(uImg, uvG).a), texture2D(uImg, uvB).a);\n \n    float maxA = max(max(colR.a, colG.a), colB.a);\n    //maxA = max(colR.a, colG.a);\n    //maxA = colR.a;\n\n    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);\n    vec4 baseCol =  texture2D(uTxt, uv) + bg + imgCol; // baseColor\n\n    vec4 defCol = (1.0 - splitCol);\n    defCol.a = splitCol.a;\n    defCol =  mix(puckCol + imgCol, defCol, defCol.a);\n\n    float alpha = threeDCol.a;\n\n    defCol = vec4(blendOverlay(defCol.rgb, puckGradient.rgb), defCol.a);\n    //mix in gradient\n    vec4 mixCol = mix(baseCol, defCol, alpha);\n\n    vec4 bgCol = mix(uBgCol, puckGradient, uGradientOpacity);\n\n    mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0, 1.0));\n    mixCol = mix( gradient, mixCol, mixCol.a); // gradient\n    mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights\n\n    gl_FragColor = mixCol;\n\n    //gl_FragColor = gradient;\n    //gl_FragColor = texture2D(threeDTexture, uv);\n    //gl_FragColor = vec4(texture2D(uImg, muv).rgb, 1.0);\n    //gl_FragColor = vec4(baseMorph, 0.0,0.0,1.0);\n    //gl_FragColor = threeDCol;\n}";
-
-},{}],"7dXWc":[function(require,module,exports) {
-module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTexture;\n\nvoid main() {\n    // just display our texture\n    gl_FragColor = texture2D(uTexture, vTextureCoord);\n}";
-
-},{}],"bIDtH":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "hexToRgb", ()=>hexToRgb);
-parcelHelpers.export(exports, "rgbaToArray", ()=>rgbaToArray);
-parcelHelpers.export(exports, "normCoord", ()=>normCoord);
-parcelHelpers.export(exports, "normX", ()=>normX);
-parcelHelpers.export(exports, "normY", ()=>normY);
-parcelHelpers.export(exports, "getCoord", ()=>getCoord);
-const hexToRgb = (hex)=>hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b)=>"#" + r + r + g + g + b + b).substring(1).match(/.{2}/g).map((x)=>parseInt(x, 16) / 255);
-const rgbaToArray = (string)=>string.replace(/[^\d,]/g, "").split(",").map((x, i)=>i < 3 ? parseInt(x) / 255 : parseInt(x));
-const normX = (x)=>{
-    return x / window.innerWidth * 2 - 1;
-};
-const normY = (y)=>{
-    return -(y / window.innerHeight) * 2 + 1;
-};
-const normCoord = (x, y)=>{
-    nx = normX(x);
-    ny = normY(y);
-    return {
-        x: nx,
-        y: ny
-    };
-};
-const getCoord = (el)=>{
-    let rect = el.getBoundingClientRect();
-    let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2;
-    keyframe = keyframe < 0 ? 0 : keyframe;
-    let stick = el.getAttribute("stick");
-    let scale = el.getAttribute("scale") ? el.getAttribute("scale") : 1;
-    let colora = el.getAttribute("colora") ? el.getAttribute("colora") : false;
-    let colorb = el.getAttribute("colorb") ? el.getAttribute("colorb") : false;
-    let colorc = el.getAttribute("colorc") ? el.getAttribute("colorc") : false;
-    let colord = el.getAttribute("colord") ? el.getAttribute("colord") : false;
-    let opacity = el.getAttribute("opacity") ? el.getAttribute("opacity") : false;
-    let rotation = el.getAttribute("rotation") ? parseInt(el.getAttribute("rotation")) : 0;
-    let range = isNaN(stick) ? 1 : 1 - stick;
-    console.log(el.getAttribute("yoffset"));
-    return {
-        x: normX(rect.x + rect.width / 2) - window.scrollX,
-        y: el.getAttribute("yoffset") ? normY(el.offsetTop + rect.height / 2 + el.parentElement.offsetTop) : 0,
-        size: rect.width > rect.height ? rect.height * scale : rect.width * scale,
-        h: rect.height,
-        w: rect.width,
-        rotation: rotation,
-        keyframe: keyframe,
-        range: range,
-        colors: {
-            ...colora && {
-                a: colora
-            },
-            ...colorb && {
-                b: colorb
-            },
-            ...colorc && {
-                c: colorc
-            },
-            ...colord && {
-                d: colord
-            },
-            ...opacity && {
-                opacity: opacity
-            }
-        }
-    };
-};
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"807TH":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _curtainsjs = require("curtainsjs");
-var _sliderFrag = require("./shaders/slider.frag");
-var _sliderFragDefault = parcelHelpers.interopDefault(_sliderFrag);
-var _sliderVert = require("./shaders/slider.vert");
-var _sliderVertDefault = parcelHelpers.interopDefault(_sliderVert);
-class Slider {
-    constructor(curtains, el){
-        this.curtains = curtains;
-        this.element = el;
-        this.params = {
-            vertexShader: (0, _sliderVertDefault.default),
-            fragmentShader: (0, _sliderFragDefault.default),
-            uniforms: {
-                transitionTimer: {
-                    name: "uTransitionTimer",
-                    type: "1f",
-                    value: 0
-                }
-            }
-        };
-        // here we will handle which texture is visible and the timer to transition between images
-        this.state = {
-            activeIndex: 0,
-            nextIndex: 1,
-            maxTextures: this.element.querySelectorAll("img").length - 1,
-            isChanging: false,
-            transitionTimer: 0
-        };
-    }
-    init(target, callback) {
-        this.callback = callback;
-        //this.target = new RenderTarget(this.curtains) //create a render target for our slider
-        this.target = target;
-        this.plane = new (0, _curtainsjs.Plane)(this.curtains, this.element, this.params) // create a plane for our slider
-        ;
-        this.plane.setRenderTarget(target);
-        //this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
-        this.plane.onLoading((texture)=>{
-            // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
-            texture.setMinFilter(this.curtains.gl.NEAREST);
-        }).onReady(this.onReady.bind(this)).onRender(this.onRender.bind(this));
-        this.element.style.opacity = 0;
-    }
-    onReady() {
-        // the idea here is to create two additionnal textures
-        // the first one will contain our visible image
-        // the second one will contain our entering (next) image
-        // that way we will deal with only active and next samplers in the fragment shader
-        // and we could easily add more images in the slideshow...
-        this.displacement = this.plane.createTexture({
-            sampler: "displacement",
-            fromTexture: this.plane.textures[this.state.nextIndex]
-        });
-        // first we set our very first image as the active texture
-        this.active = this.plane.createTexture({
-            sampler: "activeTex",
-            fromTexture: this.plane.textures[this.state.activeIndex]
-        });
-        // next we set the second image as next texture but this is not mandatory
-        // as we will reset the next texture on slide change
-        this.next = this.plane.createTexture({
-            sampler: "nextTex",
-            fromTexture: this.plane.textures[this.state.activeIndex]
-        });
-        this.element.addEventListener("click", this.onClick.bind(this));
-    }
-    onClick() {
-        if (!this.state.isChanging) {
-            // enable drawing for now
-            //curtains.enableDrawing();
-            this.state.isChanging = true;
-            // check what will be next image
-            if (this.state.activeIndex < this.state.maxTextures) this.state.nextIndex = this.state.activeIndex + 1;
-            else this.state.nextIndex = 1;
-            // apply it to our next texture
-            this.next.setSource(this.plane.images[this.state.nextIndex]);
-            this.displacement.setSource(this.plane.images[this.state.activeIndex]);
-            setTimeout(()=>{
-                // disable drawing now that the transition is over
-                //curtains.disableDrawing();
-                this.state.isChanging = false;
-                this.state.activeIndex = this.state.nextIndex;
-                // our next texture becomes our active texture
-                this.active.setSource(this.plane.images[this.state.activeIndex]);
-                // reset timer
-                this.state.transitionTimer = 0;
-            }, 1700) // add a bit of margin to the timer
-            ;
-            this.callback();
-        }
-    }
-    onRender() {
-        // increase or decrease our timer based on the active texture value
-        if (this.state.isChanging) {
-            // use damping to smoothen transition
-            this.state.transitionTimer += (90 - this.state.transitionTimer) * 0.04;
-            // force end of animation as damping is slower the closer we get from the end value
-            if (this.state.transitionTimer >= 88.9 && this.state.transitionTimer !== 90) this.state.transitionTimer = 90;
-        }
-        // update our transition timer uniform
-        this.plane.uniforms.transitionTimer.value = this.state.transitionTimer;
-    }
-}
-exports.default = Slider;
-
-},{"curtainsjs":"9AjRS","./shaders/slider.frag":"7aA3N","./shaders/slider.vert":"3Tkxq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"7aA3N":[function(require,module,exports) {
-module.exports = "precision mediump float;\n#define GLSLIFY 1\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// custom uniforms\nuniform float uTransitionTimer;\n// our textures samplers\n// notice how it matches the sampler attributes of the textures we created dynamically\nuniform sampler2D activeTex;\nuniform sampler2D nextTex;\nuniform sampler2D displacement;\nvoid main() {\n    // our displacement texture\n    vec4 displacementTexture = texture2D(displacement, vTextureCoord);\n    // slides transitions based on displacement and transition timer\n    vec2 firstDisplacementCoords = vActiveTextureCoord + displacementTexture.r * ((cos((uTransitionTimer + 90.0) / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 firstDistortedColor = texture2D(activeTex, vec2(vActiveTextureCoord.x, firstDisplacementCoords.y));\n    // same as above but we substract the effect\n    vec2 secondDisplacementCoords = vNextTextureCoord - displacementTexture.r * ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 secondDistortedColor = texture2D(nextTex, vec2(vNextTextureCoord.x, secondDisplacementCoords.y));\n    // mix both texture\n    vec4 finalColor = mix(firstDistortedColor, secondDistortedColor, 1.0 - ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 2.0));\n    // handling premultiplied alpha\n    finalColor = vec4(finalColor.rgb * finalColor.a, finalColor.a);\n    gl_FragColor = finalColor;\n}";
-
-},{}],"3Tkxq":[function(require,module,exports) {
-module.exports = "precision mediump float;\n#define GLSLIFY 1\n// default mandatory variables\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\n// varyings : notice we've got 3 texture coords varyings\n// one for the displacement texture\n// one for our visible texture\n// and one for the upcoming texture\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// textures matrices\nuniform mat4 activeTexMatrix;\nuniform mat4 nextTexMatrix;\n// custom uniforms\nuniform float uTransitionTimer;\nvoid main() {\n    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n    // varyings\n    vTextureCoord = aTextureCoord;\n    vActiveTextureCoord = (activeTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vNextTextureCoord = (nextTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vVertexPosition = aVertexPosition;\n}";
-
-},{}],"jokr5":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-/*
- * anime.js v3.2.1
- * (c) 2020 Julian Garnier
- * Released under the MIT license
- * animejs.com
- */ // Defaults
-var defaultInstanceSettings = {
-    update: null,
-    begin: null,
-    loopBegin: null,
-    changeBegin: null,
-    change: null,
-    changeComplete: null,
-    loopComplete: null,
-    complete: null,
-    loop: 1,
-    direction: "normal",
-    autoplay: true,
-    timelineOffset: 0
-};
-var defaultTweenSettings = {
-    duration: 1000,
-    delay: 0,
-    endDelay: 0,
-    easing: "easeOutElastic(1, .5)",
-    round: 0
-};
-var validTransforms = [
-    "translateX",
-    "translateY",
-    "translateZ",
-    "rotate",
-    "rotateX",
-    "rotateY",
-    "rotateZ",
-    "scale",
-    "scaleX",
-    "scaleY",
-    "scaleZ",
-    "skew",
-    "skewX",
-    "skewY",
-    "perspective",
-    "matrix",
-    "matrix3d"
-];
-// Caching
-var cache = {
-    CSS: {},
-    springs: {}
-};
-// Utils
-function minMax(val, min, max) {
-    return Math.min(Math.max(val, min), max);
-}
-function stringContains(str, text) {
-    return str.indexOf(text) > -1;
-}
-function applyArguments(func, args) {
-    return func.apply(null, args);
-}
-var is = {
-    arr: function(a) {
-        return Array.isArray(a);
-    },
-    obj: function(a) {
-        return stringContains(Object.prototype.toString.call(a), "Object");
-    },
-    pth: function(a) {
-        return is.obj(a) && a.hasOwnProperty("totalLength");
-    },
-    svg: function(a) {
-        return a instanceof SVGElement;
-    },
-    inp: function(a) {
-        return a instanceof HTMLInputElement;
-    },
-    dom: function(a) {
-        return a.nodeType || is.svg(a);
-    },
-    str: function(a) {
-        return typeof a === "string";
-    },
-    fnc: function(a) {
-        return typeof a === "function";
-    },
-    und: function(a) {
-        return typeof a === "undefined";
-    },
-    nil: function(a) {
-        return is.und(a) || a === null;
-    },
-    hex: function(a) {
-        return /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(a);
-    },
-    rgb: function(a) {
-        return /^rgb/.test(a);
-    },
-    hsl: function(a) {
-        return /^hsl/.test(a);
-    },
-    col: function(a) {
-        return is.hex(a) || is.rgb(a) || is.hsl(a);
-    },
-    key: function(a) {
-        return !defaultInstanceSettings.hasOwnProperty(a) && !defaultTweenSettings.hasOwnProperty(a) && a !== "targets" && a !== "keyframes";
-    }
-};
-// Easings
-function parseEasingParameters(string) {
-    var match = /\(([^)]+)\)/.exec(string);
-    return match ? match[1].split(",").map(function(p) {
-        return parseFloat(p);
-    }) : [];
-}
-// Spring solver inspired by Webkit Copyright © 2016 Apple Inc. All rights reserved. https://webkit.org/demos/spring/spring.js
-function spring(string, duration) {
-    var params = parseEasingParameters(string);
-    var mass = minMax(is.und(params[0]) ? 1 : params[0], .1, 100);
-    var stiffness = minMax(is.und(params[1]) ? 100 : params[1], .1, 100);
-    var damping = minMax(is.und(params[2]) ? 10 : params[2], .1, 100);
-    var velocity = minMax(is.und(params[3]) ? 0 : params[3], .1, 100);
-    var w0 = Math.sqrt(stiffness / mass);
-    var zeta = damping / (2 * Math.sqrt(stiffness * mass));
-    var wd = zeta < 1 ? w0 * Math.sqrt(1 - zeta * zeta) : 0;
-    var a = 1;
-    var b = zeta < 1 ? (zeta * w0 + -velocity) / wd : -velocity + w0;
-    function solver(t) {
-        var progress = duration ? duration * t / 1000 : t;
-        if (zeta < 1) progress = Math.exp(-progress * zeta * w0) * (a * Math.cos(wd * progress) + b * Math.sin(wd * progress));
-        else progress = (a + b * progress) * Math.exp(-progress * w0);
-        if (t === 0 || t === 1) return t;
-        return 1 - progress;
-    }
-    function getDuration() {
-        var cached = cache.springs[string];
-        if (cached) return cached;
-        var frame = 1 / 6;
-        var elapsed = 0;
-        var rest = 0;
-        while(true){
-            elapsed += frame;
-            if (solver(elapsed) === 1) {
-                rest++;
-                if (rest >= 16) break;
-            } else rest = 0;
-        }
-        var duration = elapsed * frame * 1000;
-        cache.springs[string] = duration;
-        return duration;
-    }
-    return duration ? solver : getDuration;
-}
-// Basic steps easing implementation https://developer.mozilla.org/fr/docs/Web/CSS/transition-timing-function
-function steps(steps) {
-    if (steps === void 0) steps = 10;
-    return function(t) {
-        return Math.ceil(minMax(t, 0.000001, 1) * steps) * (1 / steps);
-    };
-}
-// BezierEasing https://github.com/gre/bezier-easing
-var bezier = function() {
-    var kSplineTableSize = 11;
-    var kSampleStepSize = 1.0 / (kSplineTableSize - 1.0);
-    function A(aA1, aA2) {
-        return 1.0 - 3.0 * aA2 + 3.0 * aA1;
-    }
-    function B(aA1, aA2) {
-        return 3.0 * aA2 - 6.0 * aA1;
-    }
-    function C(aA1) {
-        return 3.0 * aA1;
-    }
-    function calcBezier(aT, aA1, aA2) {
-        return ((A(aA1, aA2) * aT + B(aA1, aA2)) * aT + C(aA1)) * aT;
-    }
-    function getSlope(aT, aA1, aA2) {
-        return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B(aA1, aA2) * aT + C(aA1);
-    }
-    function binarySubdivide(aX, aA, aB, mX1, mX2) {
-        var currentX, currentT, i = 0;
-        do {
-            currentT = aA + (aB - aA) / 2.0;
-            currentX = calcBezier(currentT, mX1, mX2) - aX;
-            if (currentX > 0.0) aB = currentT;
-            else aA = currentT;
-        }while (Math.abs(currentX) > 0.0000001 && ++i < 10);
-        return currentT;
-    }
-    function newtonRaphsonIterate(aX, aGuessT, mX1, mX2) {
-        for(var i = 0; i < 4; ++i){
-            var currentSlope = getSlope(aGuessT, mX1, mX2);
-            if (currentSlope === 0.0) return aGuessT;
-            var currentX = calcBezier(aGuessT, mX1, mX2) - aX;
-            aGuessT -= currentX / currentSlope;
-        }
-        return aGuessT;
-    }
-    function bezier(mX1, mY1, mX2, mY2) {
-        if (!(0 <= mX1 && mX1 <= 1 && 0 <= mX2 && mX2 <= 1)) return;
-        var sampleValues = new Float32Array(kSplineTableSize);
-        if (mX1 !== mY1 || mX2 !== mY2) for(var i = 0; i < kSplineTableSize; ++i)sampleValues[i] = calcBezier(i * kSampleStepSize, mX1, mX2);
-        function getTForX(aX) {
-            var intervalStart = 0;
-            var currentSample = 1;
-            var lastSample = kSplineTableSize - 1;
-            for(; currentSample !== lastSample && sampleValues[currentSample] <= aX; ++currentSample)intervalStart += kSampleStepSize;
-            --currentSample;
-            var dist = (aX - sampleValues[currentSample]) / (sampleValues[currentSample + 1] - sampleValues[currentSample]);
-            var guessForT = intervalStart + dist * kSampleStepSize;
-            var initialSlope = getSlope(guessForT, mX1, mX2);
-            if (initialSlope >= 0.001) return newtonRaphsonIterate(aX, guessForT, mX1, mX2);
-            else if (initialSlope === 0.0) return guessForT;
-            else return binarySubdivide(aX, intervalStart, intervalStart + kSampleStepSize, mX1, mX2);
-        }
-        return function(x) {
-            if (mX1 === mY1 && mX2 === mY2) return x;
-            if (x === 0 || x === 1) return x;
-            return calcBezier(getTForX(x), mY1, mY2);
-        };
-    }
-    return bezier;
-}();
-var penner = function() {
-    // Based on jQuery UI's implemenation of easing equations from Robert Penner (http://www.robertpenner.com/easing)
-    var eases = {
-        linear: function() {
-            return function(t) {
-                return t;
-            };
-        }
-    };
-    var functionEasings = {
-        Sine: function() {
-            return function(t) {
-                return 1 - Math.cos(t * Math.PI / 2);
-            };
-        },
-        Circ: function() {
-            return function(t) {
-                return 1 - Math.sqrt(1 - t * t);
-            };
-        },
-        Back: function() {
-            return function(t) {
-                return t * t * (3 * t - 2);
-            };
-        },
-        Bounce: function() {
-            return function(t) {
-                var pow2, b = 4;
-                while(t < ((pow2 = Math.pow(2, --b)) - 1) / 11);
-                return 1 / Math.pow(4, 3 - b) - 7.5625 * Math.pow((pow2 * 3 - 2) / 22 - t, 2);
-            };
-        },
-        Elastic: function(amplitude, period) {
-            if (amplitude === void 0) amplitude = 1;
-            if (period === void 0) period = .5;
-            var a = minMax(amplitude, 1, 10);
-            var p = minMax(period, .1, 2);
-            return function(t) {
-                return t === 0 || t === 1 ? t : -a * Math.pow(2, 10 * (t - 1)) * Math.sin((t - 1 - p / (Math.PI * 2) * Math.asin(1 / a)) * (Math.PI * 2) / p);
-            };
-        }
-    };
-    var baseEasings = [
-        "Quad",
-        "Cubic",
-        "Quart",
-        "Quint",
-        "Expo"
-    ];
-    baseEasings.forEach(function(name, i) {
-        functionEasings[name] = function() {
-            return function(t) {
-                return Math.pow(t, i + 2);
-            };
-        };
-    });
-    Object.keys(functionEasings).forEach(function(name) {
-        var easeIn = functionEasings[name];
-        eases["easeIn" + name] = easeIn;
-        eases["easeOut" + name] = function(a, b) {
-            return function(t) {
-                return 1 - easeIn(a, b)(1 - t);
-            };
-        };
-        eases["easeInOut" + name] = function(a, b) {
-            return function(t) {
-                return t < 0.5 ? easeIn(a, b)(t * 2) / 2 : 1 - easeIn(a, b)(t * -2 + 2) / 2;
-            };
-        };
-        eases["easeOutIn" + name] = function(a, b) {
-            return function(t) {
-                return t < 0.5 ? (1 - easeIn(a, b)(1 - t * 2)) / 2 : (easeIn(a, b)(t * 2 - 1) + 1) / 2;
-            };
-        };
-    });
-    return eases;
-}();
-function parseEasings(easing, duration) {
-    if (is.fnc(easing)) return easing;
-    var name = easing.split("(")[0];
-    var ease = penner[name];
-    var args = parseEasingParameters(easing);
-    switch(name){
-        case "spring":
-            return spring(easing, duration);
-        case "cubicBezier":
-            return applyArguments(bezier, args);
-        case "steps":
-            return applyArguments(steps, args);
-        default:
-            return applyArguments(ease, args);
-    }
-}
-// Strings
-function selectString(str) {
-    try {
-        var nodes = document.querySelectorAll(str);
-        return nodes;
-    } catch (e) {
-        return;
-    }
-}
-// Arrays
-function filterArray(arr, callback) {
-    var len = arr.length;
-    var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-    var result = [];
-    for(var i = 0; i < len; i++)if (i in arr) {
-        var val = arr[i];
-        if (callback.call(thisArg, val, i, arr)) result.push(val);
-    }
-    return result;
-}
-function flattenArray(arr) {
-    return arr.reduce(function(a, b) {
-        return a.concat(is.arr(b) ? flattenArray(b) : b);
-    }, []);
-}
-function toArray(o) {
-    if (is.arr(o)) return o;
-    if (is.str(o)) o = selectString(o) || o;
-    if (o instanceof NodeList || o instanceof HTMLCollection) return [].slice.call(o);
-    return [
-        o
-    ];
-}
-function arrayContains(arr, val) {
-    return arr.some(function(a) {
-        return a === val;
-    });
-}
-// Objects
-function cloneObject(o) {
-    var clone = {};
-    for(var p in o)clone[p] = o[p];
-    return clone;
-}
-function replaceObjectProps(o1, o2) {
-    var o = cloneObject(o1);
-    for(var p in o1)o[p] = o2.hasOwnProperty(p) ? o2[p] : o1[p];
-    return o;
-}
-function mergeObjects(o1, o2) {
-    var o = cloneObject(o1);
-    for(var p in o2)o[p] = is.und(o1[p]) ? o2[p] : o1[p];
-    return o;
-}
-// Colors
-function rgbToRgba(rgbValue) {
-    var rgb = /rgb\((\d+,\s*[\d]+,\s*[\d]+)\)/g.exec(rgbValue);
-    return rgb ? "rgba(" + rgb[1] + ",1)" : rgbValue;
-}
-function hexToRgba(hexValue) {
-    var rgx = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    var hex = hexValue.replace(rgx, function(m, r, g, b) {
-        return r + r + g + g + b + b;
-    });
-    var rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    var r = parseInt(rgb[1], 16);
-    var g = parseInt(rgb[2], 16);
-    var b = parseInt(rgb[3], 16);
-    return "rgba(" + r + "," + g + "," + b + ",1)";
-}
-function hslToRgba(hslValue) {
-    var hsl = /hsl\((\d+),\s*([\d.]+)%,\s*([\d.]+)%\)/g.exec(hslValue) || /hsla\((\d+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)/g.exec(hslValue);
-    var h = parseInt(hsl[1], 10) / 360;
-    var s = parseInt(hsl[2], 10) / 100;
-    var l = parseInt(hsl[3], 10) / 100;
-    var a = hsl[4] || 1;
-    function hue2rgb(p, q, t) {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1 / 6) return p + (q - p) * 6 * t;
-        if (t < 0.5) return q;
-        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-        return p;
-    }
-    var r, g, b;
-    if (s == 0) r = g = b = l;
-    else {
-        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        var p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1 / 3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1 / 3);
-    }
-    return "rgba(" + r * 255 + "," + g * 255 + "," + b * 255 + "," + a + ")";
-}
-function colorToRgb(val) {
-    if (is.rgb(val)) return rgbToRgba(val);
-    if (is.hex(val)) return hexToRgba(val);
-    if (is.hsl(val)) return hslToRgba(val);
-}
-// Units
-function getUnit(val) {
-    var split = /[+-]?\d*\.?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(%|px|pt|em|rem|in|cm|mm|ex|ch|pc|vw|vh|vmin|vmax|deg|rad|turn)?$/.exec(val);
-    if (split) return split[1];
-}
-function getTransformUnit(propName) {
-    if (stringContains(propName, "translate") || propName === "perspective") return "px";
-    if (stringContains(propName, "rotate") || stringContains(propName, "skew")) return "deg";
-}
-// Values
-function getFunctionValue(val, animatable) {
-    if (!is.fnc(val)) return val;
-    return val(animatable.target, animatable.id, animatable.total);
-}
-function getAttribute(el, prop) {
-    return el.getAttribute(prop);
-}
-function convertPxToUnit(el, value, unit) {
-    var valueUnit = getUnit(value);
-    if (arrayContains([
-        unit,
-        "deg",
-        "rad",
-        "turn"
-    ], valueUnit)) return value;
-    var cached = cache.CSS[value + unit];
-    if (!is.und(cached)) return cached;
-    var baseline = 100;
-    var tempEl = document.createElement(el.tagName);
-    var parentEl = el.parentNode && el.parentNode !== document ? el.parentNode : document.body;
-    parentEl.appendChild(tempEl);
-    tempEl.style.position = "absolute";
-    tempEl.style.width = baseline + unit;
-    var factor = baseline / tempEl.offsetWidth;
-    parentEl.removeChild(tempEl);
-    var convertedUnit = factor * parseFloat(value);
-    cache.CSS[value + unit] = convertedUnit;
-    return convertedUnit;
-}
-function getCSSValue(el, prop, unit) {
-    if (prop in el.style) {
-        var uppercasePropName = prop.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
-        var value = el.style[prop] || getComputedStyle(el).getPropertyValue(uppercasePropName) || "0";
-        return unit ? convertPxToUnit(el, value, unit) : value;
-    }
-}
-function getAnimationType(el, prop) {
-    if (is.dom(el) && !is.inp(el) && (!is.nil(getAttribute(el, prop)) || is.svg(el) && el[prop])) return "attribute";
-    if (is.dom(el) && arrayContains(validTransforms, prop)) return "transform";
-    if (is.dom(el) && prop !== "transform" && getCSSValue(el, prop)) return "css";
-    if (el[prop] != null) return "object";
-}
-function getElementTransforms(el) {
-    if (!is.dom(el)) return;
-    var str = el.style.transform || "";
-    var reg = /(\w+)\(([^)]*)\)/g;
-    var transforms = new Map();
-    var m;
-    while(m = reg.exec(str))transforms.set(m[1], m[2]);
-    return transforms;
-}
-function getTransformValue(el, propName, animatable, unit) {
-    var defaultVal = stringContains(propName, "scale") ? 1 : 0 + getTransformUnit(propName);
-    var value = getElementTransforms(el).get(propName) || defaultVal;
-    if (animatable) {
-        animatable.transforms.list.set(propName, value);
-        animatable.transforms["last"] = propName;
-    }
-    return unit ? convertPxToUnit(el, value, unit) : value;
-}
-function getOriginalTargetValue(target, propName, unit, animatable) {
-    switch(getAnimationType(target, propName)){
-        case "transform":
-            return getTransformValue(target, propName, animatable, unit);
-        case "css":
-            return getCSSValue(target, propName, unit);
-        case "attribute":
-            return getAttribute(target, propName);
-        default:
-            return target[propName] || 0;
-    }
-}
-function getRelativeValue(to, from) {
-    var operator = /^(\*=|\+=|-=)/.exec(to);
-    if (!operator) return to;
-    var u = getUnit(to) || 0;
-    var x = parseFloat(from);
-    var y = parseFloat(to.replace(operator[0], ""));
-    switch(operator[0][0]){
-        case "+":
-            return x + y + u;
-        case "-":
-            return x - y + u;
-        case "*":
-            return x * y + u;
-    }
-}
-function validateValue(val, unit) {
-    if (is.col(val)) return colorToRgb(val);
-    if (/\s/g.test(val)) return val;
-    var originalUnit = getUnit(val);
-    var unitLess = originalUnit ? val.substr(0, val.length - originalUnit.length) : val;
-    if (unit) return unitLess + unit;
-    return unitLess;
-}
-// getTotalLength() equivalent for circle, rect, polyline, polygon and line shapes
-// adapted from https://gist.github.com/SebLambla/3e0550c496c236709744
-function getDistance(p1, p2) {
-    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-}
-function getCircleLength(el) {
-    return Math.PI * 2 * getAttribute(el, "r");
-}
-function getRectLength(el) {
-    return getAttribute(el, "width") * 2 + getAttribute(el, "height") * 2;
-}
-function getLineLength(el) {
-    return getDistance({
-        x: getAttribute(el, "x1"),
-        y: getAttribute(el, "y1")
-    }, {
-        x: getAttribute(el, "x2"),
-        y: getAttribute(el, "y2")
-    });
-}
-function getPolylineLength(el) {
-    var points = el.points;
-    var totalLength = 0;
-    var previousPos;
-    for(var i = 0; i < points.numberOfItems; i++){
-        var currentPos = points.getItem(i);
-        if (i > 0) totalLength += getDistance(previousPos, currentPos);
-        previousPos = currentPos;
-    }
-    return totalLength;
-}
-function getPolygonLength(el) {
-    var points = el.points;
-    return getPolylineLength(el) + getDistance(points.getItem(points.numberOfItems - 1), points.getItem(0));
-}
-// Path animation
-function getTotalLength(el) {
-    if (el.getTotalLength) return el.getTotalLength();
-    switch(el.tagName.toLowerCase()){
-        case "circle":
-            return getCircleLength(el);
-        case "rect":
-            return getRectLength(el);
-        case "line":
-            return getLineLength(el);
-        case "polyline":
-            return getPolylineLength(el);
-        case "polygon":
-            return getPolygonLength(el);
-    }
-}
-function setDashoffset(el) {
-    var pathLength = getTotalLength(el);
-    el.setAttribute("stroke-dasharray", pathLength);
-    return pathLength;
-}
-// Motion path
-function getParentSvgEl(el) {
-    var parentEl = el.parentNode;
-    while(is.svg(parentEl)){
-        if (!is.svg(parentEl.parentNode)) break;
-        parentEl = parentEl.parentNode;
-    }
-    return parentEl;
-}
-function getParentSvg(pathEl, svgData) {
-    var svg = svgData || {};
-    var parentSvgEl = svg.el || getParentSvgEl(pathEl);
-    var rect = parentSvgEl.getBoundingClientRect();
-    var viewBoxAttr = getAttribute(parentSvgEl, "viewBox");
-    var width = rect.width;
-    var height = rect.height;
-    var viewBox = svg.viewBox || (viewBoxAttr ? viewBoxAttr.split(" ") : [
-        0,
-        0,
-        width,
-        height
-    ]);
-    return {
-        el: parentSvgEl,
-        viewBox: viewBox,
-        x: viewBox[0] / 1,
-        y: viewBox[1] / 1,
-        w: width,
-        h: height,
-        vW: viewBox[2],
-        vH: viewBox[3]
-    };
-}
-function getPath(path, percent) {
-    var pathEl = is.str(path) ? selectString(path)[0] : path;
-    var p = percent || 100;
-    return function(property) {
-        return {
-            property: property,
-            el: pathEl,
-            svg: getParentSvg(pathEl),
-            totalLength: getTotalLength(pathEl) * (p / 100)
-        };
-    };
-}
-function getPathProgress(path, progress, isPathTargetInsideSVG) {
-    function point(offset) {
-        if (offset === void 0) offset = 0;
-        var l = progress + offset >= 1 ? progress + offset : 0;
-        return path.el.getPointAtLength(l);
-    }
-    var svg = getParentSvg(path.el, path.svg);
-    var p = point();
-    var p0 = point(-1);
-    var p1 = point(1);
-    var scaleX = isPathTargetInsideSVG ? 1 : svg.w / svg.vW;
-    var scaleY = isPathTargetInsideSVG ? 1 : svg.h / svg.vH;
-    switch(path.property){
-        case "x":
-            return (p.x - svg.x) * scaleX;
-        case "y":
-            return (p.y - svg.y) * scaleY;
-        case "angle":
-            return Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI;
-    }
-}
-// Decompose value
-function decomposeValue(val, unit) {
-    // const rgx = /-?\d*\.?\d+/g; // handles basic numbers
-    // const rgx = /[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g; // handles exponents notation
-    var rgx = /[+-]?\d*\.?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g; // handles exponents notation
-    var value = validateValue(is.pth(val) ? val.totalLength : val, unit) + "";
-    return {
-        original: value,
-        numbers: value.match(rgx) ? value.match(rgx).map(Number) : [
-            0
-        ],
-        strings: is.str(val) || unit ? value.split(rgx) : []
-    };
-}
-// Animatables
-function parseTargets(targets) {
-    var targetsArray = targets ? flattenArray(is.arr(targets) ? targets.map(toArray) : toArray(targets)) : [];
-    return filterArray(targetsArray, function(item, pos, self) {
-        return self.indexOf(item) === pos;
-    });
-}
-function getAnimatables(targets) {
-    var parsed = parseTargets(targets);
-    return parsed.map(function(t, i) {
-        return {
-            target: t,
-            id: i,
-            total: parsed.length,
-            transforms: {
-                list: getElementTransforms(t)
-            }
-        };
-    });
-}
-// Properties
-function normalizePropertyTweens(prop, tweenSettings) {
-    var settings = cloneObject(tweenSettings);
-    // Override duration if easing is a spring
-    if (/^spring/.test(settings.easing)) settings.duration = spring(settings.easing);
-    if (is.arr(prop)) {
-        var l = prop.length;
-        var isFromTo = l === 2 && !is.obj(prop[0]);
-        if (!isFromTo) // Duration divided by the number of tweens
-        {
-            if (!is.fnc(tweenSettings.duration)) settings.duration = tweenSettings.duration / l;
-        } else // Transform [from, to] values shorthand to a valid tween value
-        prop = {
-            value: prop
-        };
-    }
-    var propArray = is.arr(prop) ? prop : [
-        prop
-    ];
-    return propArray.map(function(v, i) {
-        var obj = is.obj(v) && !is.pth(v) ? v : {
-            value: v
-        };
-        // Default delay value should only be applied to the first tween
-        if (is.und(obj.delay)) obj.delay = !i ? tweenSettings.delay : 0;
-        // Default endDelay value should only be applied to the last tween
-        if (is.und(obj.endDelay)) obj.endDelay = i === propArray.length - 1 ? tweenSettings.endDelay : 0;
-        return obj;
-    }).map(function(k) {
-        return mergeObjects(k, settings);
-    });
-}
-function flattenKeyframes(keyframes) {
-    var propertyNames = filterArray(flattenArray(keyframes.map(function(key) {
-        return Object.keys(key);
-    })), function(p) {
-        return is.key(p);
-    }).reduce(function(a, b) {
-        if (a.indexOf(b) < 0) a.push(b);
-        return a;
-    }, []);
-    var properties = {};
-    var loop = function(i) {
-        var propName = propertyNames[i];
-        properties[propName] = keyframes.map(function(key) {
-            var newKey = {};
-            for(var p in key){
-                if (is.key(p)) {
-                    if (p == propName) newKey.value = key[p];
-                } else newKey[p] = key[p];
-            }
-            return newKey;
-        });
-    };
-    for(var i = 0; i < propertyNames.length; i++)loop(i);
-    return properties;
-}
-function getProperties(tweenSettings, params) {
-    var properties = [];
-    var keyframes = params.keyframes;
-    if (keyframes) params = mergeObjects(flattenKeyframes(keyframes), params);
-    for(var p in params)if (is.key(p)) properties.push({
-        name: p,
-        tweens: normalizePropertyTweens(params[p], tweenSettings)
-    });
-    return properties;
-}
-// Tweens
-function normalizeTweenValues(tween, animatable) {
-    var t = {};
-    for(var p in tween){
-        var value = getFunctionValue(tween[p], animatable);
-        if (is.arr(value)) {
-            value = value.map(function(v) {
-                return getFunctionValue(v, animatable);
-            });
-            if (value.length === 1) value = value[0];
-        }
-        t[p] = value;
-    }
-    t.duration = parseFloat(t.duration);
-    t.delay = parseFloat(t.delay);
-    return t;
-}
-function normalizeTweens(prop, animatable) {
-    var previousTween;
-    return prop.tweens.map(function(t) {
-        var tween = normalizeTweenValues(t, animatable);
-        var tweenValue = tween.value;
-        var to = is.arr(tweenValue) ? tweenValue[1] : tweenValue;
-        var toUnit = getUnit(to);
-        var originalValue = getOriginalTargetValue(animatable.target, prop.name, toUnit, animatable);
-        var previousValue = previousTween ? previousTween.to.original : originalValue;
-        var from = is.arr(tweenValue) ? tweenValue[0] : previousValue;
-        var fromUnit = getUnit(from) || getUnit(originalValue);
-        var unit = toUnit || fromUnit;
-        if (is.und(to)) to = previousValue;
-        tween.from = decomposeValue(from, unit);
-        tween.to = decomposeValue(getRelativeValue(to, from), unit);
-        tween.start = previousTween ? previousTween.end : 0;
-        tween.end = tween.start + tween.delay + tween.duration + tween.endDelay;
-        tween.easing = parseEasings(tween.easing, tween.duration);
-        tween.isPath = is.pth(tweenValue);
-        tween.isPathTargetInsideSVG = tween.isPath && is.svg(animatable.target);
-        tween.isColor = is.col(tween.from.original);
-        if (tween.isColor) tween.round = 1;
-        previousTween = tween;
-        return tween;
-    });
-}
-// Tween progress
-var setProgressValue = {
-    css: function(t, p, v) {
-        return t.style[p] = v;
-    },
-    attribute: function(t, p, v) {
-        return t.setAttribute(p, v);
-    },
-    object: function(t, p, v) {
-        return t[p] = v;
-    },
-    transform: function(t, p, v, transforms, manual) {
-        transforms.list.set(p, v);
-        if (p === transforms.last || manual) {
-            var str = "";
-            transforms.list.forEach(function(value, prop) {
-                str += prop + "(" + value + ") ";
-            });
-            t.style.transform = str;
-        }
-    }
-};
-// Set Value helper
-function setTargetsValue(targets, properties) {
-    var animatables = getAnimatables(targets);
-    animatables.forEach(function(animatable) {
-        for(var property in properties){
-            var value = getFunctionValue(properties[property], animatable);
-            var target = animatable.target;
-            var valueUnit = getUnit(value);
-            var originalValue = getOriginalTargetValue(target, property, valueUnit, animatable);
-            var unit = valueUnit || getUnit(originalValue);
-            var to = getRelativeValue(validateValue(value, unit), originalValue);
-            var animType = getAnimationType(target, property);
-            setProgressValue[animType](target, property, to, animatable.transforms, true);
-        }
-    });
-}
-// Animations
-function createAnimation(animatable, prop) {
-    var animType = getAnimationType(animatable.target, prop.name);
-    if (animType) {
-        var tweens = normalizeTweens(prop, animatable);
-        var lastTween = tweens[tweens.length - 1];
-        return {
-            type: animType,
-            property: prop.name,
-            animatable: animatable,
-            tweens: tweens,
-            duration: lastTween.end,
-            delay: tweens[0].delay,
-            endDelay: lastTween.endDelay
-        };
-    }
-}
-function getAnimations(animatables, properties) {
-    return filterArray(flattenArray(animatables.map(function(animatable) {
-        return properties.map(function(prop) {
-            return createAnimation(animatable, prop);
-        });
-    })), function(a) {
-        return !is.und(a);
-    });
-}
-// Create Instance
-function getInstanceTimings(animations, tweenSettings) {
-    var animLength = animations.length;
-    var getTlOffset = function(anim) {
-        return anim.timelineOffset ? anim.timelineOffset : 0;
-    };
-    var timings = {};
-    timings.duration = animLength ? Math.max.apply(Math, animations.map(function(anim) {
-        return getTlOffset(anim) + anim.duration;
-    })) : tweenSettings.duration;
-    timings.delay = animLength ? Math.min.apply(Math, animations.map(function(anim) {
-        return getTlOffset(anim) + anim.delay;
-    })) : tweenSettings.delay;
-    timings.endDelay = animLength ? timings.duration - Math.max.apply(Math, animations.map(function(anim) {
-        return getTlOffset(anim) + anim.duration - anim.endDelay;
-    })) : tweenSettings.endDelay;
-    return timings;
-}
-var instanceID = 0;
-function createNewInstance(params) {
-    var instanceSettings = replaceObjectProps(defaultInstanceSettings, params);
-    var tweenSettings = replaceObjectProps(defaultTweenSettings, params);
-    var properties = getProperties(tweenSettings, params);
-    var animatables = getAnimatables(params.targets);
-    var animations = getAnimations(animatables, properties);
-    var timings = getInstanceTimings(animations, tweenSettings);
-    var id = instanceID;
-    instanceID++;
-    return mergeObjects(instanceSettings, {
-        id: id,
-        children: [],
-        animatables: animatables,
-        animations: animations,
-        duration: timings.duration,
-        delay: timings.delay,
-        endDelay: timings.endDelay
-    });
-}
-// Core
-var activeInstances = [];
-var engine = function() {
-    var raf;
-    function play() {
-        if (!raf && (!isDocumentHidden() || !anime.suspendWhenDocumentHidden) && activeInstances.length > 0) raf = requestAnimationFrame(step);
-    }
-    function step(t) {
-        // memo on algorithm issue:
-        // dangerous iteration over mutable `activeInstances`
-        // (that collection may be updated from within callbacks of `tick`-ed animation instances)
-        var activeInstancesLength = activeInstances.length;
-        var i = 0;
-        while(i < activeInstancesLength){
-            var activeInstance = activeInstances[i];
-            if (!activeInstance.paused) {
-                activeInstance.tick(t);
-                i++;
-            } else {
-                activeInstances.splice(i, 1);
-                activeInstancesLength--;
-            }
-        }
-        raf = i > 0 ? requestAnimationFrame(step) : undefined;
-    }
-    function handleVisibilityChange() {
-        if (!anime.suspendWhenDocumentHidden) return;
-        if (isDocumentHidden()) // suspend ticks
-        raf = cancelAnimationFrame(raf);
-        else {
-            // first adjust animations to consider the time that ticks were suspended
-            activeInstances.forEach(function(instance) {
-                return instance._onDocumentVisibility();
-            });
-            engine();
-        }
-    }
-    if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleVisibilityChange);
-    return play;
-}();
-function isDocumentHidden() {
-    return !!document && document.hidden;
-}
-// Public Instance
-function anime(params) {
-    if (params === void 0) params = {};
-    var startTime = 0, lastTime = 0, now = 0;
-    var children, childrenLength = 0;
-    var resolve = null;
-    function makePromise(instance) {
-        var promise = window.Promise && new Promise(function(_resolve) {
-            return resolve = _resolve;
-        });
-        instance.finished = promise;
-        return promise;
-    }
-    var instance = createNewInstance(params);
-    var promise = makePromise(instance);
-    function toggleInstanceDirection() {
-        var direction = instance.direction;
-        if (direction !== "alternate") instance.direction = direction !== "normal" ? "normal" : "reverse";
-        instance.reversed = !instance.reversed;
-        children.forEach(function(child) {
-            return child.reversed = instance.reversed;
-        });
-    }
-    function adjustTime(time) {
-        return instance.reversed ? instance.duration - time : time;
-    }
-    function resetTime() {
-        startTime = 0;
-        lastTime = adjustTime(instance.currentTime) * (1 / anime.speed);
-    }
-    function seekChild(time, child) {
-        if (child) child.seek(time - child.timelineOffset);
-    }
-    function syncInstanceChildren(time) {
-        if (!instance.reversePlayback) for(var i = 0; i < childrenLength; i++)seekChild(time, children[i]);
-        else for(var i$1 = childrenLength; i$1--;)seekChild(time, children[i$1]);
-    }
-    function setAnimationsProgress(insTime) {
-        var i = 0;
-        var animations = instance.animations;
-        var animationsLength = animations.length;
-        while(i < animationsLength){
-            var anim = animations[i];
-            var animatable = anim.animatable;
-            var tweens = anim.tweens;
-            var tweenLength = tweens.length - 1;
-            var tween = tweens[tweenLength];
-            // Only check for keyframes if there is more than one tween
-            if (tweenLength) tween = filterArray(tweens, function(t) {
-                return insTime < t.end;
-            })[0] || tween;
-            var elapsed = minMax(insTime - tween.start - tween.delay, 0, tween.duration) / tween.duration;
-            var eased = isNaN(elapsed) ? 1 : tween.easing(elapsed);
-            var strings = tween.to.strings;
-            var round = tween.round;
-            var numbers = [];
-            var toNumbersLength = tween.to.numbers.length;
-            var progress = void 0;
-            for(var n = 0; n < toNumbersLength; n++){
-                var value = void 0;
-                var toNumber = tween.to.numbers[n];
-                var fromNumber = tween.from.numbers[n] || 0;
-                if (!tween.isPath) value = fromNumber + eased * (toNumber - fromNumber);
-                else value = getPathProgress(tween.value, eased * toNumber, tween.isPathTargetInsideSVG);
-                if (round) {
-                    if (!(tween.isColor && n > 2)) value = Math.round(value * round) / round;
-                }
-                numbers.push(value);
-            }
-            // Manual Array.reduce for better performances
-            var stringsLength = strings.length;
-            if (!stringsLength) progress = numbers[0];
-            else {
-                progress = strings[0];
-                for(var s = 0; s < stringsLength; s++){
-                    var a = strings[s];
-                    var b = strings[s + 1];
-                    var n$1 = numbers[s];
-                    if (!isNaN(n$1)) {
-                        if (!b) progress += n$1 + " ";
-                        else progress += n$1 + b;
-                    }
-                }
-            }
-            setProgressValue[anim.type](animatable.target, anim.property, progress, animatable.transforms);
-            anim.currentValue = progress;
-            i++;
-        }
-    }
-    function setCallback(cb) {
-        if (instance[cb] && !instance.passThrough) instance[cb](instance);
-    }
-    function countIteration() {
-        if (instance.remaining && instance.remaining !== true) instance.remaining--;
-    }
-    function setInstanceProgress(engineTime) {
-        var insDuration = instance.duration;
-        var insDelay = instance.delay;
-        var insEndDelay = insDuration - instance.endDelay;
-        var insTime = adjustTime(engineTime);
-        instance.progress = minMax(insTime / insDuration * 100, 0, 100);
-        instance.reversePlayback = insTime < instance.currentTime;
-        if (children) syncInstanceChildren(insTime);
-        if (!instance.began && instance.currentTime > 0) {
-            instance.began = true;
-            setCallback("begin");
-        }
-        if (!instance.loopBegan && instance.currentTime > 0) {
-            instance.loopBegan = true;
-            setCallback("loopBegin");
-        }
-        if (insTime <= insDelay && instance.currentTime !== 0) setAnimationsProgress(0);
-        if (insTime >= insEndDelay && instance.currentTime !== insDuration || !insDuration) setAnimationsProgress(insDuration);
-        if (insTime > insDelay && insTime < insEndDelay) {
-            if (!instance.changeBegan) {
-                instance.changeBegan = true;
-                instance.changeCompleted = false;
-                setCallback("changeBegin");
-            }
-            setCallback("change");
-            setAnimationsProgress(insTime);
-        } else if (instance.changeBegan) {
-            instance.changeCompleted = true;
-            instance.changeBegan = false;
-            setCallback("changeComplete");
-        }
-        instance.currentTime = minMax(insTime, 0, insDuration);
-        if (instance.began) setCallback("update");
-        if (engineTime >= insDuration) {
-            lastTime = 0;
-            countIteration();
-            if (!instance.remaining) {
-                instance.paused = true;
-                if (!instance.completed) {
-                    instance.completed = true;
-                    setCallback("loopComplete");
-                    setCallback("complete");
-                    if (!instance.passThrough && "Promise" in window) {
-                        resolve();
-                        promise = makePromise(instance);
-                    }
-                }
-            } else {
-                startTime = now;
-                setCallback("loopComplete");
-                instance.loopBegan = false;
-                if (instance.direction === "alternate") toggleInstanceDirection();
-            }
-        }
-    }
-    instance.reset = function() {
-        var direction = instance.direction;
-        instance.passThrough = false;
-        instance.currentTime = 0;
-        instance.progress = 0;
-        instance.paused = true;
-        instance.began = false;
-        instance.loopBegan = false;
-        instance.changeBegan = false;
-        instance.completed = false;
-        instance.changeCompleted = false;
-        instance.reversePlayback = false;
-        instance.reversed = direction === "reverse";
-        instance.remaining = instance.loop;
-        children = instance.children;
-        childrenLength = children.length;
-        for(var i = childrenLength; i--;)instance.children[i].reset();
-        if (instance.reversed && instance.loop !== true || direction === "alternate" && instance.loop === 1) instance.remaining++;
-        setAnimationsProgress(instance.reversed ? instance.duration : 0);
-    };
-    // internal method (for engine) to adjust animation timings before restoring engine ticks (rAF)
-    instance._onDocumentVisibility = resetTime;
-    // Set Value helper
-    instance.set = function(targets, properties) {
-        setTargetsValue(targets, properties);
-        return instance;
-    };
-    instance.tick = function(t) {
-        now = t;
-        if (!startTime) startTime = now;
-        setInstanceProgress((now + (lastTime - startTime)) * anime.speed);
-    };
-    instance.seek = function(time) {
-        setInstanceProgress(adjustTime(time));
-    };
-    instance.pause = function() {
-        instance.paused = true;
-        resetTime();
-    };
-    instance.play = function() {
-        if (!instance.paused) return;
-        if (instance.completed) instance.reset();
-        instance.paused = false;
-        activeInstances.push(instance);
-        resetTime();
-        engine();
-    };
-    instance.reverse = function() {
-        toggleInstanceDirection();
-        instance.completed = instance.reversed ? false : true;
-        resetTime();
-    };
-    instance.restart = function() {
-        instance.reset();
-        instance.play();
-    };
-    instance.remove = function(targets) {
-        var targetsArray = parseTargets(targets);
-        removeTargetsFromInstance(targetsArray, instance);
-    };
-    instance.reset();
-    if (instance.autoplay) instance.play();
-    return instance;
-}
-// Remove targets from animation
-function removeTargetsFromAnimations(targetsArray, animations) {
-    for(var a = animations.length; a--;)if (arrayContains(targetsArray, animations[a].animatable.target)) animations.splice(a, 1);
-}
-function removeTargetsFromInstance(targetsArray, instance) {
-    var animations = instance.animations;
-    var children = instance.children;
-    removeTargetsFromAnimations(targetsArray, animations);
-    for(var c = children.length; c--;){
-        var child = children[c];
-        var childAnimations = child.animations;
-        removeTargetsFromAnimations(targetsArray, childAnimations);
-        if (!childAnimations.length && !child.children.length) children.splice(c, 1);
-    }
-    if (!animations.length && !children.length) instance.pause();
-}
-function removeTargetsFromActiveInstances(targets) {
-    var targetsArray = parseTargets(targets);
-    for(var i = activeInstances.length; i--;){
-        var instance = activeInstances[i];
-        removeTargetsFromInstance(targetsArray, instance);
-    }
-}
-// Stagger helpers
-function stagger(val, params) {
-    if (params === void 0) params = {};
-    var direction = params.direction || "normal";
-    var easing = params.easing ? parseEasings(params.easing) : null;
-    var grid = params.grid;
-    var axis = params.axis;
-    var fromIndex = params.from || 0;
-    var fromFirst = fromIndex === "first";
-    var fromCenter = fromIndex === "center";
-    var fromLast = fromIndex === "last";
-    var isRange = is.arr(val);
-    var val1 = isRange ? parseFloat(val[0]) : parseFloat(val);
-    var val2 = isRange ? parseFloat(val[1]) : 0;
-    var unit = getUnit(isRange ? val[1] : val) || 0;
-    var start = params.start || 0 + (isRange ? val1 : 0);
-    var values = [];
-    var maxValue = 0;
-    return function(el, i, t) {
-        if (fromFirst) fromIndex = 0;
-        if (fromCenter) fromIndex = (t - 1) / 2;
-        if (fromLast) fromIndex = t - 1;
-        if (!values.length) {
-            for(var index = 0; index < t; index++){
-                if (!grid) values.push(Math.abs(fromIndex - index));
-                else {
-                    var fromX = !fromCenter ? fromIndex % grid[0] : (grid[0] - 1) / 2;
-                    var fromY = !fromCenter ? Math.floor(fromIndex / grid[0]) : (grid[1] - 1) / 2;
-                    var toX = index % grid[0];
-                    var toY = Math.floor(index / grid[0]);
-                    var distanceX = fromX - toX;
-                    var distanceY = fromY - toY;
-                    var value = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
-                    if (axis === "x") value = -distanceX;
-                    if (axis === "y") value = -distanceY;
-                    values.push(value);
-                }
-                maxValue = Math.max.apply(Math, values);
-            }
-            if (easing) values = values.map(function(val) {
-                return easing(val / maxValue) * maxValue;
-            });
-            if (direction === "reverse") values = values.map(function(val) {
-                return axis ? val < 0 ? val * -1 : -val : Math.abs(maxValue - val);
-            });
-        }
-        var spacing = isRange ? (val2 - val1) / maxValue : val1;
-        return start + spacing * (Math.round(values[i] * 100) / 100) + unit;
-    };
-}
-// Timeline
-function timeline(params) {
-    if (params === void 0) params = {};
-    var tl = anime(params);
-    tl.duration = 0;
-    tl.add = function(instanceParams, timelineOffset) {
-        var tlIndex = activeInstances.indexOf(tl);
-        var children = tl.children;
-        if (tlIndex > -1) activeInstances.splice(tlIndex, 1);
-        function passThrough(ins) {
-            ins.passThrough = true;
-        }
-        for(var i = 0; i < children.length; i++)passThrough(children[i]);
-        var insParams = mergeObjects(instanceParams, replaceObjectProps(defaultTweenSettings, params));
-        insParams.targets = insParams.targets || params.targets;
-        var tlDuration = tl.duration;
-        insParams.autoplay = false;
-        insParams.direction = tl.direction;
-        insParams.timelineOffset = is.und(timelineOffset) ? tlDuration : getRelativeValue(timelineOffset, tlDuration);
-        passThrough(tl);
-        tl.seek(insParams.timelineOffset);
-        var ins = anime(insParams);
-        passThrough(ins);
-        children.push(ins);
-        var timings = getInstanceTimings(children, params);
-        tl.delay = timings.delay;
-        tl.endDelay = timings.endDelay;
-        tl.duration = timings.duration;
-        tl.seek(0);
-        tl.reset();
-        if (tl.autoplay) tl.play();
-        return tl;
-    };
-    return tl;
-}
-anime.version = "3.2.1";
-anime.speed = 1;
-// TODO:#review: naming, documentation
-anime.suspendWhenDocumentHidden = true;
-anime.running = activeInstances;
-anime.remove = removeTargetsFromActiveInstances;
-anime.get = getOriginalTargetValue;
-anime.set = setTargetsValue;
-anime.convertPx = convertPxToUnit;
-anime.path = getPath;
-anime.setDashoffset = setDashoffset;
-anime.stagger = stagger;
-anime.timeline = timeline;
-anime.easing = parseEasings;
-anime.penner = penner;
-anime.random = function(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-exports.default = anime;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"3qBDj":[function(require,module,exports) {
+},{}],"3qBDj":[function(require,module,exports) {
 var global = arguments[3];
 (function() {
     /** Used as a safe reference for `undefined` in pre-ES5 environments. */ var undefined;
@@ -56712,6 +55294,1471 @@ var global = arguments[3];
     root._ = _;
 }).call(this);
 
-},{}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{}],"i90JS":[function(require,module,exports) {
+module.exports = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#define GLSLIFY 1\n#endif\n\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g_0 = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g_0;\n  vec3 i1 = min( g_0.xyz, l.zxy );\n  vec3 i2 = max( g_0.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#ifndef HALF_PI\n#define HALF_PI 1.5707963267948966\n#endif\n\nfloat elasticIn(float t) {\n  return sin(13.0 * t * HALF_PI) * pow(2.0, 10.0 * (t - 1.0));\n}\n\nvec3 blendOverlay(vec3 base, vec3 blend) {\n    return mix(1.0 - 2.0 * (1.0 - base) * (1.0 - blend), 2.0 * base * blend, step(base, vec3(0.5)));\n    // with conditionals, may be worth benchmarking\n    // return vec3(\n    //     base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r)),\n    //     base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g)),\n    //     base.b < 0.5 ? (2.0 * base.b * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b))\n    // );\n}\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTxt;\nuniform sampler2D threeDTexture;\nuniform sampler2D uPuck;\nuniform sampler2D uBg;\nuniform sampler2D uImg;\n\n// lerped scroll deltas\n// negative when scrolling down, positive when scrolling up\nuniform float uScrollEffect;\n\n// default to 2.5\nuniform float uScrollStrength;\n\nuniform vec4 uBgCol;\nuniform vec4 uFgCol;\nuniform vec4 uColA;\nuniform vec4 uColB;\nuniform vec4 uColC;\nuniform vec4 uColD;\nuniform vec2 uMouse;\nuniform float uTime;\nuniform float uGradientOpacity;\n\nvoid main() {\n    vec2 uv = vTextureCoord;\n    float horizontalStretch;\n    vec4 threeDCol = texture2D(threeDTexture, uv);\n\n    // branching on an uniform is ok\n    if(uScrollEffect >= 0.0) {\n        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(uv.y);\n    }\n    else if(uScrollEffect < 0.0) {\n        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;\n        horizontalStretch = sin(-1.0 * (1.0 - uv.y));\n    }\n\n    uv.x = uv.x * 2.0 - 1.0;\n    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;\n    uv.x = (uv.x + 1.0) * 0.5;\n    // moving the content underneath the square\n\n    float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;\n    //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);\n    float morphStrength = 0.005;\n    float morph = elasticIn(threeDCol.r);\n    float baseStrength = 0.02;\n\n    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);\n\n    //rgb split\n    vec2 uvR = muv;\n    vec2 uvG = muv;\n    vec2 uvB = muv;\n\n    uvR.x += morph * morphStrength;\n    uvR.y += morph * morphStrength;\n    uvG.x -= morph * morphStrength;\n    uvG.y += morph * morphStrength;\n    uvB.y -= morph * morphStrength;\n\n    \n    float t = uTime /1000.0  ;\n\n    // gradient noise\n    float noise = snoise(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));\n    float black = snoise(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));\n\n    vec4 gradient = mix(uColA, uColB, noise);\n    gradient = mix(gradient, uBgCol, black);\n    vec4 puckGradient = mix(uColC, uColD, noise);\n    puckGradient = mix(puckGradient, uBgCol, black);\n    //\n\n    vec4 colR =  texture2D(uTxt, uvR);\n    vec4 colG =  texture2D(uTxt, uvG);\n    vec4 colB =  texture2D(uTxt, uvB);\n\n    vec4 bg = texture2D(uBg, uv); // images not in the puck\n    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk\n\n    puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));\n\n    vec4 imgCol =  vec4(texture2D(uImg, uvR).r, texture2D(uImg, uvG).g, texture2D(uImg, uvB).b, 1.0); //images\n    imgCol.a = max( max(texture2D(uImg, uvR).a, texture2D(uImg, uvG).a), texture2D(uImg, uvB).a);\n \n    float maxA = max(max(colR.a, colG.a), colB.a);\n    //maxA = max(colR.a, colG.a);\n    //maxA = colR.a;\n\n    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);\n    vec4 baseCol =  texture2D(uTxt, uv) + bg + imgCol; // baseColor\n\n    vec4 defCol = (1.0 - splitCol);\n    defCol.a = splitCol.a;\n    defCol =  mix(puckCol + imgCol, defCol, defCol.a);\n\n    float alpha = threeDCol.a;\n\n    defCol = vec4(blendOverlay(defCol.rgb, puckGradient.rgb), defCol.a);\n    //mix in gradient\n    vec4 mixCol = mix(baseCol, defCol, alpha);\n\n    vec4 bgCol = mix(uBgCol, puckGradient, uGradientOpacity);\n\n    mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0, 1.0));\n    mixCol = mix( gradient, mixCol, mixCol.a); // gradient\n    mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights\n\n    gl_FragColor = mixCol;\n\n    //gl_FragColor = gradient;\n    //gl_FragColor = texture2D(threeDTexture, uv);\n    //gl_FragColor = vec4(texture2D(uImg, muv).rgb, 1.0);\n    //gl_FragColor = vec4(baseMorph, 0.0,0.0,1.0);\n    //gl_FragColor = threeDCol;\n}";
+
+},{}],"7dXWc":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTexture;\n\nvoid main() {\n    // just display our texture\n    gl_FragColor = texture2D(uTexture, vTextureCoord);\n}";
+
+},{}],"bIDtH":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "hexToRgb", ()=>hexToRgb);
+parcelHelpers.export(exports, "rgbaToArray", ()=>rgbaToArray);
+parcelHelpers.export(exports, "normCoord", ()=>normCoord);
+parcelHelpers.export(exports, "normX", ()=>normX);
+parcelHelpers.export(exports, "normY", ()=>normY);
+parcelHelpers.export(exports, "getCoord", ()=>getCoord);
+const hexToRgb = (hex)=>hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b)=>"#" + r + r + g + g + b + b).substring(1).match(/.{2}/g).map((x)=>parseInt(x, 16) / 255);
+const rgbaToArray = (string)=>string.replace(/[^\d,]/g, "").split(",").map((x, i)=>i < 3 ? parseInt(x) / 255 : parseInt(x));
+const normX = (x)=>{
+    return x / window.innerWidth * 2 - 1;
+};
+const normY = (y)=>{
+    return -(y / window.innerHeight) * 2 + 1;
+};
+const normCoord = (x, y)=>{
+    nx = normX(x);
+    ny = normY(y);
+    return {
+        x: nx,
+        y: ny
+    };
+};
+const getCoord = (el)=>{
+    if (!el) return false;
+    let rect = el.getBoundingClientRect();
+    let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2;
+    keyframe = keyframe < 0 ? 0 : keyframe;
+    let stick = el.getAttribute("stick");
+    let scale = el.getAttribute("scale") ? el.getAttribute("scale") : 1;
+    let colora = el.getAttribute("colora") ? el.getAttribute("colora") : false;
+    let colorb = el.getAttribute("colorb") ? el.getAttribute("colorb") : false;
+    let colorc = el.getAttribute("colorc") ? el.getAttribute("colorc") : false;
+    let colord = el.getAttribute("colord") ? el.getAttribute("colord") : false;
+    let opacity = el.getAttribute("opacity") ? el.getAttribute("opacity") : false;
+    let rotation = el.getAttribute("rotation") ? parseInt(el.getAttribute("rotation")) : 0;
+    let range = isNaN(stick) ? 1 : 1 - stick;
+    return {
+        x: normX(rect.x + rect.width / 2) - window.scrollX,
+        y: el.getAttribute("yoffset") ? normY(el.offsetTop + rect.height / 2 + el.parentElement.offsetTop) : 0,
+        size: rect.width > rect.height ? rect.height * scale : rect.width * scale,
+        h: rect.height,
+        w: rect.width,
+        rotation: rotation,
+        keyframe: keyframe,
+        range: range,
+        colors: {
+            ...colora && {
+                a: colora
+            },
+            ...colorb && {
+                b: colorb
+            },
+            ...colorc && {
+                c: colorc
+            },
+            ...colord && {
+                d: colord
+            },
+            ...opacity && {
+                opacity: opacity
+            }
+        }
+    };
+};
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"807TH":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _curtainsjs = require("curtainsjs");
+var _sliderFrag = require("./shaders/slider.frag");
+var _sliderFragDefault = parcelHelpers.interopDefault(_sliderFrag);
+var _sliderVert = require("./shaders/slider.vert");
+var _sliderVertDefault = parcelHelpers.interopDefault(_sliderVert);
+class Slider {
+    constructor(curtains, el){
+        this.curtains = curtains;
+        this.element = el;
+        this.params = {
+            vertexShader: (0, _sliderVertDefault.default),
+            fragmentShader: (0, _sliderFragDefault.default),
+            uniforms: {
+                transitionTimer: {
+                    name: "uTransitionTimer",
+                    type: "1f",
+                    value: 0
+                }
+            }
+        };
+        // here we will handle which texture is visible and the timer to transition between images
+        this.state = {
+            activeIndex: 0,
+            nextIndex: 1,
+            maxTextures: this.element.querySelectorAll("img").length - 1,
+            isChanging: false,
+            transitionTimer: 0
+        };
+    }
+    init(target, callback) {
+        this.callback = callback;
+        //this.target = new RenderTarget(this.curtains) //create a render target for our slider
+        this.target = target;
+        this.plane = new (0, _curtainsjs.Plane)(this.curtains, this.element, this.params) // create a plane for our slider
+        ;
+        this.plane.setRenderTarget(target);
+        //this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
+        this.plane.onLoading((texture)=>{
+            // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
+            texture.setMinFilter(this.curtains.gl.NEAREST);
+        }).onReady(this.onReady.bind(this)).onRender(this.onRender.bind(this));
+        this.element.style.opacity = 0;
+    }
+    onReady() {
+        // the idea here is to create two additionnal textures
+        // the first one will contain our visible image
+        // the second one will contain our entering (next) image
+        // that way we will deal with only active and next samplers in the fragment shader
+        // and we could easily add more images in the slideshow...
+        this.displacement = this.plane.createTexture({
+            sampler: "displacement",
+            fromTexture: this.plane.textures[this.state.nextIndex]
+        });
+        // first we set our very first image as the active texture
+        this.active = this.plane.createTexture({
+            sampler: "activeTex",
+            fromTexture: this.plane.textures[this.state.activeIndex]
+        });
+        // next we set the second image as next texture but this is not mandatory
+        // as we will reset the next texture on slide change
+        this.next = this.plane.createTexture({
+            sampler: "nextTex",
+            fromTexture: this.plane.textures[this.state.activeIndex]
+        });
+        this.element.addEventListener("click", this.onClick.bind(this));
+    }
+    onClick() {
+        if (!this.state.isChanging) {
+            // enable drawing for now
+            //curtains.enableDrawing();
+            this.state.isChanging = true;
+            // check what will be next image
+            if (this.state.activeIndex < this.state.maxTextures) this.state.nextIndex = this.state.activeIndex + 1;
+            else this.state.nextIndex = 1;
+            // apply it to our next texture
+            this.next.setSource(this.plane.images[this.state.nextIndex]);
+            this.displacement.setSource(this.plane.images[this.state.activeIndex]);
+            setTimeout(()=>{
+                // disable drawing now that the transition is over
+                //curtains.disableDrawing();
+                this.state.isChanging = false;
+                this.state.activeIndex = this.state.nextIndex;
+                // our next texture becomes our active texture
+                this.active.setSource(this.plane.images[this.state.activeIndex]);
+                // reset timer
+                this.state.transitionTimer = 0;
+            }, 1700) // add a bit of margin to the timer
+            ;
+            this.callback();
+        }
+    }
+    onRender() {
+        // increase or decrease our timer based on the active texture value
+        if (this.state.isChanging) {
+            // use damping to smoothen transition
+            this.state.transitionTimer += (90 - this.state.transitionTimer) * 0.04;
+            // force end of animation as damping is slower the closer we get from the end value
+            if (this.state.transitionTimer >= 88.9 && this.state.transitionTimer !== 90) this.state.transitionTimer = 90;
+        }
+        // update our transition timer uniform
+        this.plane.uniforms.transitionTimer.value = this.state.transitionTimer;
+    }
+}
+exports.default = Slider;
+
+},{"curtainsjs":"9AjRS","./shaders/slider.frag":"7aA3N","./shaders/slider.vert":"3Tkxq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"7aA3N":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// custom uniforms\nuniform float uTransitionTimer;\n// our textures samplers\n// notice how it matches the sampler attributes of the textures we created dynamically\nuniform sampler2D activeTex;\nuniform sampler2D nextTex;\nuniform sampler2D displacement;\nvoid main() {\n    // our displacement texture\n    vec4 displacementTexture = texture2D(displacement, vTextureCoord);\n    // slides transitions based on displacement and transition timer\n    vec2 firstDisplacementCoords = vActiveTextureCoord + displacementTexture.r * ((cos((uTransitionTimer + 90.0) / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 firstDistortedColor = texture2D(activeTex, vec2(vActiveTextureCoord.x, firstDisplacementCoords.y));\n    // same as above but we substract the effect\n    vec2 secondDisplacementCoords = vNextTextureCoord - displacementTexture.r * ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 1.25);\n    vec4 secondDistortedColor = texture2D(nextTex, vec2(vNextTextureCoord.x, secondDisplacementCoords.y));\n    // mix both texture\n    vec4 finalColor = mix(firstDistortedColor, secondDistortedColor, 1.0 - ((cos(uTransitionTimer / (90.0 / 3.141592)) + 1.0) / 2.0));\n    // handling premultiplied alpha\n    finalColor = vec4(finalColor.rgb * finalColor.a, finalColor.a);\n    gl_FragColor = finalColor;\n}";
+
+},{}],"3Tkxq":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\n// default mandatory variables\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\n// varyings : notice we've got 3 texture coords varyings\n// one for the displacement texture\n// one for our visible texture\n// and one for the upcoming texture\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\nvarying vec2 vActiveTextureCoord;\nvarying vec2 vNextTextureCoord;\n// textures matrices\nuniform mat4 activeTexMatrix;\nuniform mat4 nextTexMatrix;\n// custom uniforms\nuniform float uTransitionTimer;\nvoid main() {\n    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n    // varyings\n    vTextureCoord = aTextureCoord;\n    vActiveTextureCoord = (activeTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vNextTextureCoord = (nextTexMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;\n    vVertexPosition = aVertexPosition;\n}";
+
+},{}],"jokr5":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+/*
+ * anime.js v3.2.1
+ * (c) 2020 Julian Garnier
+ * Released under the MIT license
+ * animejs.com
+ */ // Defaults
+var defaultInstanceSettings = {
+    update: null,
+    begin: null,
+    loopBegin: null,
+    changeBegin: null,
+    change: null,
+    changeComplete: null,
+    loopComplete: null,
+    complete: null,
+    loop: 1,
+    direction: "normal",
+    autoplay: true,
+    timelineOffset: 0
+};
+var defaultTweenSettings = {
+    duration: 1000,
+    delay: 0,
+    endDelay: 0,
+    easing: "easeOutElastic(1, .5)",
+    round: 0
+};
+var validTransforms = [
+    "translateX",
+    "translateY",
+    "translateZ",
+    "rotate",
+    "rotateX",
+    "rotateY",
+    "rotateZ",
+    "scale",
+    "scaleX",
+    "scaleY",
+    "scaleZ",
+    "skew",
+    "skewX",
+    "skewY",
+    "perspective",
+    "matrix",
+    "matrix3d"
+];
+// Caching
+var cache = {
+    CSS: {},
+    springs: {}
+};
+// Utils
+function minMax(val, min, max) {
+    return Math.min(Math.max(val, min), max);
+}
+function stringContains(str, text) {
+    return str.indexOf(text) > -1;
+}
+function applyArguments(func, args) {
+    return func.apply(null, args);
+}
+var is = {
+    arr: function(a) {
+        return Array.isArray(a);
+    },
+    obj: function(a) {
+        return stringContains(Object.prototype.toString.call(a), "Object");
+    },
+    pth: function(a) {
+        return is.obj(a) && a.hasOwnProperty("totalLength");
+    },
+    svg: function(a) {
+        return a instanceof SVGElement;
+    },
+    inp: function(a) {
+        return a instanceof HTMLInputElement;
+    },
+    dom: function(a) {
+        return a.nodeType || is.svg(a);
+    },
+    str: function(a) {
+        return typeof a === "string";
+    },
+    fnc: function(a) {
+        return typeof a === "function";
+    },
+    und: function(a) {
+        return typeof a === "undefined";
+    },
+    nil: function(a) {
+        return is.und(a) || a === null;
+    },
+    hex: function(a) {
+        return /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(a);
+    },
+    rgb: function(a) {
+        return /^rgb/.test(a);
+    },
+    hsl: function(a) {
+        return /^hsl/.test(a);
+    },
+    col: function(a) {
+        return is.hex(a) || is.rgb(a) || is.hsl(a);
+    },
+    key: function(a) {
+        return !defaultInstanceSettings.hasOwnProperty(a) && !defaultTweenSettings.hasOwnProperty(a) && a !== "targets" && a !== "keyframes";
+    }
+};
+// Easings
+function parseEasingParameters(string) {
+    var match = /\(([^)]+)\)/.exec(string);
+    return match ? match[1].split(",").map(function(p) {
+        return parseFloat(p);
+    }) : [];
+}
+// Spring solver inspired by Webkit Copyright © 2016 Apple Inc. All rights reserved. https://webkit.org/demos/spring/spring.js
+function spring(string, duration) {
+    var params = parseEasingParameters(string);
+    var mass = minMax(is.und(params[0]) ? 1 : params[0], .1, 100);
+    var stiffness = minMax(is.und(params[1]) ? 100 : params[1], .1, 100);
+    var damping = minMax(is.und(params[2]) ? 10 : params[2], .1, 100);
+    var velocity = minMax(is.und(params[3]) ? 0 : params[3], .1, 100);
+    var w0 = Math.sqrt(stiffness / mass);
+    var zeta = damping / (2 * Math.sqrt(stiffness * mass));
+    var wd = zeta < 1 ? w0 * Math.sqrt(1 - zeta * zeta) : 0;
+    var a = 1;
+    var b = zeta < 1 ? (zeta * w0 + -velocity) / wd : -velocity + w0;
+    function solver(t) {
+        var progress = duration ? duration * t / 1000 : t;
+        if (zeta < 1) progress = Math.exp(-progress * zeta * w0) * (a * Math.cos(wd * progress) + b * Math.sin(wd * progress));
+        else progress = (a + b * progress) * Math.exp(-progress * w0);
+        if (t === 0 || t === 1) return t;
+        return 1 - progress;
+    }
+    function getDuration() {
+        var cached = cache.springs[string];
+        if (cached) return cached;
+        var frame = 1 / 6;
+        var elapsed = 0;
+        var rest = 0;
+        while(true){
+            elapsed += frame;
+            if (solver(elapsed) === 1) {
+                rest++;
+                if (rest >= 16) break;
+            } else rest = 0;
+        }
+        var duration = elapsed * frame * 1000;
+        cache.springs[string] = duration;
+        return duration;
+    }
+    return duration ? solver : getDuration;
+}
+// Basic steps easing implementation https://developer.mozilla.org/fr/docs/Web/CSS/transition-timing-function
+function steps(steps) {
+    if (steps === void 0) steps = 10;
+    return function(t) {
+        return Math.ceil(minMax(t, 0.000001, 1) * steps) * (1 / steps);
+    };
+}
+// BezierEasing https://github.com/gre/bezier-easing
+var bezier = function() {
+    var kSplineTableSize = 11;
+    var kSampleStepSize = 1.0 / (kSplineTableSize - 1.0);
+    function A(aA1, aA2) {
+        return 1.0 - 3.0 * aA2 + 3.0 * aA1;
+    }
+    function B(aA1, aA2) {
+        return 3.0 * aA2 - 6.0 * aA1;
+    }
+    function C(aA1) {
+        return 3.0 * aA1;
+    }
+    function calcBezier(aT, aA1, aA2) {
+        return ((A(aA1, aA2) * aT + B(aA1, aA2)) * aT + C(aA1)) * aT;
+    }
+    function getSlope(aT, aA1, aA2) {
+        return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B(aA1, aA2) * aT + C(aA1);
+    }
+    function binarySubdivide(aX, aA, aB, mX1, mX2) {
+        var currentX, currentT, i = 0;
+        do {
+            currentT = aA + (aB - aA) / 2.0;
+            currentX = calcBezier(currentT, mX1, mX2) - aX;
+            if (currentX > 0.0) aB = currentT;
+            else aA = currentT;
+        }while (Math.abs(currentX) > 0.0000001 && ++i < 10);
+        return currentT;
+    }
+    function newtonRaphsonIterate(aX, aGuessT, mX1, mX2) {
+        for(var i = 0; i < 4; ++i){
+            var currentSlope = getSlope(aGuessT, mX1, mX2);
+            if (currentSlope === 0.0) return aGuessT;
+            var currentX = calcBezier(aGuessT, mX1, mX2) - aX;
+            aGuessT -= currentX / currentSlope;
+        }
+        return aGuessT;
+    }
+    function bezier(mX1, mY1, mX2, mY2) {
+        if (!(0 <= mX1 && mX1 <= 1 && 0 <= mX2 && mX2 <= 1)) return;
+        var sampleValues = new Float32Array(kSplineTableSize);
+        if (mX1 !== mY1 || mX2 !== mY2) for(var i = 0; i < kSplineTableSize; ++i)sampleValues[i] = calcBezier(i * kSampleStepSize, mX1, mX2);
+        function getTForX(aX) {
+            var intervalStart = 0;
+            var currentSample = 1;
+            var lastSample = kSplineTableSize - 1;
+            for(; currentSample !== lastSample && sampleValues[currentSample] <= aX; ++currentSample)intervalStart += kSampleStepSize;
+            --currentSample;
+            var dist = (aX - sampleValues[currentSample]) / (sampleValues[currentSample + 1] - sampleValues[currentSample]);
+            var guessForT = intervalStart + dist * kSampleStepSize;
+            var initialSlope = getSlope(guessForT, mX1, mX2);
+            if (initialSlope >= 0.001) return newtonRaphsonIterate(aX, guessForT, mX1, mX2);
+            else if (initialSlope === 0.0) return guessForT;
+            else return binarySubdivide(aX, intervalStart, intervalStart + kSampleStepSize, mX1, mX2);
+        }
+        return function(x) {
+            if (mX1 === mY1 && mX2 === mY2) return x;
+            if (x === 0 || x === 1) return x;
+            return calcBezier(getTForX(x), mY1, mY2);
+        };
+    }
+    return bezier;
+}();
+var penner = function() {
+    // Based on jQuery UI's implemenation of easing equations from Robert Penner (http://www.robertpenner.com/easing)
+    var eases = {
+        linear: function() {
+            return function(t) {
+                return t;
+            };
+        }
+    };
+    var functionEasings = {
+        Sine: function() {
+            return function(t) {
+                return 1 - Math.cos(t * Math.PI / 2);
+            };
+        },
+        Circ: function() {
+            return function(t) {
+                return 1 - Math.sqrt(1 - t * t);
+            };
+        },
+        Back: function() {
+            return function(t) {
+                return t * t * (3 * t - 2);
+            };
+        },
+        Bounce: function() {
+            return function(t) {
+                var pow2, b = 4;
+                while(t < ((pow2 = Math.pow(2, --b)) - 1) / 11);
+                return 1 / Math.pow(4, 3 - b) - 7.5625 * Math.pow((pow2 * 3 - 2) / 22 - t, 2);
+            };
+        },
+        Elastic: function(amplitude, period) {
+            if (amplitude === void 0) amplitude = 1;
+            if (period === void 0) period = .5;
+            var a = minMax(amplitude, 1, 10);
+            var p = minMax(period, .1, 2);
+            return function(t) {
+                return t === 0 || t === 1 ? t : -a * Math.pow(2, 10 * (t - 1)) * Math.sin((t - 1 - p / (Math.PI * 2) * Math.asin(1 / a)) * (Math.PI * 2) / p);
+            };
+        }
+    };
+    var baseEasings = [
+        "Quad",
+        "Cubic",
+        "Quart",
+        "Quint",
+        "Expo"
+    ];
+    baseEasings.forEach(function(name, i) {
+        functionEasings[name] = function() {
+            return function(t) {
+                return Math.pow(t, i + 2);
+            };
+        };
+    });
+    Object.keys(functionEasings).forEach(function(name) {
+        var easeIn = functionEasings[name];
+        eases["easeIn" + name] = easeIn;
+        eases["easeOut" + name] = function(a, b) {
+            return function(t) {
+                return 1 - easeIn(a, b)(1 - t);
+            };
+        };
+        eases["easeInOut" + name] = function(a, b) {
+            return function(t) {
+                return t < 0.5 ? easeIn(a, b)(t * 2) / 2 : 1 - easeIn(a, b)(t * -2 + 2) / 2;
+            };
+        };
+        eases["easeOutIn" + name] = function(a, b) {
+            return function(t) {
+                return t < 0.5 ? (1 - easeIn(a, b)(1 - t * 2)) / 2 : (easeIn(a, b)(t * 2 - 1) + 1) / 2;
+            };
+        };
+    });
+    return eases;
+}();
+function parseEasings(easing, duration) {
+    if (is.fnc(easing)) return easing;
+    var name = easing.split("(")[0];
+    var ease = penner[name];
+    var args = parseEasingParameters(easing);
+    switch(name){
+        case "spring":
+            return spring(easing, duration);
+        case "cubicBezier":
+            return applyArguments(bezier, args);
+        case "steps":
+            return applyArguments(steps, args);
+        default:
+            return applyArguments(ease, args);
+    }
+}
+// Strings
+function selectString(str) {
+    try {
+        var nodes = document.querySelectorAll(str);
+        return nodes;
+    } catch (e) {
+        return;
+    }
+}
+// Arrays
+function filterArray(arr, callback) {
+    var len = arr.length;
+    var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+    var result = [];
+    for(var i = 0; i < len; i++)if (i in arr) {
+        var val = arr[i];
+        if (callback.call(thisArg, val, i, arr)) result.push(val);
+    }
+    return result;
+}
+function flattenArray(arr) {
+    return arr.reduce(function(a, b) {
+        return a.concat(is.arr(b) ? flattenArray(b) : b);
+    }, []);
+}
+function toArray(o) {
+    if (is.arr(o)) return o;
+    if (is.str(o)) o = selectString(o) || o;
+    if (o instanceof NodeList || o instanceof HTMLCollection) return [].slice.call(o);
+    return [
+        o
+    ];
+}
+function arrayContains(arr, val) {
+    return arr.some(function(a) {
+        return a === val;
+    });
+}
+// Objects
+function cloneObject(o) {
+    var clone = {};
+    for(var p in o)clone[p] = o[p];
+    return clone;
+}
+function replaceObjectProps(o1, o2) {
+    var o = cloneObject(o1);
+    for(var p in o1)o[p] = o2.hasOwnProperty(p) ? o2[p] : o1[p];
+    return o;
+}
+function mergeObjects(o1, o2) {
+    var o = cloneObject(o1);
+    for(var p in o2)o[p] = is.und(o1[p]) ? o2[p] : o1[p];
+    return o;
+}
+// Colors
+function rgbToRgba(rgbValue) {
+    var rgb = /rgb\((\d+,\s*[\d]+,\s*[\d]+)\)/g.exec(rgbValue);
+    return rgb ? "rgba(" + rgb[1] + ",1)" : rgbValue;
+}
+function hexToRgba(hexValue) {
+    var rgx = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    var hex = hexValue.replace(rgx, function(m, r, g, b) {
+        return r + r + g + g + b + b;
+    });
+    var rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    var r = parseInt(rgb[1], 16);
+    var g = parseInt(rgb[2], 16);
+    var b = parseInt(rgb[3], 16);
+    return "rgba(" + r + "," + g + "," + b + ",1)";
+}
+function hslToRgba(hslValue) {
+    var hsl = /hsl\((\d+),\s*([\d.]+)%,\s*([\d.]+)%\)/g.exec(hslValue) || /hsla\((\d+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)/g.exec(hslValue);
+    var h = parseInt(hsl[1], 10) / 360;
+    var s = parseInt(hsl[2], 10) / 100;
+    var l = parseInt(hsl[3], 10) / 100;
+    var a = hsl[4] || 1;
+    function hue2rgb(p, q, t) {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 0.5) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+    }
+    var r, g, b;
+    if (s == 0) r = g = b = l;
+    else {
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return "rgba(" + r * 255 + "," + g * 255 + "," + b * 255 + "," + a + ")";
+}
+function colorToRgb(val) {
+    if (is.rgb(val)) return rgbToRgba(val);
+    if (is.hex(val)) return hexToRgba(val);
+    if (is.hsl(val)) return hslToRgba(val);
+}
+// Units
+function getUnit(val) {
+    var split = /[+-]?\d*\.?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(%|px|pt|em|rem|in|cm|mm|ex|ch|pc|vw|vh|vmin|vmax|deg|rad|turn)?$/.exec(val);
+    if (split) return split[1];
+}
+function getTransformUnit(propName) {
+    if (stringContains(propName, "translate") || propName === "perspective") return "px";
+    if (stringContains(propName, "rotate") || stringContains(propName, "skew")) return "deg";
+}
+// Values
+function getFunctionValue(val, animatable) {
+    if (!is.fnc(val)) return val;
+    return val(animatable.target, animatable.id, animatable.total);
+}
+function getAttribute(el, prop) {
+    return el.getAttribute(prop);
+}
+function convertPxToUnit(el, value, unit) {
+    var valueUnit = getUnit(value);
+    if (arrayContains([
+        unit,
+        "deg",
+        "rad",
+        "turn"
+    ], valueUnit)) return value;
+    var cached = cache.CSS[value + unit];
+    if (!is.und(cached)) return cached;
+    var baseline = 100;
+    var tempEl = document.createElement(el.tagName);
+    var parentEl = el.parentNode && el.parentNode !== document ? el.parentNode : document.body;
+    parentEl.appendChild(tempEl);
+    tempEl.style.position = "absolute";
+    tempEl.style.width = baseline + unit;
+    var factor = baseline / tempEl.offsetWidth;
+    parentEl.removeChild(tempEl);
+    var convertedUnit = factor * parseFloat(value);
+    cache.CSS[value + unit] = convertedUnit;
+    return convertedUnit;
+}
+function getCSSValue(el, prop, unit) {
+    if (prop in el.style) {
+        var uppercasePropName = prop.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+        var value = el.style[prop] || getComputedStyle(el).getPropertyValue(uppercasePropName) || "0";
+        return unit ? convertPxToUnit(el, value, unit) : value;
+    }
+}
+function getAnimationType(el, prop) {
+    if (is.dom(el) && !is.inp(el) && (!is.nil(getAttribute(el, prop)) || is.svg(el) && el[prop])) return "attribute";
+    if (is.dom(el) && arrayContains(validTransforms, prop)) return "transform";
+    if (is.dom(el) && prop !== "transform" && getCSSValue(el, prop)) return "css";
+    if (el[prop] != null) return "object";
+}
+function getElementTransforms(el) {
+    if (!is.dom(el)) return;
+    var str = el.style.transform || "";
+    var reg = /(\w+)\(([^)]*)\)/g;
+    var transforms = new Map();
+    var m;
+    while(m = reg.exec(str))transforms.set(m[1], m[2]);
+    return transforms;
+}
+function getTransformValue(el, propName, animatable, unit) {
+    var defaultVal = stringContains(propName, "scale") ? 1 : 0 + getTransformUnit(propName);
+    var value = getElementTransforms(el).get(propName) || defaultVal;
+    if (animatable) {
+        animatable.transforms.list.set(propName, value);
+        animatable.transforms["last"] = propName;
+    }
+    return unit ? convertPxToUnit(el, value, unit) : value;
+}
+function getOriginalTargetValue(target, propName, unit, animatable) {
+    switch(getAnimationType(target, propName)){
+        case "transform":
+            return getTransformValue(target, propName, animatable, unit);
+        case "css":
+            return getCSSValue(target, propName, unit);
+        case "attribute":
+            return getAttribute(target, propName);
+        default:
+            return target[propName] || 0;
+    }
+}
+function getRelativeValue(to, from) {
+    var operator = /^(\*=|\+=|-=)/.exec(to);
+    if (!operator) return to;
+    var u = getUnit(to) || 0;
+    var x = parseFloat(from);
+    var y = parseFloat(to.replace(operator[0], ""));
+    switch(operator[0][0]){
+        case "+":
+            return x + y + u;
+        case "-":
+            return x - y + u;
+        case "*":
+            return x * y + u;
+    }
+}
+function validateValue(val, unit) {
+    if (is.col(val)) return colorToRgb(val);
+    if (/\s/g.test(val)) return val;
+    var originalUnit = getUnit(val);
+    var unitLess = originalUnit ? val.substr(0, val.length - originalUnit.length) : val;
+    if (unit) return unitLess + unit;
+    return unitLess;
+}
+// getTotalLength() equivalent for circle, rect, polyline, polygon and line shapes
+// adapted from https://gist.github.com/SebLambla/3e0550c496c236709744
+function getDistance(p1, p2) {
+    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+}
+function getCircleLength(el) {
+    return Math.PI * 2 * getAttribute(el, "r");
+}
+function getRectLength(el) {
+    return getAttribute(el, "width") * 2 + getAttribute(el, "height") * 2;
+}
+function getLineLength(el) {
+    return getDistance({
+        x: getAttribute(el, "x1"),
+        y: getAttribute(el, "y1")
+    }, {
+        x: getAttribute(el, "x2"),
+        y: getAttribute(el, "y2")
+    });
+}
+function getPolylineLength(el) {
+    var points = el.points;
+    var totalLength = 0;
+    var previousPos;
+    for(var i = 0; i < points.numberOfItems; i++){
+        var currentPos = points.getItem(i);
+        if (i > 0) totalLength += getDistance(previousPos, currentPos);
+        previousPos = currentPos;
+    }
+    return totalLength;
+}
+function getPolygonLength(el) {
+    var points = el.points;
+    return getPolylineLength(el) + getDistance(points.getItem(points.numberOfItems - 1), points.getItem(0));
+}
+// Path animation
+function getTotalLength(el) {
+    if (el.getTotalLength) return el.getTotalLength();
+    switch(el.tagName.toLowerCase()){
+        case "circle":
+            return getCircleLength(el);
+        case "rect":
+            return getRectLength(el);
+        case "line":
+            return getLineLength(el);
+        case "polyline":
+            return getPolylineLength(el);
+        case "polygon":
+            return getPolygonLength(el);
+    }
+}
+function setDashoffset(el) {
+    var pathLength = getTotalLength(el);
+    el.setAttribute("stroke-dasharray", pathLength);
+    return pathLength;
+}
+// Motion path
+function getParentSvgEl(el) {
+    var parentEl = el.parentNode;
+    while(is.svg(parentEl)){
+        if (!is.svg(parentEl.parentNode)) break;
+        parentEl = parentEl.parentNode;
+    }
+    return parentEl;
+}
+function getParentSvg(pathEl, svgData) {
+    var svg = svgData || {};
+    var parentSvgEl = svg.el || getParentSvgEl(pathEl);
+    var rect = parentSvgEl.getBoundingClientRect();
+    var viewBoxAttr = getAttribute(parentSvgEl, "viewBox");
+    var width = rect.width;
+    var height = rect.height;
+    var viewBox = svg.viewBox || (viewBoxAttr ? viewBoxAttr.split(" ") : [
+        0,
+        0,
+        width,
+        height
+    ]);
+    return {
+        el: parentSvgEl,
+        viewBox: viewBox,
+        x: viewBox[0] / 1,
+        y: viewBox[1] / 1,
+        w: width,
+        h: height,
+        vW: viewBox[2],
+        vH: viewBox[3]
+    };
+}
+function getPath(path, percent) {
+    var pathEl = is.str(path) ? selectString(path)[0] : path;
+    var p = percent || 100;
+    return function(property) {
+        return {
+            property: property,
+            el: pathEl,
+            svg: getParentSvg(pathEl),
+            totalLength: getTotalLength(pathEl) * (p / 100)
+        };
+    };
+}
+function getPathProgress(path, progress, isPathTargetInsideSVG) {
+    function point(offset) {
+        if (offset === void 0) offset = 0;
+        var l = progress + offset >= 1 ? progress + offset : 0;
+        return path.el.getPointAtLength(l);
+    }
+    var svg = getParentSvg(path.el, path.svg);
+    var p = point();
+    var p0 = point(-1);
+    var p1 = point(1);
+    var scaleX = isPathTargetInsideSVG ? 1 : svg.w / svg.vW;
+    var scaleY = isPathTargetInsideSVG ? 1 : svg.h / svg.vH;
+    switch(path.property){
+        case "x":
+            return (p.x - svg.x) * scaleX;
+        case "y":
+            return (p.y - svg.y) * scaleY;
+        case "angle":
+            return Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI;
+    }
+}
+// Decompose value
+function decomposeValue(val, unit) {
+    // const rgx = /-?\d*\.?\d+/g; // handles basic numbers
+    // const rgx = /[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g; // handles exponents notation
+    var rgx = /[+-]?\d*\.?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g; // handles exponents notation
+    var value = validateValue(is.pth(val) ? val.totalLength : val, unit) + "";
+    return {
+        original: value,
+        numbers: value.match(rgx) ? value.match(rgx).map(Number) : [
+            0
+        ],
+        strings: is.str(val) || unit ? value.split(rgx) : []
+    };
+}
+// Animatables
+function parseTargets(targets) {
+    var targetsArray = targets ? flattenArray(is.arr(targets) ? targets.map(toArray) : toArray(targets)) : [];
+    return filterArray(targetsArray, function(item, pos, self) {
+        return self.indexOf(item) === pos;
+    });
+}
+function getAnimatables(targets) {
+    var parsed = parseTargets(targets);
+    return parsed.map(function(t, i) {
+        return {
+            target: t,
+            id: i,
+            total: parsed.length,
+            transforms: {
+                list: getElementTransforms(t)
+            }
+        };
+    });
+}
+// Properties
+function normalizePropertyTweens(prop, tweenSettings) {
+    var settings = cloneObject(tweenSettings);
+    // Override duration if easing is a spring
+    if (/^spring/.test(settings.easing)) settings.duration = spring(settings.easing);
+    if (is.arr(prop)) {
+        var l = prop.length;
+        var isFromTo = l === 2 && !is.obj(prop[0]);
+        if (!isFromTo) // Duration divided by the number of tweens
+        {
+            if (!is.fnc(tweenSettings.duration)) settings.duration = tweenSettings.duration / l;
+        } else // Transform [from, to] values shorthand to a valid tween value
+        prop = {
+            value: prop
+        };
+    }
+    var propArray = is.arr(prop) ? prop : [
+        prop
+    ];
+    return propArray.map(function(v, i) {
+        var obj = is.obj(v) && !is.pth(v) ? v : {
+            value: v
+        };
+        // Default delay value should only be applied to the first tween
+        if (is.und(obj.delay)) obj.delay = !i ? tweenSettings.delay : 0;
+        // Default endDelay value should only be applied to the last tween
+        if (is.und(obj.endDelay)) obj.endDelay = i === propArray.length - 1 ? tweenSettings.endDelay : 0;
+        return obj;
+    }).map(function(k) {
+        return mergeObjects(k, settings);
+    });
+}
+function flattenKeyframes(keyframes) {
+    var propertyNames = filterArray(flattenArray(keyframes.map(function(key) {
+        return Object.keys(key);
+    })), function(p) {
+        return is.key(p);
+    }).reduce(function(a, b) {
+        if (a.indexOf(b) < 0) a.push(b);
+        return a;
+    }, []);
+    var properties = {};
+    var loop = function(i) {
+        var propName = propertyNames[i];
+        properties[propName] = keyframes.map(function(key) {
+            var newKey = {};
+            for(var p in key){
+                if (is.key(p)) {
+                    if (p == propName) newKey.value = key[p];
+                } else newKey[p] = key[p];
+            }
+            return newKey;
+        });
+    };
+    for(var i = 0; i < propertyNames.length; i++)loop(i);
+    return properties;
+}
+function getProperties(tweenSettings, params) {
+    var properties = [];
+    var keyframes = params.keyframes;
+    if (keyframes) params = mergeObjects(flattenKeyframes(keyframes), params);
+    for(var p in params)if (is.key(p)) properties.push({
+        name: p,
+        tweens: normalizePropertyTweens(params[p], tweenSettings)
+    });
+    return properties;
+}
+// Tweens
+function normalizeTweenValues(tween, animatable) {
+    var t = {};
+    for(var p in tween){
+        var value = getFunctionValue(tween[p], animatable);
+        if (is.arr(value)) {
+            value = value.map(function(v) {
+                return getFunctionValue(v, animatable);
+            });
+            if (value.length === 1) value = value[0];
+        }
+        t[p] = value;
+    }
+    t.duration = parseFloat(t.duration);
+    t.delay = parseFloat(t.delay);
+    return t;
+}
+function normalizeTweens(prop, animatable) {
+    var previousTween;
+    return prop.tweens.map(function(t) {
+        var tween = normalizeTweenValues(t, animatable);
+        var tweenValue = tween.value;
+        var to = is.arr(tweenValue) ? tweenValue[1] : tweenValue;
+        var toUnit = getUnit(to);
+        var originalValue = getOriginalTargetValue(animatable.target, prop.name, toUnit, animatable);
+        var previousValue = previousTween ? previousTween.to.original : originalValue;
+        var from = is.arr(tweenValue) ? tweenValue[0] : previousValue;
+        var fromUnit = getUnit(from) || getUnit(originalValue);
+        var unit = toUnit || fromUnit;
+        if (is.und(to)) to = previousValue;
+        tween.from = decomposeValue(from, unit);
+        tween.to = decomposeValue(getRelativeValue(to, from), unit);
+        tween.start = previousTween ? previousTween.end : 0;
+        tween.end = tween.start + tween.delay + tween.duration + tween.endDelay;
+        tween.easing = parseEasings(tween.easing, tween.duration);
+        tween.isPath = is.pth(tweenValue);
+        tween.isPathTargetInsideSVG = tween.isPath && is.svg(animatable.target);
+        tween.isColor = is.col(tween.from.original);
+        if (tween.isColor) tween.round = 1;
+        previousTween = tween;
+        return tween;
+    });
+}
+// Tween progress
+var setProgressValue = {
+    css: function(t, p, v) {
+        return t.style[p] = v;
+    },
+    attribute: function(t, p, v) {
+        return t.setAttribute(p, v);
+    },
+    object: function(t, p, v) {
+        return t[p] = v;
+    },
+    transform: function(t, p, v, transforms, manual) {
+        transforms.list.set(p, v);
+        if (p === transforms.last || manual) {
+            var str = "";
+            transforms.list.forEach(function(value, prop) {
+                str += prop + "(" + value + ") ";
+            });
+            t.style.transform = str;
+        }
+    }
+};
+// Set Value helper
+function setTargetsValue(targets, properties) {
+    var animatables = getAnimatables(targets);
+    animatables.forEach(function(animatable) {
+        for(var property in properties){
+            var value = getFunctionValue(properties[property], animatable);
+            var target = animatable.target;
+            var valueUnit = getUnit(value);
+            var originalValue = getOriginalTargetValue(target, property, valueUnit, animatable);
+            var unit = valueUnit || getUnit(originalValue);
+            var to = getRelativeValue(validateValue(value, unit), originalValue);
+            var animType = getAnimationType(target, property);
+            setProgressValue[animType](target, property, to, animatable.transforms, true);
+        }
+    });
+}
+// Animations
+function createAnimation(animatable, prop) {
+    var animType = getAnimationType(animatable.target, prop.name);
+    if (animType) {
+        var tweens = normalizeTweens(prop, animatable);
+        var lastTween = tweens[tweens.length - 1];
+        return {
+            type: animType,
+            property: prop.name,
+            animatable: animatable,
+            tweens: tweens,
+            duration: lastTween.end,
+            delay: tweens[0].delay,
+            endDelay: lastTween.endDelay
+        };
+    }
+}
+function getAnimations(animatables, properties) {
+    return filterArray(flattenArray(animatables.map(function(animatable) {
+        return properties.map(function(prop) {
+            return createAnimation(animatable, prop);
+        });
+    })), function(a) {
+        return !is.und(a);
+    });
+}
+// Create Instance
+function getInstanceTimings(animations, tweenSettings) {
+    var animLength = animations.length;
+    var getTlOffset = function(anim) {
+        return anim.timelineOffset ? anim.timelineOffset : 0;
+    };
+    var timings = {};
+    timings.duration = animLength ? Math.max.apply(Math, animations.map(function(anim) {
+        return getTlOffset(anim) + anim.duration;
+    })) : tweenSettings.duration;
+    timings.delay = animLength ? Math.min.apply(Math, animations.map(function(anim) {
+        return getTlOffset(anim) + anim.delay;
+    })) : tweenSettings.delay;
+    timings.endDelay = animLength ? timings.duration - Math.max.apply(Math, animations.map(function(anim) {
+        return getTlOffset(anim) + anim.duration - anim.endDelay;
+    })) : tweenSettings.endDelay;
+    return timings;
+}
+var instanceID = 0;
+function createNewInstance(params) {
+    var instanceSettings = replaceObjectProps(defaultInstanceSettings, params);
+    var tweenSettings = replaceObjectProps(defaultTweenSettings, params);
+    var properties = getProperties(tweenSettings, params);
+    var animatables = getAnimatables(params.targets);
+    var animations = getAnimations(animatables, properties);
+    var timings = getInstanceTimings(animations, tweenSettings);
+    var id = instanceID;
+    instanceID++;
+    return mergeObjects(instanceSettings, {
+        id: id,
+        children: [],
+        animatables: animatables,
+        animations: animations,
+        duration: timings.duration,
+        delay: timings.delay,
+        endDelay: timings.endDelay
+    });
+}
+// Core
+var activeInstances = [];
+var engine = function() {
+    var raf;
+    function play() {
+        if (!raf && (!isDocumentHidden() || !anime.suspendWhenDocumentHidden) && activeInstances.length > 0) raf = requestAnimationFrame(step);
+    }
+    function step(t) {
+        // memo on algorithm issue:
+        // dangerous iteration over mutable `activeInstances`
+        // (that collection may be updated from within callbacks of `tick`-ed animation instances)
+        var activeInstancesLength = activeInstances.length;
+        var i = 0;
+        while(i < activeInstancesLength){
+            var activeInstance = activeInstances[i];
+            if (!activeInstance.paused) {
+                activeInstance.tick(t);
+                i++;
+            } else {
+                activeInstances.splice(i, 1);
+                activeInstancesLength--;
+            }
+        }
+        raf = i > 0 ? requestAnimationFrame(step) : undefined;
+    }
+    function handleVisibilityChange() {
+        if (!anime.suspendWhenDocumentHidden) return;
+        if (isDocumentHidden()) // suspend ticks
+        raf = cancelAnimationFrame(raf);
+        else {
+            // first adjust animations to consider the time that ticks were suspended
+            activeInstances.forEach(function(instance) {
+                return instance._onDocumentVisibility();
+            });
+            engine();
+        }
+    }
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleVisibilityChange);
+    return play;
+}();
+function isDocumentHidden() {
+    return !!document && document.hidden;
+}
+// Public Instance
+function anime(params) {
+    if (params === void 0) params = {};
+    var startTime = 0, lastTime = 0, now = 0;
+    var children, childrenLength = 0;
+    var resolve = null;
+    function makePromise(instance) {
+        var promise = window.Promise && new Promise(function(_resolve) {
+            return resolve = _resolve;
+        });
+        instance.finished = promise;
+        return promise;
+    }
+    var instance = createNewInstance(params);
+    var promise = makePromise(instance);
+    function toggleInstanceDirection() {
+        var direction = instance.direction;
+        if (direction !== "alternate") instance.direction = direction !== "normal" ? "normal" : "reverse";
+        instance.reversed = !instance.reversed;
+        children.forEach(function(child) {
+            return child.reversed = instance.reversed;
+        });
+    }
+    function adjustTime(time) {
+        return instance.reversed ? instance.duration - time : time;
+    }
+    function resetTime() {
+        startTime = 0;
+        lastTime = adjustTime(instance.currentTime) * (1 / anime.speed);
+    }
+    function seekChild(time, child) {
+        if (child) child.seek(time - child.timelineOffset);
+    }
+    function syncInstanceChildren(time) {
+        if (!instance.reversePlayback) for(var i = 0; i < childrenLength; i++)seekChild(time, children[i]);
+        else for(var i$1 = childrenLength; i$1--;)seekChild(time, children[i$1]);
+    }
+    function setAnimationsProgress(insTime) {
+        var i = 0;
+        var animations = instance.animations;
+        var animationsLength = animations.length;
+        while(i < animationsLength){
+            var anim = animations[i];
+            var animatable = anim.animatable;
+            var tweens = anim.tweens;
+            var tweenLength = tweens.length - 1;
+            var tween = tweens[tweenLength];
+            // Only check for keyframes if there is more than one tween
+            if (tweenLength) tween = filterArray(tweens, function(t) {
+                return insTime < t.end;
+            })[0] || tween;
+            var elapsed = minMax(insTime - tween.start - tween.delay, 0, tween.duration) / tween.duration;
+            var eased = isNaN(elapsed) ? 1 : tween.easing(elapsed);
+            var strings = tween.to.strings;
+            var round = tween.round;
+            var numbers = [];
+            var toNumbersLength = tween.to.numbers.length;
+            var progress = void 0;
+            for(var n = 0; n < toNumbersLength; n++){
+                var value = void 0;
+                var toNumber = tween.to.numbers[n];
+                var fromNumber = tween.from.numbers[n] || 0;
+                if (!tween.isPath) value = fromNumber + eased * (toNumber - fromNumber);
+                else value = getPathProgress(tween.value, eased * toNumber, tween.isPathTargetInsideSVG);
+                if (round) {
+                    if (!(tween.isColor && n > 2)) value = Math.round(value * round) / round;
+                }
+                numbers.push(value);
+            }
+            // Manual Array.reduce for better performances
+            var stringsLength = strings.length;
+            if (!stringsLength) progress = numbers[0];
+            else {
+                progress = strings[0];
+                for(var s = 0; s < stringsLength; s++){
+                    var a = strings[s];
+                    var b = strings[s + 1];
+                    var n$1 = numbers[s];
+                    if (!isNaN(n$1)) {
+                        if (!b) progress += n$1 + " ";
+                        else progress += n$1 + b;
+                    }
+                }
+            }
+            setProgressValue[anim.type](animatable.target, anim.property, progress, animatable.transforms);
+            anim.currentValue = progress;
+            i++;
+        }
+    }
+    function setCallback(cb) {
+        if (instance[cb] && !instance.passThrough) instance[cb](instance);
+    }
+    function countIteration() {
+        if (instance.remaining && instance.remaining !== true) instance.remaining--;
+    }
+    function setInstanceProgress(engineTime) {
+        var insDuration = instance.duration;
+        var insDelay = instance.delay;
+        var insEndDelay = insDuration - instance.endDelay;
+        var insTime = adjustTime(engineTime);
+        instance.progress = minMax(insTime / insDuration * 100, 0, 100);
+        instance.reversePlayback = insTime < instance.currentTime;
+        if (children) syncInstanceChildren(insTime);
+        if (!instance.began && instance.currentTime > 0) {
+            instance.began = true;
+            setCallback("begin");
+        }
+        if (!instance.loopBegan && instance.currentTime > 0) {
+            instance.loopBegan = true;
+            setCallback("loopBegin");
+        }
+        if (insTime <= insDelay && instance.currentTime !== 0) setAnimationsProgress(0);
+        if (insTime >= insEndDelay && instance.currentTime !== insDuration || !insDuration) setAnimationsProgress(insDuration);
+        if (insTime > insDelay && insTime < insEndDelay) {
+            if (!instance.changeBegan) {
+                instance.changeBegan = true;
+                instance.changeCompleted = false;
+                setCallback("changeBegin");
+            }
+            setCallback("change");
+            setAnimationsProgress(insTime);
+        } else if (instance.changeBegan) {
+            instance.changeCompleted = true;
+            instance.changeBegan = false;
+            setCallback("changeComplete");
+        }
+        instance.currentTime = minMax(insTime, 0, insDuration);
+        if (instance.began) setCallback("update");
+        if (engineTime >= insDuration) {
+            lastTime = 0;
+            countIteration();
+            if (!instance.remaining) {
+                instance.paused = true;
+                if (!instance.completed) {
+                    instance.completed = true;
+                    setCallback("loopComplete");
+                    setCallback("complete");
+                    if (!instance.passThrough && "Promise" in window) {
+                        resolve();
+                        promise = makePromise(instance);
+                    }
+                }
+            } else {
+                startTime = now;
+                setCallback("loopComplete");
+                instance.loopBegan = false;
+                if (instance.direction === "alternate") toggleInstanceDirection();
+            }
+        }
+    }
+    instance.reset = function() {
+        var direction = instance.direction;
+        instance.passThrough = false;
+        instance.currentTime = 0;
+        instance.progress = 0;
+        instance.paused = true;
+        instance.began = false;
+        instance.loopBegan = false;
+        instance.changeBegan = false;
+        instance.completed = false;
+        instance.changeCompleted = false;
+        instance.reversePlayback = false;
+        instance.reversed = direction === "reverse";
+        instance.remaining = instance.loop;
+        children = instance.children;
+        childrenLength = children.length;
+        for(var i = childrenLength; i--;)instance.children[i].reset();
+        if (instance.reversed && instance.loop !== true || direction === "alternate" && instance.loop === 1) instance.remaining++;
+        setAnimationsProgress(instance.reversed ? instance.duration : 0);
+    };
+    // internal method (for engine) to adjust animation timings before restoring engine ticks (rAF)
+    instance._onDocumentVisibility = resetTime;
+    // Set Value helper
+    instance.set = function(targets, properties) {
+        setTargetsValue(targets, properties);
+        return instance;
+    };
+    instance.tick = function(t) {
+        now = t;
+        if (!startTime) startTime = now;
+        setInstanceProgress((now + (lastTime - startTime)) * anime.speed);
+    };
+    instance.seek = function(time) {
+        setInstanceProgress(adjustTime(time));
+    };
+    instance.pause = function() {
+        instance.paused = true;
+        resetTime();
+    };
+    instance.play = function() {
+        if (!instance.paused) return;
+        if (instance.completed) instance.reset();
+        instance.paused = false;
+        activeInstances.push(instance);
+        resetTime();
+        engine();
+    };
+    instance.reverse = function() {
+        toggleInstanceDirection();
+        instance.completed = instance.reversed ? false : true;
+        resetTime();
+    };
+    instance.restart = function() {
+        instance.reset();
+        instance.play();
+    };
+    instance.remove = function(targets) {
+        var targetsArray = parseTargets(targets);
+        removeTargetsFromInstance(targetsArray, instance);
+    };
+    instance.reset();
+    if (instance.autoplay) instance.play();
+    return instance;
+}
+// Remove targets from animation
+function removeTargetsFromAnimations(targetsArray, animations) {
+    for(var a = animations.length; a--;)if (arrayContains(targetsArray, animations[a].animatable.target)) animations.splice(a, 1);
+}
+function removeTargetsFromInstance(targetsArray, instance) {
+    var animations = instance.animations;
+    var children = instance.children;
+    removeTargetsFromAnimations(targetsArray, animations);
+    for(var c = children.length; c--;){
+        var child = children[c];
+        var childAnimations = child.animations;
+        removeTargetsFromAnimations(targetsArray, childAnimations);
+        if (!childAnimations.length && !child.children.length) children.splice(c, 1);
+    }
+    if (!animations.length && !children.length) instance.pause();
+}
+function removeTargetsFromActiveInstances(targets) {
+    var targetsArray = parseTargets(targets);
+    for(var i = activeInstances.length; i--;){
+        var instance = activeInstances[i];
+        removeTargetsFromInstance(targetsArray, instance);
+    }
+}
+// Stagger helpers
+function stagger(val, params) {
+    if (params === void 0) params = {};
+    var direction = params.direction || "normal";
+    var easing = params.easing ? parseEasings(params.easing) : null;
+    var grid = params.grid;
+    var axis = params.axis;
+    var fromIndex = params.from || 0;
+    var fromFirst = fromIndex === "first";
+    var fromCenter = fromIndex === "center";
+    var fromLast = fromIndex === "last";
+    var isRange = is.arr(val);
+    var val1 = isRange ? parseFloat(val[0]) : parseFloat(val);
+    var val2 = isRange ? parseFloat(val[1]) : 0;
+    var unit = getUnit(isRange ? val[1] : val) || 0;
+    var start = params.start || 0 + (isRange ? val1 : 0);
+    var values = [];
+    var maxValue = 0;
+    return function(el, i, t) {
+        if (fromFirst) fromIndex = 0;
+        if (fromCenter) fromIndex = (t - 1) / 2;
+        if (fromLast) fromIndex = t - 1;
+        if (!values.length) {
+            for(var index = 0; index < t; index++){
+                if (!grid) values.push(Math.abs(fromIndex - index));
+                else {
+                    var fromX = !fromCenter ? fromIndex % grid[0] : (grid[0] - 1) / 2;
+                    var fromY = !fromCenter ? Math.floor(fromIndex / grid[0]) : (grid[1] - 1) / 2;
+                    var toX = index % grid[0];
+                    var toY = Math.floor(index / grid[0]);
+                    var distanceX = fromX - toX;
+                    var distanceY = fromY - toY;
+                    var value = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+                    if (axis === "x") value = -distanceX;
+                    if (axis === "y") value = -distanceY;
+                    values.push(value);
+                }
+                maxValue = Math.max.apply(Math, values);
+            }
+            if (easing) values = values.map(function(val) {
+                return easing(val / maxValue) * maxValue;
+            });
+            if (direction === "reverse") values = values.map(function(val) {
+                return axis ? val < 0 ? val * -1 : -val : Math.abs(maxValue - val);
+            });
+        }
+        var spacing = isRange ? (val2 - val1) / maxValue : val1;
+        return start + spacing * (Math.round(values[i] * 100) / 100) + unit;
+    };
+}
+// Timeline
+function timeline(params) {
+    if (params === void 0) params = {};
+    var tl = anime(params);
+    tl.duration = 0;
+    tl.add = function(instanceParams, timelineOffset) {
+        var tlIndex = activeInstances.indexOf(tl);
+        var children = tl.children;
+        if (tlIndex > -1) activeInstances.splice(tlIndex, 1);
+        function passThrough(ins) {
+            ins.passThrough = true;
+        }
+        for(var i = 0; i < children.length; i++)passThrough(children[i]);
+        var insParams = mergeObjects(instanceParams, replaceObjectProps(defaultTweenSettings, params));
+        insParams.targets = insParams.targets || params.targets;
+        var tlDuration = tl.duration;
+        insParams.autoplay = false;
+        insParams.direction = tl.direction;
+        insParams.timelineOffset = is.und(timelineOffset) ? tlDuration : getRelativeValue(timelineOffset, tlDuration);
+        passThrough(tl);
+        tl.seek(insParams.timelineOffset);
+        var ins = anime(insParams);
+        passThrough(ins);
+        children.push(ins);
+        var timings = getInstanceTimings(children, params);
+        tl.delay = timings.delay;
+        tl.endDelay = timings.endDelay;
+        tl.duration = timings.duration;
+        tl.seek(0);
+        tl.reset();
+        if (tl.autoplay) tl.play();
+        return tl;
+    };
+    return tl;
+}
+anime.version = "3.2.1";
+anime.speed = 1;
+// TODO:#review: naming, documentation
+anime.suspendWhenDocumentHidden = true;
+anime.running = activeInstances;
+anime.remove = removeTargetsFromActiveInstances;
+anime.get = getOriginalTargetValue;
+anime.set = setTargetsValue;
+anime.convertPx = convertPxToUnit;
+anime.path = getPath;
+anime.setDashoffset = setDashoffset;
+anime.stagger = stagger;
+anime.timeline = timeline;
+anime.easing = parseEasings;
+anime.penner = penner;
+anime.random = function(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+exports.default = anime;
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map
