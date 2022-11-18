@@ -10,6 +10,8 @@ const normX = (x) =>{
     return (x / window.innerWidth) * 2 - 1
 }
 
+const lerpRgba =  (col1, col2, factor = 0.5) => col1.map( (x, i) => x + factor*(col2[i]-x) )
+
 const normY = (y) =>{
     return -(y/ window.innerHeight) * 2 + 1
 }
@@ -34,6 +36,12 @@ const getCoord = (el) => {
     let rotation = el.getAttribute('rotation') ? parseInt(el.getAttribute('rotation') ): 0
     let range = isNaN(stick) ? 1 : 1 - stick
 
+    let hcolora = el.getAttribute('hcolora') ? el.getAttribute('hcolora') : false
+    let hcolorb = el.getAttribute('hcolorb') ? el.getAttribute('hcolorb') : false
+    let hcolorc = el.getAttribute('hcolorc') ? el.getAttribute('hcolorc') : false
+    let hcolord = el.getAttribute('hcolord') ? el.getAttribute('hcolord') : false
+    let hopacity = el.getAttribute('hopacity') ? el.getAttribute('hopacity') : false
+
     return {
         x: normX(rect.x + rect.width / 2) - window.scrollX,
         y: el.getAttribute('yoffset') ? normY(el.offsetTop + rect.height/2 + el.parentElement.offsetTop) : 0,
@@ -49,10 +57,17 @@ const getCoord = (el) => {
           ...(colorc && {c: colorc}),
           ...(colord && {d: colord}),
           ...(opacity && {opacity: opacity}),
-        }
+        },
+        hoverColors: {
+            ...(hcolora && {a: hcolora}),
+            ...(hcolorb && {b: hcolorb}),
+            ...(hcolorc && {c: hcolorc}),
+            ...(hcolord && {d: hcolord}),
+            ...(hopacity && {opacity: hopacity}),
+          }
         //keyframed when the element y center is half way down the screen
     }
 }
 
 
-export {hexToRgb, rgbaToArray, normCoord,normX, normY, getCoord}
+export {hexToRgb, lerpRgba, rgbaToArray, normCoord,normX, normY, getCoord}

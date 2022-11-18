@@ -590,9 +590,18 @@ class App {
             d: "#61FCC4",
             opacity: 0
         };
+        this.hoverColors = {
+            a: "#F198C0",
+            b: "#61FCC4",
+            c: "#F198C0",
+            d: "#61FCC4",
+            opacity: 0,
+            mix: 0
+        };
         this.impulses = {
             acceleration: 0.005,
-            rotation: 0
+            rotation: 0,
+            color: 0
         };
         this.lastFrame = 0;
     }
@@ -630,6 +639,14 @@ class App {
         });
         let colorFrames = [
             ...document.querySelectorAll("[colora], [colorb], [colorc], [colord], [opacity]")
+        ].map((el)=>{
+            return {
+                el: el,
+                coord: (0, _utils.getCoord)(el)
+            };
+        });
+        this.colorTriggers = [
+            ...document.querySelectorAll("[hcolora], [hcolorb], [hcolorc], [hcolord], [hopacity]")
         ].map((el)=>{
             return {
                 el: el,
@@ -683,6 +700,9 @@ class App {
         });
         this.timeline = timeline;
         this.onScroll();
+        (0, _animejsDefault.default).set(this.hoverColors, {
+            ...this.hoverColors
+        });
     }
     initText(target) {
         const textEls = document.querySelectorAll("[text]");
@@ -823,7 +843,19 @@ class App {
         this.threeD.setPos(this.origin);
         document.addEventListener("click", this.startAnim.bind(this));
         window.addEventListener("scroll", this.startAnim.bind(this));
-    //this.loadAnim()
+        //this.loadAnim()
+        this.colorTriggers.forEach((e)=>{
+            e.el.addEventListener("mouseenter", ()=>{
+                (0, _animejsDefault.default).set(this.hoverColors, {
+                    ...this.hoverColors,
+                    ...e.coord.hoverColors,
+                    mix: 1
+                });
+                e.el.addEventListener("mouseleave", ()=>{
+                    this.hoverColors.mix = 0;
+                });
+            });
+        });
     }
     startAnim() {
         if (!this.origin.loaded) {
@@ -878,11 +910,18 @@ class App {
         ];
         this.pass.uniforms.mouse.value = mouseLerp;
         this.pass.uniforms.time.value += 1;
-        this.pass.uniforms.colA.value = (0, _utils.rgbaToArray)(this.colors.a);
-        this.pass.uniforms.colB.value = (0, _utils.rgbaToArray)(this.colors.b);
-        this.pass.uniforms.colC.value = (0, _utils.rgbaToArray)(this.colors.c);
-        this.pass.uniforms.colD.value = (0, _utils.rgbaToArray)(this.colors.d);
-        this.pass.uniforms.gradientOpacity.value = this.colors.opacity;
+        console.log((0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.a), (0, _utils.rgbaToArray)(this.hoverColors.a), 1.0));
+        //this.impulses.color = this.curtains.lerp(this.impulses.color, this.hoverColors.mix, delta * 3.15)
+        let colAtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.a), (0, _utils.rgbaToArray)(this.hoverColors.a), this.hoverColors.mix);
+        let colBtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.b), (0, _utils.rgbaToArray)(this.hoverColors.b), this.hoverColors.mix);
+        let colCtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.c), (0, _utils.rgbaToArray)(this.hoverColors.c), this.hoverColors.mix);
+        let colDtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.d), (0, _utils.rgbaToArray)(this.hoverColors.d), this.hoverColors.mix);
+        let colOtarget = this.curtains.lerp(this.colors.opacity, this.hoverColors.opacity, this.hoverColors.mix);
+        this.pass.uniforms.colA.value = (0, _utils.lerpRgba)(this.pass.uniforms.colA.value, colAtarget, delta * 1.5);
+        this.pass.uniforms.colB.value = (0, _utils.lerpRgba)(this.pass.uniforms.colB.value, colBtarget, delta * 1.5);
+        this.pass.uniforms.colC.value = (0, _utils.lerpRgba)(this.pass.uniforms.colC.value, colCtarget, delta * 1.5);
+        this.pass.uniforms.colD.value = (0, _utils.lerpRgba)(this.pass.uniforms.colD.value, colDtarget, delta * 1.5);
+        this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, this.hoverColors.opacity, delta * 1.5);
     }
     loadImg(query, target, sampler) {
         const imgs = document.querySelectorAll(query);
@@ -55308,6 +55347,7 @@ module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vV
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "hexToRgb", ()=>hexToRgb);
+parcelHelpers.export(exports, "lerpRgba", ()=>lerpRgba);
 parcelHelpers.export(exports, "rgbaToArray", ()=>rgbaToArray);
 parcelHelpers.export(exports, "normCoord", ()=>normCoord);
 parcelHelpers.export(exports, "normX", ()=>normX);
@@ -55318,6 +55358,7 @@ const rgbaToArray = (string)=>string.replace(/[^\d,]/g, "").split(",").map((x, i
 const normX = (x)=>{
     return x / window.innerWidth * 2 - 1;
 };
+const lerpRgba = (col1, col2, factor = 0.5)=>col1.map((x, i)=>x + factor * (col2[i] - x));
 const normY = (y)=>{
     return -(y / window.innerHeight) * 2 + 1;
 };
@@ -55343,6 +55384,11 @@ const getCoord = (el)=>{
     let opacity = el.getAttribute("opacity") ? el.getAttribute("opacity") : false;
     let rotation = el.getAttribute("rotation") ? parseInt(el.getAttribute("rotation")) : 0;
     let range = isNaN(stick) ? 1 : 1 - stick;
+    let hcolora = el.getAttribute("hcolora") ? el.getAttribute("hcolora") : false;
+    let hcolorb = el.getAttribute("hcolorb") ? el.getAttribute("hcolorb") : false;
+    let hcolorc = el.getAttribute("hcolorc") ? el.getAttribute("hcolorc") : false;
+    let hcolord = el.getAttribute("hcolord") ? el.getAttribute("hcolord") : false;
+    let hopacity = el.getAttribute("hopacity") ? el.getAttribute("hopacity") : false;
     return {
         x: normX(rect.x + rect.width / 2) - window.scrollX,
         y: el.getAttribute("yoffset") ? normY(el.offsetTop + rect.height / 2 + el.parentElement.offsetTop) : 0,
@@ -55367,6 +55413,23 @@ const getCoord = (el)=>{
             },
             ...opacity && {
                 opacity: opacity
+            }
+        },
+        hoverColors: {
+            ...hcolora && {
+                a: hcolora
+            },
+            ...hcolorb && {
+                b: hcolorb
+            },
+            ...hcolorc && {
+                c: hcolorc
+            },
+            ...hcolord && {
+                d: hcolord
+            },
+            ...hopacity && {
+                opacity: hopacity
             }
         }
     };

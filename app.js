@@ -6,7 +6,7 @@ import pageFrag from './shaders/page.frag';
 import ThreeD from './3d';
 import Slider from './slider';
 import HoverSlider from './hoverSlider';
-import {hexToRgb, getCoord, rgbaToArray }from './utils'
+import {hexToRgb, getCoord, rgbaToArray, lerpRgba }from './utils'
 import anime from 'animejs';
 import _, { delay } from 'lodash';
 import * as THREE from 'three'
@@ -51,9 +51,19 @@ class App {
             opacity: 0,
         }
 
+        this.hoverColors ={
+            a: '#F198C0',
+            b: "#61FCC4",
+            c: '#F198C0',
+            d: "#61FCC4",
+            opacity: 0,
+            mix: 0
+        }
+
         this.impulses = {
             acceleration: 0.005,
             rotation: 0,
+            color: 0,
         }
 
         this.lastFrame = 0
@@ -95,6 +105,10 @@ class App {
         })
 
         let colorFrames = [...document.querySelectorAll('[colora], [colorb], [colorc], [colord], [opacity]')].map(el =>{
+            return {el:el, coord: getCoord(el)}
+        })
+
+        this.colorTriggers = [...document.querySelectorAll('[hcolora], [hcolorb], [hcolorc], [hcolord], [hopacity]')].map(el =>{
             return {el:el, coord: getCoord(el)}
         })
 
@@ -155,7 +169,11 @@ class App {
 
         this.timeline = timeline
         this.onScroll()
-  
+
+        anime.set( this.hoverColors, {
+            ...this.hoverColors,
+        })
+
     }
 
     
@@ -310,6 +328,20 @@ class App {
        document.addEventListener('click', this.startAnim.bind(this))
        window.addEventListener("scroll", this.startAnim.bind(this))
         //this.loadAnim()
+
+        this.colorTriggers.forEach((e) => {
+            e.el.addEventListener('mouseenter', ()=> {
+                anime.set( this.hoverColors, {
+                    ...this.hoverColors,
+                    ...e.coord.hoverColors,
+                    mix: 1
+                })
+
+               e.el.addEventListener('mouseleave', ()=>{
+                this.hoverColors.mix = 0
+               })
+            })
+        })
        
     }
 
@@ -378,11 +410,20 @@ class App {
         this.pass.uniforms.mouse.value = mouseLerp;
         this.pass.uniforms.time.value += 1;
 
-        this.pass.uniforms.colA.value = rgbaToArray(this.colors.a)
-        this.pass.uniforms.colB.value = rgbaToArray(this.colors.b)
-        this.pass.uniforms.colC.value = rgbaToArray(this.colors.c)
-        this.pass.uniforms.colD.value = rgbaToArray(this.colors.d)
-        this.pass.uniforms.gradientOpacity.value = this.colors.opacity
+        console.log( lerpRgba(rgbaToArray(this.colors.a), rgbaToArray(this.hoverColors.a), 1.0))
+
+        //this.impulses.color = this.curtains.lerp(this.impulses.color, this.hoverColors.mix, delta * 3.15)
+        let colAtarget = lerpRgba(rgbaToArray(this.colors.a), rgbaToArray(this.hoverColors.a), this.hoverColors.mix)
+        let colBtarget = lerpRgba(rgbaToArray(this.colors.b), rgbaToArray(this.hoverColors.b), this.hoverColors.mix)
+        let colCtarget = lerpRgba(rgbaToArray(this.colors.c), rgbaToArray(this.hoverColors.c), this.hoverColors.mix)
+        let colDtarget = lerpRgba(rgbaToArray(this.colors.d), rgbaToArray(this.hoverColors.d), this.hoverColors.mix)
+        let colOtarget = this.curtains.lerp(this.colors.opacity, this.hoverColors.opacity, this.hoverColors.mix)
+
+        this.pass.uniforms.colA.value = lerpRgba(this.pass.uniforms.colA.value, colAtarget, delta * 1.5)
+        this.pass.uniforms.colB.value = lerpRgba(this.pass.uniforms.colB.value, colBtarget, delta * 1.5)
+        this.pass.uniforms.colC.value = lerpRgba(this.pass.uniforms.colC.value, colCtarget, delta * 1.5)
+        this.pass.uniforms.colD.value = lerpRgba(this.pass.uniforms.colD.value, colDtarget, delta * 1.5)
+        this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, this.hoverColors.opacity, delta * 1.5)
     }
 
     loadImg(query, target, sampler){
