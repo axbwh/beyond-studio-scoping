@@ -36,6 +36,7 @@ uniform vec4 uColD;
 uniform vec2 uMouse;
 uniform float uTime;
 uniform float uGradientOpacity;
+uniform float uMorph;
 
 void main() {
     vec2 uv = vTextureCoord;
@@ -61,7 +62,7 @@ void main() {
     //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);
     float morphStrength = 0.005;
     float morph = ease(threeDCol.r);
-    float baseStrength = 0.02;
+    float baseStrength = 0.02 * uMorph;
 
     vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);
 

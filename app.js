@@ -63,7 +63,7 @@ class App {
         this.impulses = {
             acceleration: 0.005,
             rotation: 0,
-            color: 0,
+            morph: 0,
         }
 
         this.lastFrame = 0
@@ -112,13 +112,13 @@ class App {
             return {el:el, coord: getCoord(el)}
         })
 
-        this.axes = {
+        this.axes = frames[0] ? {
             range: frames[0].coord.range,
             x: frames[0].coord.x,
             y: frames[0].coord.y,
             size: frames[0].coord.size,
             rotation: frames[0].coord.rotation
-        }
+        } : this.axes
 
         // colorFrames.slice().reverse().forEach(f =>{
         //     this.colors = {
@@ -215,8 +215,9 @@ class App {
     }
 
     onSuccess(){
-        this.slider = new Slider(this.curtains, document.getElementById('slider'))
-        this.hoverSlider = new HoverSlider(this.curtains, document.getElementById('hover-slider'), document.getElementById('hover-slider-trigger'))
+        
+        this.slider = document.getElementById('slider') ?  new Slider(this.curtains, document.getElementById('slider')) : false
+        this.hoverSlider = document.getElementById('slider') ? new HoverSlider(this.curtains, document.getElementById('hover-slider'), document.getElementById('hover-slider-trigger')) : false
         this.puckTarget = new RenderTarget(this.curtains)
         this.bgTarget = new RenderTarget(this.curtains)
         this.imgTarget = new RenderTarget(this.curtains)
@@ -290,6 +291,11 @@ class App {
                     type: '1f',
                     value: 0,
                 },
+                morph:{
+                    name: 'uMorph',
+                    type: '1f',
+                    value: 1,
+                },
                 gradientOpacity:{
                     name: 'uGradientOpacity',
                     type: '1f',
@@ -306,9 +312,10 @@ class App {
         this.loadImg('img[bg]', this.bgTarget, 'uBg')
         //images that will be inside the puck
         this.loadImg('img[puck]', this.puckTarget, 'uPuck')
-        this.slider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
 
-        this.hoverSlider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
+        this.slider && this.slider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
+
+        this.hoverSlider && this.hoverSlider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
         // hide gradient
         document.getElementById('gradient').style.display = 'none';
 
@@ -341,6 +348,17 @@ class App {
                 this.hoverColors.mix = 0
                })
             })
+        })
+
+        document.querySelectorAll('a').forEach((e) => {
+            e.addEventListener('mouseenter', ()=>{
+                this.impulses.morph = 5
+                console.log('here')
+            })
+
+            e.addEventListener('mouseleave', () =>{
+                this.impulses.morph = 1
+            } )
         })
        
     }
@@ -410,8 +428,6 @@ class App {
         this.pass.uniforms.mouse.value = mouseLerp;
         this.pass.uniforms.time.value += 1;
 
-        console.log( lerpRgba(rgbaToArray(this.colors.a), rgbaToArray(this.hoverColors.a), 1.0))
-
         //this.impulses.color = this.curtains.lerp(this.impulses.color, this.hoverColors.mix, delta * 3.15)
         let colAtarget = lerpRgba(rgbaToArray(this.colors.a), rgbaToArray(this.hoverColors.a), this.hoverColors.mix)
         let colBtarget = lerpRgba(rgbaToArray(this.colors.b), rgbaToArray(this.hoverColors.b), this.hoverColors.mix)
@@ -424,6 +440,7 @@ class App {
         this.pass.uniforms.colC.value = lerpRgba(this.pass.uniforms.colC.value, colCtarget, delta * 1.5)
         this.pass.uniforms.colD.value = lerpRgba(this.pass.uniforms.colD.value, colDtarget, delta * 1.5)
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, this.hoverColors.opacity, delta * 1.5)
+        this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, this.impulses.morph, delta / 2)
     }
 
     loadImg(query, target, sampler){
