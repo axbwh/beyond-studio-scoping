@@ -403,7 +403,7 @@ class App {
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
 
 
-        anime.set('.container', {
+        anime.set('.section', {
             translateY: -this.scroll.effect *5
         }) //smoothscroll
 

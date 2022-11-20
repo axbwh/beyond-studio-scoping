@@ -901,7 +901,7 @@ class App {
         this.scroll.delta = Math.max(-30, Math.min(30, this.scroll.lastValue - this.scroll.value));
         this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, 0.05);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
-        (0, _animejsDefault.default).set(".container", {
+        (0, _animejsDefault.default).set(".section", {
             translateY: -this.scroll.effect * 5
         }) //smoothscroll
         ;
