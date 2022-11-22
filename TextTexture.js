@@ -108,6 +108,7 @@ export class TextTexture {
         this.canvas = document.createElement("canvas");
         this.context = this.canvas.getContext("2d");
 
+        
         // get text style
         this.content.style = window.getComputedStyle(this.textElement);
         this.content.style.fillType = fillType !== "fill" && fillType !== "stroke" ? "fill" : fillType;
@@ -412,10 +413,12 @@ export class TextTexture {
      Resize the canvas and write the texture again (internally called right after the plane object has been resized)
      ***/
     resize() {
+        this.textElement.style.color=''
         if(this.texture) {
             this.setCanvasSize();
             this.writeTexture();
         }
+        this.textElement.style.color='#ff000000'
     }
 
 
