@@ -866,7 +866,7 @@ class App {
         });
         document.querySelectorAll("a").forEach((e)=>{
             e.addEventListener("mouseenter", ()=>{
-                this.impulses.morph = 10;
+                this.impulses.morph = 1.5;
             });
             e.addEventListener("mouseleave", ()=>{
                 this.impulses.morph = 1;
@@ -902,10 +902,10 @@ class App {
         this.scroll.value = this.curtains.getScrollValues().y;
         // clamp delta
         this.scroll.delta = Math.max(-30, Math.min(30, this.scroll.lastValue - this.scroll.value));
-        this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, 0.05);
+        this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
         (0, _animejsDefault.default).set(".section", {
-            translateY: -this.scroll.effect * 5
+            translateY: `${-this.scroll.effect}vh`
         }) //smoothscroll
         ;
         let mouseVal = this.pass.uniforms.mouse.value;
