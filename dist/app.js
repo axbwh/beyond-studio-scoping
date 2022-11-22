@@ -604,13 +604,16 @@ class App {
             morph: 0
         };
         this.lastFrame = 0;
+        this.frames = [];
+        this.pixelRatio = Math.min(1.25, window.devicePixelRatio);
     }
     init() {
         // create curtains instance
         this.curtains = new (0, _curtainsjs.Curtains)({
             container: "canvas",
-            pixelRatio: Math.min(1.5, window.devicePixelRatio)
+            pixelRatio: this.pixelRatio
         });
+        console.log(window.devicePixelRatio);
         this.curtains.onSuccess(this.onSuccess.bind(this));
         this.curtains.onError(this.onError.bind(this));
     }
@@ -894,10 +897,23 @@ class App {
     onFlip(impulses) {
         impulses.rotation += 180;
     }
+    monitorPerformance(delta) {
+        this.frames[this.frames.length] = delta;
+        if (this.frames.length >= 45) {
+            let total = this.frames.reduce((acc, val)=>acc + val);
+            console.log(total, total / 45, 1 / 30, this.pixelRatio);
+            if (total / 45 > 1 / 30) {
+                this.pixelRatio = this.pixelRatio > 0.75 ? this.pixelRatio - 0.1 : 0.75;
+                this.canvas.setPixelRatio(this.pixelRatio);
+            }
+            this.frames = [];
+        }
+    }
     getDelta() {
         let delta = (performance.now() - this.lastFrame) / 1000;
         delta = delta > 0.5 ? 0.5 : delta;
         this.lastFrame = performance.now();
+        this.monitorPerformance(delta);
         return delta;
     }
     onRender() {
@@ -57026,6 +57042,12 @@ class HoverSlider {
             });
         });
     }
+    getDelta() {
+        let delta = (performance.now() - this.lastFrame) / 1000;
+        delta = delta > 0.5 ? 0.5 : delta;
+        this.lastFrame = performance.now();
+        return delta;
+    }
     onEnter(i) {
         this.state.activeIndex = this.state.nextIndex;
         this.active.setSource(this.plane.images[this.state.activeIndex]);
@@ -57036,12 +57058,13 @@ class HoverSlider {
         this.state.transitionTimer = 0;
     }
     onRender() {
+        let delta = this.getDelta();
         // increase or decrease our timer based on the active texture value
         if (this.state.isChanging) {
             // use damping to smoothen transition
-            this.state.transitionTimer += (90 - this.state.transitionTimer) * 0.06;
+            this.state.transitionTimer += (90 - this.state.transitionTimer) * delta * 4;
             // force end of animation as damping is slower the closer we get from the end value
-            if (this.state.transitionTimer >= 88.9 && this.state.transitionTimer !== 90) this.state.transitionTimer = 90;
+            if (this.state.transitionTimer >= 90 - delta * 4 && this.state.transitionTimer !== 90) this.state.transitionTimer = 90;
         }
         // update our transition timer uniform
         this.plane.uniforms.transitionTimer.value = this.state.transitionTimer;

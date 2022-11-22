@@ -70,14 +70,19 @@ class App {
 
         this.lastFrame = 0
 
+        this.frames = []
+        this.pixelRatio = Math.min(1.25, window.devicePixelRatio)
+
     }
 
     init(){
         // create curtains instance
         this.curtains = new Curtains({
             container: "canvas",
-            pixelRatio: Math.min(1.5, window.devicePixelRatio)
+            pixelRatio: this.pixelRatio
         })
+
+        console.log(window.devicePixelRatio)
 
         this.curtains.onSuccess(this.onSuccess.bind(this))
         this.curtains.onError(this.onError.bind(this))
@@ -393,10 +398,25 @@ class App {
         impulses.rotation += 180;
     }
 
+    monitorPerformance(delta){
+        this.frames[this.frames.length] = delta
+        if(this.frames.length >= 45){
+           let total = this.frames.reduce((acc, val) => acc + val)
+            console.log(total, total/45, 1 / 30, this.pixelRatio )
+            if (total / 45 > 1 / 30){
+                this.pixelRatio = this.pixelRatio > 0.75 ? this.pixelRatio - 0.1 : 0.75
+                this.canvas.setPixelRatio(this.pixelRatio)
+            }
+            this.frames = []
+        }
+
+    }
+
     getDelta(){
         let delta = (performance.now() - this.lastFrame) / 1000
         delta = delta > 0.5 ? 0.5 : delta
         this.lastFrame = performance.now()
+        this.monitorPerformance(delta)
         return delta
     }
 
