@@ -7,6 +7,7 @@ class HoverSlider {
     this.curtains = curtains
     this.element = el
     this.triggers = trigger.querySelectorAll('a')
+    console.log(this.triggers, this.element)
 
     this.params = {
       vertexShader: sliderVert,
@@ -24,12 +25,15 @@ class HoverSlider {
     this.state = {
       activeIndex: 0,
       nextIndex: 1, // does not care for now
-      maxTextures: this.element.querySelectorAll('img').length - 1, // -1 because displacement image does not count
+      maxTextures: this.element.querySelectorAll('img').length, // -1 because displacement image does not count
 
       isChanging: false,
       transitionTimer: 0,
     }
+    console.log(this.element.querySelectorAll('img'))
   }
+
+  
 
   init(target, callback) {
     this.callback = callback
@@ -72,7 +76,7 @@ class HoverSlider {
     })
 
     this.triggers.forEach((e, i)=> {
-      console
+      console.log('here')
       e.addEventListener('mouseenter', ()=>{
         this.onEnter(i)
       })
