@@ -201,6 +201,16 @@ class App {
                 sampler: "uTexture",
                 resolution: 1,
                 skipFontLoading: true, // we've already loaded the fonts
+                onBeforeWordMeasuring: () => {
+                    anime.set('.section', {
+                        translateY: `${0}vh`
+                    }) 
+                },
+                onAfterWordWriting: () =>{
+                    anime.set('.section', {
+                        translateY: `${-this.scroll.effect}vh`
+                    }) 
+                }
             })
 
             plane.setRenderTarget(target)
@@ -211,6 +221,8 @@ class App {
             sampler: 'uTxt',
             fromTexture: target.getTexture()
         })
+
+        
 
 
 
@@ -409,14 +421,8 @@ class App {
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.7){
                 let minus = total /45 > 1 / 15 ? 0.3 : 0.1
                 this.pixelRatio =  this.pixelRatio - minus
-                anime.set('.section', {
-                    translateY: `${0}vh`
-                }) 
                 this.curtains.setPixelRatio(this.pixelRatio)
                 this.threeD.setPixelRatio(this.pixelRatio)
-                anime.set('.section', {
-                    translateY: `${-this.scroll.effect}vh`
-                }) 
             }
 
             this.frames = []

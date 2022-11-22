@@ -724,7 +724,17 @@ class App {
                 textElement: plane.htmlElement,
                 sampler: "uTexture",
                 resolution: 1,
-                skipFontLoading: true
+                skipFontLoading: true,
+                onBeforeWordMeasuring: ()=>{
+                    (0, _animejsDefault.default).set(".section", {
+                        translateY: `${0}vh`
+                    });
+                },
+                onAfterWordWriting: ()=>{
+                    (0, _animejsDefault.default).set(".section", {
+                        translateY: `${-this.scroll.effect}vh`
+                    });
+                }
             });
             plane.setRenderTarget(target);
             textEl.style.color = "#ff000000" //make text invisible bhut still highlightable
@@ -905,14 +915,8 @@ class App {
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.7) {
                 let minus = total / 45 > 1 / 15 ? 0.3 : 0.1;
                 this.pixelRatio = this.pixelRatio - minus;
-                (0, _animejsDefault.default).set(".section", {
-                    translateY: `${0}vh`
-                });
                 this.curtains.setPixelRatio(this.pixelRatio);
                 this.threeD.setPixelRatio(this.pixelRatio);
-                (0, _animejsDefault.default).set(".section", {
-                    translateY: `${-this.scroll.effect}vh`
-                });
             }
             this.frames = [];
         }
