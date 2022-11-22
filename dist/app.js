@@ -567,7 +567,6 @@ class App {
             lastValue: 0,
             effect: 0
         };
-        this.threeD = new (0, _3DDefault.default)();
         this.axes = {
             range: 0,
             x: 0,
@@ -606,6 +605,7 @@ class App {
         this.lastFrame = 0;
         this.frames = [];
         this.pixelRatio = Math.min(1.25, window.devicePixelRatio);
+        this.threeD = new (0, _3DDefault.default)(this.pixelRatio);
     }
     init() {
         // create curtains instance
@@ -613,7 +613,6 @@ class App {
             container: "canvas",
             pixelRatio: this.pixelRatio
         });
-        console.log(window.devicePixelRatio);
         this.curtains.onSuccess(this.onSuccess.bind(this));
         this.curtains.onError(this.onError.bind(this));
     }
@@ -903,8 +902,9 @@ class App {
             let total = this.frames.reduce((acc, val)=>acc + val);
             console.log(total, total / 45, 1 / 30, this.pixelRatio);
             if (total / 45 > 1 / 30) {
-                this.pixelRatio = this.pixelRatio > 0.75 ? this.pixelRatio - 0.1 : 0.75;
+                this.pixelRatio = this.pixelRatio > 0.65 ? this.pixelRatio - 0.1 : 0.65;
                 this.curtains.setPixelRatio(this.pixelRatio);
+                this.threeD.setPixelRatio(this.pixelRatio);
             }
             this.frames = [];
         }
@@ -8531,7 +8531,7 @@ void main()
 }`;
 const clamp = (num, min, max)=>Math.min(Math.max(num, min), max);
 class ThreeD {
-    constructor(){
+    constructor(pixelRatio){
         this.scene = new _three.Scene();
         this.camera = new _three.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.bbox = new _three.Vector3();
@@ -8539,6 +8539,7 @@ class ThreeD {
             alpha: true
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(pixelRatio);
         this.canvas = this.renderer.domElement;
         this.canvas.setAttribute("data-sampler", "threeDTexture") // this data attribute will automatically load our canvas 
         ;
@@ -8578,6 +8579,9 @@ class ThreeD {
         this.lightBottom.position.set(10, -40, 50);
         this.rotationTarget = new _three.Quaternion();
         this.rotTdeg = new _three.Euler();
+    }
+    setPixelRatio(pixelRatio) {
+        this.renderer.setPixelRatio(pixelRatio);
     }
     loadGlb() {
         // Instantiate a loader

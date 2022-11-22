@@ -25,8 +25,6 @@ class App {
             lastValue: 0,
             effect: 0,
         }
-
-        this.threeD = new ThreeD()
         
         this.axes = {
             range: 0,
@@ -73,6 +71,8 @@ class App {
         this.frames = []
         this.pixelRatio = Math.min(1.25, window.devicePixelRatio)
 
+        this.threeD = new ThreeD(this.pixelRatio)
+
     }
 
     init(){
@@ -81,8 +81,6 @@ class App {
             container: "canvas",
             pixelRatio: this.pixelRatio
         })
-
-        console.log(window.devicePixelRatio)
 
         this.curtains.onSuccess(this.onSuccess.bind(this))
         this.curtains.onError(this.onError.bind(this))
@@ -402,10 +400,11 @@ class App {
         this.frames[this.frames.length] = delta
         if(this.frames.length >= 45){
            let total = this.frames.reduce((acc, val) => acc + val)
-            console.log(total, total/45, 1 / 30, this.pixelRatio, )
+            console.log(total, total/45, 1 / 30, this.pixelRatio)
             if (total / 45 > 1 / 30){
-                this.pixelRatio = this.pixelRatio > 0.75 ? this.pixelRatio - 0.1 : 0.75
+                this.pixelRatio = this.pixelRatio > 0.65 ? this.pixelRatio - 0.1 : 0.65
                 this.curtains.setPixelRatio(this.pixelRatio)
+                this.threeD.setPixelRatio(this.pixelRatio)
             }
             this.frames = []
         }
