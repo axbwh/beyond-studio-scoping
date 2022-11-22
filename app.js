@@ -408,10 +408,16 @@ class App {
             // console.log(total, total/45, 1 / 30, this.pixelRatio)
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.65){
                 this.pixelRatio =  this.pixelRatio - 0.075
+                anime.set('.section', {
+                    translateY: `${0}vh`
+                }) 
                 this.curtains.setPixelRatio(this.pixelRatio)
                 this.threeD.setPixelRatio(this.pixelRatio)
+                anime.set('.section', {
+                    translateY: `${-this.scroll.effect}vh`
+                }) 
             }
-            
+
             this.frames = []
         }
     }
