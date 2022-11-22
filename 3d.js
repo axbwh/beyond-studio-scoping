@@ -163,12 +163,13 @@ class ThreeD {
 
         pos.lerp(mpos, axes.range)
 
+        this.mesh.rotation.z += (this.mesh.position.distanceTo(pos) * delta * 1.5)* axes.range
         this.mesh.position.lerp(pos, delta * 1.5)
 
         // this.mesh.scale.x = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
-        this.mesh.rotation.z += (0.005 + this.mesh.position.distanceTo(pos)) * delta * axes.range
+  
 
         this.rotTdeg.copy(this.mesh.rotation)
         this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation + rotation)
