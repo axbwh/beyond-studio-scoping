@@ -25,7 +25,9 @@ class App {
             lastValue: 0,
             effect: 0,
         }
+
         this.threeD = new ThreeD()
+        
         this.axes = {
             range: 0,
             x: 0,
@@ -120,13 +122,12 @@ class App {
             rotation: frames[0].coord.rotation
         } : this.axes
 
-        // colorFrames.slice().reverse().forEach(f =>{
-        //     this.colors = {
-        //         ...this.colors,
-        //         ...f.coord.colors
-        //     }
-        //     console.log(this.colors, f)
-        // }) // iterate backwards through array to reset colors to first value
+        colorFrames.length > 0 && colorFrames.slice().reverse().forEach(f =>{
+            this.colors = {
+                ...this.colors,
+                ...f.coord.colors
+            }
+        }) // iterate backwards through array to reset colors to first value
 
 
 
@@ -137,7 +138,8 @@ class App {
             loop: false
         })
 
-        frames.forEach((frame, index)=>{
+
+        frames.length > 0 && frames.forEach((frame, index)=>{
             let previousTime = index > 0 ? frames[index - 1].coord.keyframe : 0
             let duration = index > 0 ? frame.coord.keyframe - frames[index - 1].coord.keyframe : 0.00001
             timeline.add({
@@ -156,8 +158,11 @@ class App {
         }, document.body.offsetHeight - window.innerHeight - 0.00001)
 
 
+        anime.set(this.colors, {
+            ...this.colors
+        }) // to convert #hex to rgba when no colrs are defined
 
-        colorFrames.forEach( (frame, index) => {
+        colorFrames.length > 0 && colorFrames.forEach( (frame, index) => {
             let previousTime = index > 0 ? colorFrames[index - 1].coord.keyframe : 0
             let duration = index > 0 ? frame.coord.keyframe - colorFrames[index - 1].coord.keyframe : 0.00001
             timeline.add({
@@ -216,8 +221,8 @@ class App {
 
     onSuccess(){
         
-        this.slider = document.getElementById('slider') ?  new Slider(this.curtains, document.getElementById('slider')) : false
-        this.hoverSlider = document.getElementById('slider') ? new HoverSlider(this.curtains, document.getElementById('hover-slider'), document.getElementById('hover-slider-trigger')) : false
+        this.slider = document.getElementById('slider') ?  new Slider(this.curtains, document.getElementById('slider'), document.getElementById('slider-dom'), document.getElementById('slider-trigger')) : false
+        this.hoverSlider = document.getElementById('hover-slider') ? new HoverSlider(this.curtains, document.getElementById('hover-slider'), document.getElementById('hover-slider-trigger')) : false
         this.puckTarget = new RenderTarget(this.curtains)
         this.bgTarget = new RenderTarget(this.curtains)
         this.imgTarget = new RenderTarget(this.curtains)
@@ -225,8 +230,9 @@ class App {
 
 
         Promise.all([
-            document.fonts.load('normal 700 1em "Arial", sans-serif'),
-            document.fonts.load('normal 400 1em "Arial", sans-serif'),
+            document.fonts.load('300 1.375em "Atosmose", sans-serif'),
+            document.fonts.load('200 1em "Atosmose", sans-serif'),
+            document.fonts.load('400 1em "Outfit", sans-serif'),
             this.threeD.loadGlb()
         ]).then(this.onLoaded.bind(this))
 
@@ -316,8 +322,7 @@ class App {
         this.slider && this.slider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
 
         this.hoverSlider && this.hoverSlider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
-        // hide gradient
-        document.getElementById('gradient').style.display = 'none';
+  
 
         this.pass.onRender(this.onRender.bind(this))
 
@@ -336,7 +341,7 @@ class App {
        window.addEventListener("scroll", this.startAnim.bind(this))
         //this.loadAnim()
 
-        this.colorTriggers.forEach((e) => {
+        this.colorTriggers.length > 0 && this.colorTriggers.forEach((e) => {
             e.el.addEventListener('mouseenter', ()=> {
                 anime.set( this.hoverColors, {
                     ...this.hoverColors,
@@ -352,8 +357,7 @@ class App {
 
         document.querySelectorAll('a').forEach((e) => {
             e.addEventListener('mouseenter', ()=>{
-                this.impulses.morph = 5
-                console.log('here')
+                this.impulses.morph = 10
             })
 
             e.addEventListener('mouseleave', () =>{
@@ -384,6 +388,7 @@ class App {
 
     getDelta(){
         let delta = (performance.now() - this.lastFrame) / 1000
+        delta = delta > 0.5 ? 0.5 : delta
         this.lastFrame = performance.now()
         return delta
     }
@@ -426,7 +431,7 @@ class App {
 
         let mouseLerp = [this.curtains.lerp( mouseVal[0] ,this.mouse.x, delta * 3.125), this.curtains.lerp( mouseVal[1] ,this.mouse.y, delta * 3.125) ] 
         this.pass.uniforms.mouse.value = mouseLerp;
-        this.pass.uniforms.time.value += 1;
+        this.pass.uniforms.time.value += delta * 50;
 
         //this.impulses.color = this.curtains.lerp(this.impulses.color, this.hoverColors.mix, delta * 3.15)
         let colAtarget = lerpRgba(rgbaToArray(this.colors.a), rgbaToArray(this.hoverColors.a), this.hoverColors.mix)
@@ -439,8 +444,8 @@ class App {
         this.pass.uniforms.colB.value = lerpRgba(this.pass.uniforms.colB.value, colBtarget, delta * 1.5)
         this.pass.uniforms.colC.value = lerpRgba(this.pass.uniforms.colC.value, colCtarget, delta * 1.5)
         this.pass.uniforms.colD.value = lerpRgba(this.pass.uniforms.colD.value, colDtarget, delta * 1.5)
-        this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, this.hoverColors.opacity, delta * 1.5)
-        this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, this.impulses.morph, delta / 2)
+        this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5)
+        this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, this.impulses.morph, delta *1.5)
     }
 
     loadImg(query, target, sampler){

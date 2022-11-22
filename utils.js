@@ -44,7 +44,7 @@ const getCoord = (el) => {
 
     return {
         x: normX(rect.x + rect.width / 2) - window.scrollX,
-        y: el.getAttribute('yoffset') ? normY(el.offsetTop + rect.height/2 + el.parentElement.offsetTop) : 0,
+        y: el.getAttribute('yoffset') ? el.getAttribute('yoffset') === 'bottom' ? normY((rect.top + window.scrollY + rect.height/2) - (document.body.offsetHeight - window.innerHeight) ) : normY(rect.top + rect.height/2 + window.scrollY) : 0,
         size: rect.width > rect.height ? rect.height * scale: rect.width * scale,
         h: rect.height,
         w: rect.width,

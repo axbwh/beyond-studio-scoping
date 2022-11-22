@@ -1,11 +1,21 @@
+import anime from 'animejs';
 import {Plane, RenderTarget, ShaderPass} from 'curtainsjs';
 import sliderFrag from './shaders/slider.frag'
 import sliderVert from './shaders/slider.vert'
 
 class Slider {
-  constructor(curtains, el) {
+  constructor(curtains, el, dom, trigger) {
     this.curtains = curtains
     this.element = el
+    this.dom = dom
+    this.triggers = [...trigger.querySelectorAll('.slider-dot')]
+    this.num = [...trigger.querySelectorAll('.text-sml')]
+    this.doms = [...this.dom.querySelectorAll('.cms-item')]
+
+
+    this.dom.querySelectorAll('img').forEach((e) =>{
+      e.style.display = 'none'
+    })
 
     this.params = {
       vertexShader: sliderVert,
@@ -23,7 +33,7 @@ class Slider {
     this.state = {
       activeIndex: 0,
       nextIndex: 1, // does not care for now
-      maxTextures: this.element.querySelectorAll('img').length - 1, // -1 because displacement image does not count
+      maxTextures: this.element.querySelectorAll('img').length, 
 
       isChanging: false,
       transitionTimer: 0,
@@ -31,6 +41,19 @@ class Slider {
   }
 
   init(target, callback) {
+
+    this.doms.forEach((e, i) =>{
+      if(i != this.state.activeIndex){
+        anime.set(e.querySelectorAll('p, h3'), {
+          opacity:0,
+          translateY: '4vh'
+        })
+      }
+    }) // hide sliders
+
+
+    this.num[2].innerText = this.state.maxTextures
+
     this.callback = callback
     //this.target = new RenderTarget(this.curtains) //create a render target for our slider
     this.target = target
@@ -70,22 +93,64 @@ class Slider {
       fromTexture: this.plane.textures[this.state.activeIndex],
     })
 
-    this.element.addEventListener('click', this.onClick.bind(this))
+    this.triggers.forEach( (e, i) => {
+      e.addEventListener('click', () => {
+        this.onClick(i)
+      })
+    })
   }
 
-  onClick() {
+  onClick(i) {
     if (!this.state.isChanging) {
       // enable drawing for now
       //curtains.enableDrawing();
 
       this.state.isChanging = true
 
-      // check what will be next image
-      if (this.state.activeIndex < this.state.maxTextures) {
-        this.state.nextIndex = this.state.activeIndex + 1
-      } else {
-        this.state.nextIndex = 0
+      if(i < 1){
+          // check what will be next image
+          if (this.state.activeIndex < this.state.maxTextures - 1) {
+            this.state.nextIndex = this.state.activeIndex + 1
+          } else {
+            this.state.nextIndex = 0
+          }
+      }else{
+        if (this.state.activeIndex > 0) {
+          this.state.nextIndex = this.state.activeIndex - 1
+        } else {
+          this.state.nextIndex = this.state.maxTextures - 1
+        }
       }
+
+      
+
+      anime({
+        targets: this.doms[this.state.activeIndex].querySelectorAll('p, h3'),
+        opacity: { value: 0, duration: 400, easing: 'easeInSine'},
+        translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
+        delay: anime.stagger(100)
+      })
+
+      anime({
+        targets: this.num[0],
+        opacity: { value: 0, duration: 400, easing: 'easeInSine'},
+        translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
+      }).finished.then(()=> {
+        this.num[0].innerText = this.state.nextIndex + 1
+        anime({
+          targets: this.num[0],
+          opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
+          translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'}
+        })
+      })
+
+      anime({
+        targets: this.doms[this.state.nextIndex].querySelectorAll('p, h3'),
+        opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
+        translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'},
+        delay: anime.stagger(100, {start: 400})
+      })
+  
 
       // apply it to our next texture
       this.next.setSource(this.plane.images[this.state.nextIndex])
