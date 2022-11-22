@@ -841,12 +841,16 @@ class App {
         this.slider && this.slider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         this.hoverSlider && this.hoverSlider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         this.pass.onRender(this.onRender.bind(this));
+        let _mouse = (0, _lodashDefault.default).throttle(this.mouseEvent.bind(this), 10, {
+            trailing: true,
+            leading: true
+        });
         let _scroll = (0, _lodashDefault.default).throttle(this.onScroll.bind(this), 10, {
             trailing: true,
             leading: true
         });
         window.addEventListener("scroll", _scroll.bind(this));
-        document.addEventListener("mousemove", this.mouseEvent.bind(this), false);
+        document.addEventListener("mousemove", _mouse.bind(this), false);
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
         document.addEventListener("click", this.startAnim.bind(this));

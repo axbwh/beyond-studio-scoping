@@ -174,8 +174,6 @@ class ThreeD {
         this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation + rotation)
 
         this.rotationTarget.setFromEuler(this.rotTdeg)
-
-
         this.mesh.quaternion.slerp(this.rotationTarget, delta* 2 * (1.0 -axes.range))
         
         // this.lightTop.lookAt(this.mesh.position)
