@@ -904,7 +904,7 @@ class App {
             console.log(total, total / 45, 1 / 30, this.pixelRatio);
             if (total / 45 > 1 / 30) {
                 this.pixelRatio = this.pixelRatio > 0.75 ? this.pixelRatio - 0.1 : 0.75;
-                this.canvas.setPixelRatio(this.pixelRatio);
+                this.curtains.setPixelRatio(this.pixelRatio);
             }
             this.frames = [];
         }
