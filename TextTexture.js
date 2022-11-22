@@ -58,7 +58,7 @@ export class TextTexture {
         plane,
         textElement,
         skipFontLoading = false,
-        verticalAlign = "top",
+        verticalAlign = "center",
         allowedLineEndSpace = 0.5,
         fillType = "fill",
         sampler = "uTextTexture",

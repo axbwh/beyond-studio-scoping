@@ -199,13 +199,8 @@ class App {
                 plane: plane,
                 textElement: plane.htmlElement,
                 sampler: "uTexture",
-                resolution: 1,
+                resolution: 1.2,
                 skipFontLoading: true, // we've already loaded the fonts
-                onBeforeWordMeasuring: () => {
-                    anime.set('.section', {
-                        translateY: 0
-                    }) 
-                }
             })
 
             plane.setRenderTarget(target)
@@ -216,12 +211,26 @@ class App {
             sampler: 'uTxt',
             fromTexture: target.getTexture()
         })
-
-        
-
-
-
     }
+
+    loadImg(query, target, sampler){
+        const imgs = document.querySelectorAll(query)
+        imgs.forEach((el) => {
+            const plane = new Plane(this.curtains, el, {
+              vertexShader: textShader.vs,
+              fragmentShader: imgFrag,
+            })
+            plane.loadImage(el, { sampler: 'uTexture' })
+            plane.setRenderTarget(target)
+            el.style.opacity = 0
+          })
+
+        this.pass.createTexture({
+            sampler: sampler,
+            fromTexture: target.getTexture(),
+        })
+    }
+
 
 
     onScroll(){
@@ -412,10 +421,12 @@ class App {
         this.frames[this.frames.length] = delta
         if(this.frames.length >= 45){
            let total = this.frames.reduce((acc, val) => acc + val)
-            console.log(total, total/45, 1 / 30, this.pixelRatio)
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.7){
                 let minus = total /45 > 1 / 15 ? 0.3 : 0.1
                 this.pixelRatio =  this.pixelRatio - minus
+                anime.set('.section', {
+                    translateY: 0
+                }) //conteract smoothscroll
                 this.curtains.setPixelRatio(this.pixelRatio)
                 this.threeD.setPixelRatio(this.pixelRatio)
             }
@@ -447,9 +458,9 @@ class App {
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
 
 
-        // anime.set('.section', {
-        //     translateY: `${-this.scroll.effect}vh`
-        // }) //smoothscroll
+        anime.set('.section', {
+            translateY: `${-this.scroll.effect}vh`
+        }) //smoothscroll
 
 
         let mouseVal = this.pass.uniforms.mouse.value;
@@ -485,24 +496,6 @@ class App {
         this.pass.uniforms.colD.value = lerpRgba(this.pass.uniforms.colD.value, colDtarget, delta * 1.5)
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5)
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, this.impulses.morph, delta *1.5)
-    }
-
-    loadImg(query, target, sampler){
-        const imgs = document.querySelectorAll(query)
-        imgs.forEach((el) => {
-            const plane = new Plane(this.curtains, el, {
-              vertexShader: textShader.vs,
-              fragmentShader: imgFrag,
-            })
-            plane.loadImage(el, { sampler: 'uTexture' })
-            plane.setRenderTarget(target)
-            el.style.opacity = 0
-          })
-
-        this.pass.createTexture({
-            sampler: sampler,
-            fromTexture: target.getTexture(),
-        })
     }
 
     mouseEvent(event){

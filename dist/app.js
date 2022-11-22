@@ -723,13 +723,8 @@ class App {
                 plane: plane,
                 textElement: plane.htmlElement,
                 sampler: "uTexture",
-                resolution: 1,
-                skipFontLoading: true,
-                onBeforeWordMeasuring: ()=>{
-                    (0, _animejsDefault.default).set(".section", {
-                        translateY: 0
-                    });
-                }
+                resolution: 1.2,
+                skipFontLoading: true
             });
             plane.setRenderTarget(target);
             textEl.style.color = "#ff000000" //make text invisible bhut still highlightable
@@ -737,6 +732,24 @@ class App {
         });
         this.pass.createTexture({
             sampler: "uTxt",
+            fromTexture: target.getTexture()
+        });
+    }
+    loadImg(query, target, sampler) {
+        const imgs = document.querySelectorAll(query);
+        imgs.forEach((el)=>{
+            const plane = new (0, _curtainsjs.Plane)(this.curtains, el, {
+                vertexShader: (0, _textShaderDefault.default).vs,
+                fragmentShader: (0, _imgFragDefault.default)
+            });
+            plane.loadImage(el, {
+                sampler: "uTexture"
+            });
+            plane.setRenderTarget(target);
+            el.style.opacity = 0;
+        });
+        this.pass.createTexture({
+            sampler: sampler,
             fromTexture: target.getTexture()
         });
     }
@@ -906,10 +919,13 @@ class App {
         this.frames[this.frames.length] = delta;
         if (this.frames.length >= 45) {
             let total = this.frames.reduce((acc, val)=>acc + val);
-            console.log(total, total / 45, 1 / 30, this.pixelRatio);
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.7) {
                 let minus = total / 45 > 1 / 15 ? 0.3 : 0.1;
                 this.pixelRatio = this.pixelRatio - minus;
+                (0, _animejsDefault.default).set(".section", {
+                    translateY: 0
+                }) //conteract smoothscroll
+                ;
                 this.curtains.setPixelRatio(this.pixelRatio);
                 this.threeD.setPixelRatio(this.pixelRatio);
             }
@@ -931,9 +947,10 @@ class App {
         this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
         this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
-        // anime.set('.section', {
-        //     translateY: `${-this.scroll.effect}vh`
-        // }) //smoothscroll
+        (0, _animejsDefault.default).set(".section", {
+            translateY: `${-this.scroll.effect}vh`
+        }) //smoothscroll
+        ;
         let mouseVal = this.pass.uniforms.mouse.value;
         //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
         /// axes mixed with origin
@@ -965,24 +982,6 @@ class App {
         this.pass.uniforms.colD.value = (0, _utils.lerpRgba)(this.pass.uniforms.colD.value, colDtarget, delta * 1.5);
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5);
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, this.impulses.morph, delta * 1.5);
-    }
-    loadImg(query, target, sampler) {
-        const imgs = document.querySelectorAll(query);
-        imgs.forEach((el)=>{
-            const plane = new (0, _curtainsjs.Plane)(this.curtains, el, {
-                vertexShader: (0, _textShaderDefault.default).vs,
-                fragmentShader: (0, _imgFragDefault.default)
-            });
-            plane.loadImage(el, {
-                sampler: "uTexture"
-            });
-            plane.setRenderTarget(target);
-            el.style.opacity = 0;
-        });
-        this.pass.createTexture({
-            sampler: sampler,
-            fromTexture: target.getTexture()
-        });
     }
     mouseEvent(event) {
         //event.preventDefault();
@@ -8213,7 +8212,7 @@ parcelHelpers.defineInteropFlag(exports);
 
  ***/ parcelHelpers.export(exports, "TextTexture", ()=>TextTexture);
 class TextTexture {
-    constructor({ plane , textElement , skipFontLoading =false , verticalAlign ="top" , allowedLineEndSpace =0.5 , fillType ="fill" , sampler ="uTextTexture" , texturesOptions ={} , resolution =1 , // callbacks
+    constructor({ plane , textElement , skipFontLoading =false , verticalAlign ="center" , allowedLineEndSpace =0.5 , fillType ="fill" , sampler ="uTextTexture" , texturesOptions ={} , resolution =1 , // callbacks
     onBeforeWordMeasuring =()=>{} , onAfterWordMeasuring =()=>{} , onBeforeWordWriting =()=>{} , onAfterWordWriting =()=>{} ,  } = {}){
         const acceptedTypes = [
             "Plane",
