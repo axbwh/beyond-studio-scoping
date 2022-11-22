@@ -55658,7 +55658,7 @@ class Slider {
             // use damping to smoothen transition
             this.state.transitionTimer += (90 - this.state.transitionTimer) * delta * 2.5;
             // force end of animation as damping is slower the closer we get from the end value
-            if (this.state.transitionTimer >= 88.9 && this.state.transitionTimer !== 90) this.state.transitionTimer = 90;
+            if (this.state.transitionTimer >= 90 - delta * 2.5 && this.state.transitionTimer !== 90) this.state.transitionTimer = 90;
         }
         // update our transition timer uniform
         this.plane.uniforms.transitionTimer.value = this.state.transitionTimer;
