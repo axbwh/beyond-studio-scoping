@@ -203,12 +203,7 @@ class App {
                 skipFontLoading: true, // we've already loaded the fonts
                 onBeforeWordMeasuring: () => {
                     anime.set('.section', {
-                        translateY: `${0}vh`
-                    }) 
-                },
-                onAfterWordWriting: () =>{
-                    anime.set('.section', {
-                        translateY: `${-this.scroll.effect}vh`
+                        translateY: 0
                     }) 
                 }
             })
@@ -417,7 +412,7 @@ class App {
         this.frames[this.frames.length] = delta
         if(this.frames.length >= 45){
            let total = this.frames.reduce((acc, val) => acc + val)
-            // console.log(total, total/45, 1 / 30, this.pixelRatio)
+            console.log(total, total/45, 1 / 30, this.pixelRatio)
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.7){
                 let minus = total /45 > 1 / 15 ? 0.3 : 0.1
                 this.pixelRatio =  this.pixelRatio - minus
@@ -452,9 +447,9 @@ class App {
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
 
 
-        anime.set('.section', {
-            translateY: `${-this.scroll.effect}vh`
-        }) //smoothscroll
+        // anime.set('.section', {
+        //     translateY: `${-this.scroll.effect}vh`
+        // }) //smoothscroll
 
 
         let mouseVal = this.pass.uniforms.mouse.value;
