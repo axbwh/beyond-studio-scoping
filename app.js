@@ -441,7 +441,7 @@ class App {
         
 
         // clamp delta
-        this.scroll.delta = Math.max(-17.5, Math.min(17.5, this.scroll.lastValue - this.scroll.value));
+        this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
 
         this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
