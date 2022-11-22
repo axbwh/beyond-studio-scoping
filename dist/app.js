@@ -606,6 +606,7 @@ class App {
         this.frames = [];
         this.pixelRatio = Math.min(1, window.devicePixelRatio);
         this.threeD = new (0, _3DDefault.default)(this.pixelRatio);
+        this.textTextures = [];
     }
     init() {
         // create curtains instance
@@ -718,7 +719,7 @@ class App {
                 fragmentShader: (0, _textShaderDefault.default).fs
             });
             // create the text texture and... that's it!
-            const textTexture = new (0, _textTexture.TextTexture)({
+            this.textTextures[this.textTextures.length] = new (0, _textTexture.TextTexture)({
                 plane: plane,
                 textElement: plane.htmlElement,
                 sampler: "uTexture",
@@ -900,10 +901,10 @@ class App {
         this.frames[this.frames.length] = delta;
         if (this.frames.length >= 45) {
             let total = this.frames.reduce((acc, val)=>acc + val);
-            console.log(total, total / 45, 1 / 30, this.pixelRatio);
+            // console.log(total, total/45, 1 / 30, this.pixelRatio)
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.65) {
                 this.pixelRatio = this.pixelRatio - 0.075;
-                this.curtains.renderingScale = this.pixelRatio;
+                this.curtains.setPixelRatio(this.pixelRatio);
                 this.threeD.setPixelRatio(this.pixelRatio);
             }
             this.frames = [];
@@ -8433,10 +8434,12 @@ class TextTexture {
     /***
      Resize the canvas and write the texture again (internally called right after the plane object has been resized)
      ***/ resize() {
+        this.textElement.style.color = "";
         if (this.texture) {
             this.setCanvasSize();
             this.writeTexture();
         }
+        this.textElement.style.color = "#ff000000";
     }
     /*** DESTROYING ***/ /***
      Cleanly dispose our TextTexture object
