@@ -29,6 +29,8 @@ class Slider {
       },
     }
 
+    this.lastFrame = performance.now()
+
     // here we will handle which texture is visible and the timer to transition between images
     this.state = {
       activeIndex: 0,
@@ -174,11 +176,20 @@ class Slider {
     }
   }
 
+  getDelta(){
+    let delta = (performance.now() - this.lastFrame) / 1000
+    delta = delta > 0.5 ? 0.5 : delta
+    this.lastFrame = performance.now()
+    return delta
+}
+
   onRender() {
+
+    let delta = this.getDelta()
     // increase or decrease our timer based on the active texture value
     if (this.state.isChanging) {
       // use damping to smoothen transition
-      this.state.transitionTimer += (90 - this.state.transitionTimer) * 0.04
+      this.state.transitionTimer += (90 - this.state.transitionTimer) * delta * 2.5
 
       // force end of animation as damping is slower the closer we get from the end value
       if ( this.state.transitionTimer >= 88.9 && this.state.transitionTimer !== 90) {
