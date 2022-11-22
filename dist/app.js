@@ -604,7 +604,7 @@ class App {
         };
         this.lastFrame = 0;
         this.frames = [];
-        this.pixelRatio = Math.min(1, window.devicePixelRatio);
+        this.pixelRatio = Math.min(1.5, window.devicePixelRatio);
         this.threeD = new (0, _3DDefault.default)(this.pixelRatio);
         this.textTextures = [];
     }
@@ -902,8 +902,9 @@ class App {
         if (this.frames.length >= 45) {
             let total = this.frames.reduce((acc, val)=>acc + val);
             // console.log(total, total/45, 1 / 30, this.pixelRatio)
-            if (total / 45 > 1 / 30 && this.pixelRatio > 0.65) {
-                this.pixelRatio = this.pixelRatio - 0.075;
+            if (total / 45 > 1 / 30 && this.pixelRatio > 0.7) {
+                let minus = total / 45 > 1 / 15 ? 0.3 : 0.1;
+                this.pixelRatio = this.pixelRatio - minus;
                 (0, _animejsDefault.default).set(".section", {
                     translateY: `${0}vh`
                 });
