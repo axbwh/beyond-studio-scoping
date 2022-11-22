@@ -69,7 +69,7 @@ class App {
         this.lastFrame = 0
 
         this.frames = []
-        this.pixelRatio = Math.min(1.25, window.devicePixelRatio)
+        this.pixelRatio = Math.min(1, window.devicePixelRatio)
 
         this.threeD = new ThreeD(this.pixelRatio)
 
@@ -198,7 +198,7 @@ class App {
                 plane: plane,
                 textElement: plane.htmlElement,
                 sampler: "uTexture",
-                resolution: 1.5,
+                resolution: 1,
                 skipFontLoading: true, // we've already loaded the fonts
             })
 
@@ -401,9 +401,9 @@ class App {
         if(this.frames.length >= 45){
            let total = this.frames.reduce((acc, val) => acc + val)
             console.log(total, total/45, 1 / 30, this.pixelRatio)
-            if (total / 45 > 1 / 30){
+            if (total / 45 > 1 / 500){
                 this.pixelRatio = this.pixelRatio > 0.65 ? this.pixelRatio - 0.1 : 0.65
-                this.curtains.setPixelRatio(this.pixelRatio)
+                this.curtains.renderingScale = this.pixelRatio
                 this.threeD.setPixelRatio(this.pixelRatio)
             }
             this.frames = []
