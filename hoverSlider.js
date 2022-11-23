@@ -7,7 +7,6 @@ class HoverSlider {
     this.curtains = curtains
     this.element = el
     this.triggers = trigger.querySelectorAll('a')
-    console.log(this.triggers, this.element)
 
     this.params = {
       vertexShader: sliderVert,
@@ -30,7 +29,6 @@ class HoverSlider {
       isChanging: false,
       transitionTimer: 0,
     }
-    console.log(this.element.querySelectorAll('img'))
   }
 
   
@@ -76,7 +74,6 @@ class HoverSlider {
     })
 
     this.triggers.forEach((e, i)=> {
-      console.log('here')
       e.addEventListener('mouseenter', ()=>{
         this.onEnter(i)
       })

@@ -279,8 +279,6 @@ export class TextTexture {
             adjustTopPos = (lineHeightRatio - 1.4) * fontSize / 2;
         }
 
-        console.log(adjustTopPos)
-
         const position = {
             x: startingPos,
             y: this.content.innerBoundingRect.top + adjustTopPos,

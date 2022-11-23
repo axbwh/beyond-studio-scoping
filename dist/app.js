@@ -8361,7 +8361,6 @@ class TextTexture {
         let adjustTopPos = fontSize * 0.1 + (lineHeightRatio - 1) * fontSize * 0.5;
         // safari seems to handle this differently!
         if (navigator.userAgent.indexOf("Safari") !== -1 && navigator.userAgent.indexOf("Chrome") === -1) adjustTopPos = (lineHeightRatio - 1.4) * fontSize / 2;
-        console.log(adjustTopPos);
         const position = {
             x: startingPos,
             y: this.content.innerBoundingRect.top + adjustTopPos
@@ -56990,7 +56989,6 @@ class HoverSlider {
         this.curtains = curtains;
         this.element = el;
         this.triggers = trigger.querySelectorAll("a");
-        console.log(this.triggers, this.element);
         this.params = {
             vertexShader: (0, _sliderVertDefault.default),
             fragmentShader: (0, _sliderFragDefault.default),
@@ -57010,7 +57008,6 @@ class HoverSlider {
             isChanging: false,
             transitionTimer: 0
         };
-        console.log(this.element.querySelectorAll("img"));
     }
     init(target, callback) {
         this.callback = callback;
@@ -57048,7 +57045,6 @@ class HoverSlider {
             fromTexture: this.plane.textures[this.state.activeIndex]
         });
         this.triggers.forEach((e, i)=>{
-            console.log("here");
             e.addEventListener("mouseenter", ()=>{
                 this.onEnter(i);
             });
