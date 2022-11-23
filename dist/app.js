@@ -8348,11 +8348,11 @@ class TextTexture {
         // first, apply the correct styles
         this.context.fillStyle = this.content.style.color;
         this.context.strokeStyle = this.content.style.color;
-        this.context.font = this.content.style.fontStyle + " " + this.content.style.fontWeight + " " + parseFloat(this.content.style.fontSize) * this.plane.renderer.pixelRatio + "px " + this.content.style.fontFamily;
-        this.context.lineHeight = this.content.style.lineHeight;
+        this.context.font = this.content.style.fontStyle + " " + this.content.style.fontWeight + " " + Math.floor(parseFloat(this.content.style.fontSize)) * this.plane.renderer.pixelRatio + "px " + this.content.style.fontFamily;
+        this.context.lineHeight = Math.floor(this.content.style.lineHeight);
         const startingPos = this.content.innerBoundingRect.left;
-        const lineHeight = parseFloat(this.content.style.lineHeight) * this.pixelRatio;
-        const fontSize = parseFloat(this.content.style.fontSize) * this.pixelRatio;
+        const lineHeight = Math.floor(parseFloat(this.content.style.lineHeight) * this.pixelRatio);
+        const fontSize = Math.floor(parseFloat(this.content.style.fontSize) * this.pixelRatio);
         const spaceWidth = this.context.measureText(" ").width;
         // start at the right position
         this.context.textBaseline = "top";
@@ -8361,6 +8361,7 @@ class TextTexture {
         let adjustTopPos = fontSize * 0.1 + (lineHeightRatio - 1) * fontSize * 0.5;
         // safari seems to handle this differently!
         if (navigator.userAgent.indexOf("Safari") !== -1 && navigator.userAgent.indexOf("Chrome") === -1) adjustTopPos = (lineHeightRatio - 1.4) * fontSize / 2;
+        console.log(adjustTopPos);
         const position = {
             x: startingPos,
             y: this.content.innerBoundingRect.top + adjustTopPos

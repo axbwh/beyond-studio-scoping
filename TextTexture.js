@@ -256,14 +256,14 @@ export class TextTexture {
         this.context.fillStyle = this.content.style.color;
         this.context.strokeStyle = this.content.style.color;
 
-        this.context.font = this.content.style.fontStyle + " " + this.content.style.fontWeight + " " + parseFloat(this.content.style.fontSize) * this.plane.renderer.pixelRatio + "px " + this.content.style.fontFamily;
+        this.context.font = this.content.style.fontStyle + " " + this.content.style.fontWeight + " " + Math.floor(parseFloat(this.content.style.fontSize)) * this.plane.renderer.pixelRatio + "px " + this.content.style.fontFamily;
 
-        this.context.lineHeight = this.content.style.lineHeight;
+        this.context.lineHeight = Math.floor(this.content.style.lineHeight);
 
         const startingPos = this.content.innerBoundingRect.left ;
 
-        const lineHeight = parseFloat(this.content.style.lineHeight) * this.pixelRatio;
-        const fontSize = parseFloat(this.content.style.fontSize) * this.pixelRatio;
+        const lineHeight = Math.floor(parseFloat(this.content.style.lineHeight) * this.pixelRatio);
+        const fontSize = Math.floor(parseFloat(this.content.style.fontSize) * this.pixelRatio);
 
         const spaceWidth = this.context.measureText(" ").width;
 
