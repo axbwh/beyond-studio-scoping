@@ -284,7 +284,7 @@ class App {
                 bgCol:{
                     name: "uBgCol",
                     type: '4f',
-                    value: [...hexToRgb("#0F1212"), 1.0],
+                    value: [...hexToRgb("#040707"), 1.0],
                 },
                 fgCol:{
                     name: "uFgCol",

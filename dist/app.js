@@ -794,7 +794,7 @@ class App {
                     name: "uBgCol",
                     type: "4f",
                     value: [
-                        ...(0, _utils.hexToRgb)("#0F1212"),
+                        ...(0, _utils.hexToRgb)("#040707"),
                         1.0
                     ]
                 },
