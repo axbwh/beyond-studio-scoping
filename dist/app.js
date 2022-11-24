@@ -8681,8 +8681,10 @@ class ThreeD {
         // this.mesh.scale.x = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
+        console.log(_three.MathUtils.degToRad(axes.rotation + rotation));
+        console.log("mult", _three.MathUtils.degToRad(axes.rotation + rotation * axes.rotRange), axes.rotRange);
         this.rotTdeg.copy(this.mesh.rotation);
-        this.rotTdeg.z = _three.MathUtils.degToRad(axes.rotation + rotation);
+        this.rotTdeg.z = _three.MathUtils.degToRad(axes.rotation + rotation * axes.rotRange);
         this.rotationTarget.setFromEuler(this.rotTdeg);
         this.mesh.quaternion.slerp(this.rotationTarget, delta * 2 * (1.0 - axes.range));
     // this.lightTop.lookAt(this.mesh.position)
