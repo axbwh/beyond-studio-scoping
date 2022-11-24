@@ -723,7 +723,7 @@ class App {
                 plane: plane,
                 textElement: plane.htmlElement,
                 sampler: "uTexture",
-                resolution: 1.2,
+                resolution: 1.5,
                 skipFontLoading: true
             });
             plane.setRenderTarget(target);
@@ -938,7 +938,7 @@ class App {
         this.frames[this.frames.length] = delta;
         if (this.frames.length >= 45) {
             let total = this.frames.reduce((acc, val)=>acc + val);
-            if (total / 45 > 1 / 30 && this.pixelRatio > 0.7) {
+            if (total / 45 > 1 / 30 && this.pixelRatio > 0.8) {
                 let minus = total / 45 > 1 / 15 ? 0.3 : 0.1;
                 this.pixelRatio = this.pixelRatio - minus;
                 (0, _animejsDefault.default).set(".section:not(#preloader)", {
