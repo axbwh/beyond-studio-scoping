@@ -894,33 +894,41 @@ class App {
                 this.impulses.morph = 1;
             });
         });
-        this.startAnim();
+        this.preloader();
     // document.addEventListener('click', this.startAnim.bind(this))
     // window.addEventListener("scroll", this.startAnim.bind(this))
     }
-    startAnim() {
-        if (!this.origin.loaded) {
-            (0, _animejsDefault.default)({
-                targets: "#preloader",
-                opacity: 0,
-                duration: 2000,
-                delay: 500,
-                easing: "easeInSine"
-            }).finished.then(()=>{
-                (0, _animejsDefault.default).set("#preloader", {
-                    display: "none"
-                });
+    preloader() {
+        (0, _animejsDefault.default)({
+            targets: "#preloader",
+            opacity: 0,
+            duration: 2000,
+            delay: 500,
+            easing: "easeInSine"
+        }).finished.then(()=>{
+            (0, _animejsDefault.default).set("#preloader", {
+                display: "none"
             });
+        });
+        if (window.scrollY > 10) this.startAnim(1500);
+        else {
+            document.addEventListener("click", ()=>this.startAnim());
+            window.addEventListener("scroll", ()=>this.startAnim());
+        }
+    }
+    startAnim(delay = 0) {
+        if (!this.origin.loaded) {
+            console.log(delay);
             (0, _animejsDefault.default)({
                 targets: this.origin,
                 range: 1,
                 duration: 2000,
                 easing: "easeOutBounce",
-                delay: 1500
+                delay: delay
             });
             this.origin.loaded = true;
-            document.removeEventListener("click", this.startAnim.bind(this));
-            window.removeEventListener("scroll", this.startAnim.bind(this));
+            document.removeEventListener("click", ()=>this.startAnim());
+            window.removeEventListener("scroll", ()=>this.startAnim());
         }
     }
     onFlip(impulses) {
@@ -8616,7 +8624,8 @@ class ThreeD {
             this.mesh = new _three.Mesh(this.geometry, this.material);
             this.scene.add(this.mesh);
             this.mesh.geometry.computeBoundingBox();
-            this.mesh.rotation.x = Math.PI / 4;
+            this.mesh.rotation.x = Math.PI / 2;
+            // this.mesh.rotation.y = THREE.MathUtils.degToRad(180)
             this.ready();
         });
     }

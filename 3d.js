@@ -119,7 +119,8 @@ class ThreeD {
             this.mesh = new THREE.Mesh(this.geometry, this.material)
             this.scene.add( this.mesh );
             this.mesh.geometry.computeBoundingBox()
-            this.mesh.rotation.x = Math.PI / 4 ;
+            this.mesh.rotation.x = Math.PI / 2 ;
+            // this.mesh.rotation.y = THREE.MathUtils.degToRad(180)
             this.ready()
         })
 

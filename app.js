@@ -392,38 +392,48 @@ class App {
                 this.impulses.morph = 1
             } )
         })
-        this.startAnim()
+        this.preloader()
         // document.addEventListener('click', this.startAnim.bind(this))
         // window.addEventListener("scroll", this.startAnim.bind(this))
        
     }
 
-    startAnim(){
-        if(!this.origin.loaded){
-            anime({
-                targets: '#preloader',
-                opacity: 0,
-                duration: 2000,
-                delay: 500,
-                easing: 'easeInSine',
+    preloader(){
+        anime({
+            targets: '#preloader',
+            opacity: 0,
+            duration: 2000,
+            delay: 500,
+            easing: 'easeInSine',
 
-            }).finished.then(() => {
-                anime.set('#preloader', {
-                    display: 'none'
-                })
+        }).finished.then(() => {
+            anime.set('#preloader', {
+                display: 'none'
             })
+        })
+        if(window.scrollY > 10){
+            this.startAnim(1500)
+        }else{
+                document.addEventListener('click', () => this.startAnim())
+                window.addEventListener("scroll", () => this.startAnim())
 
+        }
+    }
+
+    startAnim(delay = 0){
+        if(!this.origin.loaded){
+            console.log(delay)
             anime({
                 targets: this.origin,
                 range: 1,
                 duration: 2000,
                 easing: 'easeOutBounce',
-                delay: 1500,
+                delay: delay,
                })
 
                this.origin.loaded = true
-               document.removeEventListener('click', this.startAnim.bind(this))
-               window.removeEventListener("scroll", this.startAnim.bind(this))
+               document.removeEventListener('click', () => this.startAnim())
+               window.removeEventListener("scroll", () => this.startAnim())
         }
     }
 
