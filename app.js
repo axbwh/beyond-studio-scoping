@@ -367,10 +367,7 @@ class App {
 
        this.curtains.onAfterResize(this.onResize.bind(this))
        this.threeD.setPos(this.origin)
-
-       document.addEventListener('click', this.startAnim.bind(this))
-       window.addEventListener("scroll", this.startAnim.bind(this))
-        //this.loadAnim()
+        
 
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e) => {
             e.el.addEventListener('mouseenter', ()=> {
@@ -395,18 +392,35 @@ class App {
                 this.impulses.morph = 1
             } )
         })
+        this.startAnim()
+        // document.addEventListener('click', this.startAnim.bind(this))
+        // window.addEventListener("scroll", this.startAnim.bind(this))
        
     }
 
     startAnim(){
         if(!this.origin.loaded){
             anime({
+                targets: '#preloader',
+                opacity: 0,
+                duration: 2000,
+                delay: 500,
+                easing: 'easeInSine',
+
+            }).finished.then(() => {
+                anime.set('#preloader', {
+                    display: 'none'
+                })
+            })
+
+            anime({
                 targets: this.origin,
                 range: 1,
                 duration: 2000,
                 easing: 'easeOutBounce',
-                delay: 0,
+                delay: 1500,
                })
+
                this.origin.loaded = true
                document.removeEventListener('click', this.startAnim.bind(this))
                window.removeEventListener("scroll", this.startAnim.bind(this))
@@ -424,7 +438,7 @@ class App {
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.7){
                 let minus = total /45 > 1 / 15 ? 0.3 : 0.1
                 this.pixelRatio =  this.pixelRatio - minus
-                anime.set('.section', {
+                anime.set('.section:not(#preloader)', {
                     translateY: 0
                 }) //conteract smoothscroll
                 this.curtains.setPixelRatio(this.pixelRatio)
@@ -458,7 +472,7 @@ class App {
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
 
 
-        anime.set('.section', {
+        anime.set('.section:not(#preloader)', {
             translateY: `${-this.scroll.effect}vh`
         }) //smoothscroll
 
