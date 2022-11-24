@@ -138,7 +138,7 @@ class ThreeD {
     }
 
     ready(){
-        this.move({ range: 0, x: 0, y: 0, size: 20, rotation: 0}, {x: 0, y:0});
+        this.move({ range: 0, x: 0, y: 0, size: 20, rotation: 0, rotRange: 1}, {x: 0, y:0});
         this.render();
     }
 
@@ -174,7 +174,6 @@ class ThreeD {
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
   
-
         this.rotTdeg.copy(this.mesh.rotation)
         this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation + rotation)
 

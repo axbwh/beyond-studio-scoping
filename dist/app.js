@@ -572,12 +572,14 @@ class App {
             x: 0,
             y: 0,
             size: 0,
-            rotation: 0
+            rotation: 0,
+            rotRange: 0
         };
         this.origin = {
             x: 0,
             y: 0,
             rotation: 0,
+            rotRange: 0,
             size: 0,
             range: 0,
             intro: false
@@ -629,6 +631,7 @@ class App {
             y: origin.y,
             size: origin.size,
             rotation: origin.rotation,
+            rotRange: origin.rotRange,
             range: this.origin.range,
             intro: this.origin.intro
         } : this.origin;
@@ -661,7 +664,8 @@ class App {
             x: frames[0].coord.x,
             y: frames[0].coord.y,
             size: frames[0].coord.size,
-            rotation: frames[0].coord.rotation
+            rotation: frames[0].coord.rotation,
+            rotRange: frames[0].coord.rotRange
         } : this.axes;
         colorFrames.length > 0 && colorFrames.slice().reverse().forEach((f)=>{
             this.colors = {
@@ -685,6 +689,7 @@ class App {
                 y: frame.coord.y,
                 size: frame.coord.size,
                 rotation: frame.coord.rotation,
+                rotRange: frame.coord.rotRange,
                 duration: duration,
                 easing: "easeInOutSine"
             }, previousTime);
@@ -978,7 +983,8 @@ class App {
             x: this.curtains.lerp(this.origin.x, this.axes.x, this.origin.range),
             y: this.curtains.lerp(this.origin.y, this.axes.y, this.origin.range),
             size: this.curtains.lerp(this.origin.size, this.axes.size, this.origin.range),
-            range: this.curtains.lerp(this.origin.range, this.axes.range, this.origin.range)
+            range: this.curtains.lerp(this.origin.range, this.axes.range, this.origin.range),
+            rotRange: this.curtains.lerp(this.origin.rotRange, this.axes.rotRange, this.origin.range)
         };
         ///
         this.threeD.move(ax, this.mouse, this.impulses.rotation, delta);
@@ -8643,7 +8649,8 @@ class ThreeD {
             x: 0,
             y: 0,
             size: 20,
-            rotation: 0
+            rotation: 0,
+            rotRange: 1
         }, {
             x: 0,
             y: 0
@@ -55443,7 +55450,6 @@ const getCoord = (el)=>{
     let rect = el.getBoundingClientRect();
     let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2;
     keyframe = keyframe < 0 ? 0 : keyframe;
-    let stick = el.getAttribute("stick");
     let scale = el.getAttribute("scale") ? el.getAttribute("scale") : 1;
     let colora = el.getAttribute("colora") ? el.getAttribute("colora") : false;
     let colorb = el.getAttribute("colorb") ? el.getAttribute("colorb") : false;
@@ -55451,6 +55457,9 @@ const getCoord = (el)=>{
     let colord = el.getAttribute("colord") ? el.getAttribute("colord") : false;
     let opacity = el.getAttribute("opacity") ? el.getAttribute("opacity") : false;
     let rotation = el.getAttribute("rotation") ? parseInt(el.getAttribute("rotation")) : 0;
+    let stick = el.getAttribute("stick");
+    let rotRange = el.getAttribute("rotrange") ? el.getAttribute("rotrange") : 1;
+    rotRange = isNaN(rotRange) ? 1 : rotRange;
     let range = isNaN(stick) ? 1 : 1 - stick;
     let hcolora = el.getAttribute("hcolora") ? el.getAttribute("hcolora") : false;
     let hcolorb = el.getAttribute("hcolorb") ? el.getAttribute("hcolorb") : false;
@@ -55466,6 +55475,7 @@ const getCoord = (el)=>{
         rotation: rotation,
         keyframe: keyframe,
         range: range,
+        rotRange: rotRange,
         colors: {
             ...colora && {
                 a: colora

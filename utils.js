@@ -26,7 +26,6 @@ const getCoord = (el) => {
     let rect = el.getBoundingClientRect()
     let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2
     keyframe = keyframe < 0 ? 0 : keyframe;
-    let stick = el.getAttribute('stick')
     let scale = el.getAttribute('scale') ? el.getAttribute('scale') : 1
     let colora = el.getAttribute('colora') ? el.getAttribute('colora') : false
     let colorb = el.getAttribute('colorb') ? el.getAttribute('colorb') : false
@@ -34,6 +33,9 @@ const getCoord = (el) => {
     let colord = el.getAttribute('colord') ? el.getAttribute('colord') : false
     let opacity = el.getAttribute('opacity') ? el.getAttribute('opacity') : false
     let rotation = el.getAttribute('rotation') ? parseInt(el.getAttribute('rotation') ): 0
+    let stick = el.getAttribute('stick')
+    let rotRange = el.getAttribute('rotrange') ? el.getAttribute('rotrange') : 1
+    rotRange = isNaN(rotRange) ? 1 : rotRange
     let range = isNaN(stick) ? 1 : 1 - stick
 
     let hcolora = el.getAttribute('hcolora') ? el.getAttribute('hcolora') : false
@@ -51,6 +53,7 @@ const getCoord = (el) => {
         rotation: rotation,
         keyframe: keyframe,
         range: range,
+        rotRange: rotRange,
         colors: {
           ...(colora && {a: colora}),
           ...(colorb && {b: colorb}),

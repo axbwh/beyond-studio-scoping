@@ -32,12 +32,14 @@ class App {
             y: 0,
             size: 0,
             rotation: 0,
+            rotRange: 0
         }
 
         this.origin = {
             x: 0,
             y: 0,
             rotation: 0,
+            rotRange: 0,
             size:0,
             range: 0,
             intro: false
@@ -102,6 +104,7 @@ class App {
             y: origin.y,
             size: origin.size,
             rotation: origin.rotation,
+            rotRange: origin.rotRange,
             range: this.origin.range,
             intro: this.origin.intro,
         } : this.origin
@@ -123,7 +126,8 @@ class App {
             x: frames[0].coord.x,
             y: frames[0].coord.y,
             size: frames[0].coord.size,
-            rotation: frames[0].coord.rotation
+            rotation: frames[0].coord.rotation,
+            rotRange: frames[0].coord.rotRange
         } : this.axes
 
         colorFrames.length > 0 && colorFrames.slice().reverse().forEach(f =>{
@@ -152,6 +156,7 @@ class App {
                 y: frame.coord.y,
                 size: frame.coord.size,
                 rotation: frame.coord.rotation,
+                rotRange: frame.coord.rotRange,
                 duration: duration,
                 easing: 'easeInOutSine'
             }, previousTime)
@@ -497,11 +502,11 @@ class App {
             y: this.curtains.lerp(this.origin.y, this.axes.y, this.origin.range),
             size: this.curtains.lerp(this.origin.size, this.axes.size, this.origin.range),
             range: this.curtains.lerp(this.origin.range, this.axes.range, this.origin.range),
+            rotRange: this.curtains.lerp(this.origin.rotRange, this.axes.rotRange, this.origin.range)
         }
         ///
         this.threeD.move(ax, this.mouse, this.impulses.rotation, delta)
         this.threeD.render()
-
 
         let mouseLerp = [this.curtains.lerp( mouseVal[0] ,this.mouse.x, delta * 3.125), this.curtains.lerp( mouseVal[1] ,this.mouse.y, delta * 3.125) ] 
         this.pass.uniforms.mouse.value = mouseLerp;
