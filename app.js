@@ -524,7 +524,8 @@ class App {
         this.pass.uniforms.colC.value = lerpRgba(this.pass.uniforms.colC.value, colCtarget, delta * 1.5)
         this.pass.uniforms.colD.value = lerpRgba(this.pass.uniforms.colD.value, colDtarget, delta * 1.5)
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5)
-        this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, this.impulses.morph, delta *1.5)
+        this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta *1.5)
+
     }
 
     mouseEvent(event){

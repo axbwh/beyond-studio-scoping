@@ -174,9 +174,6 @@ class ThreeD {
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
   
-
-        console.log(THREE.MathUtils.degToRad(axes.rotation + rotation))
-        console.log('mult', THREE.MathUtils.degToRad(axes.rotation + rotation * axes.rotRange), axes.rotRange)
         this.rotTdeg.copy(this.mesh.rotation)
         this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation + rotation * axes.rotRange)
 

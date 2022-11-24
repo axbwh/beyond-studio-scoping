@@ -62,7 +62,7 @@ void main() {
     //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);
     float morphStrength = 0.005  * uMorph;
     float morph = ease(threeDCol.r);
-    float baseStrength = 0.02;
+    float baseStrength = 0.02 * uMorph;
 
     vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);
 
