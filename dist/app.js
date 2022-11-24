@@ -606,7 +606,7 @@ class App {
         };
         this.lastFrame = 0;
         this.frames = [];
-        this.pixelRatio = Math.min(1.5, window.devicePixelRatio);
+        this.pixelRatio = Math.min(1.2, window.devicePixelRatio);
         this.threeD = new (0, _3DDefault.default)(this.pixelRatio);
         this.textTextures = [];
     }
@@ -728,7 +728,7 @@ class App {
                 plane: plane,
                 textElement: plane.htmlElement,
                 sampler: "uTexture",
-                resolution: 1.5,
+                resolution: 1.2,
                 skipFontLoading: true
             });
             plane.setRenderTarget(target);
@@ -943,7 +943,7 @@ class App {
         this.frames[this.frames.length] = delta;
         if (this.frames.length >= 45) {
             let total = this.frames.reduce((acc, val)=>acc + val);
-            if (total / 45 > 1 / 30 && this.pixelRatio > 0.8) {
+            if (total / 45 > 1 / 30 && this.pixelRatio > 0.7) {
                 let minus = total / 45 > 1 / 15 ? 0.3 : 0.1;
                 this.pixelRatio = this.pixelRatio - minus;
                 (0, _animejsDefault.default).set(".section:not(#preloader)", {
@@ -55537,6 +55537,7 @@ class Slider {
         this.doms = [
             ...this.dom.querySelectorAll(".cms-item")
         ];
+        this.images = this.element.querySelectorAll("img");
         this.dom.querySelectorAll("img").forEach((e)=>{
             e.style.display = "none";
         });
@@ -55556,7 +55557,7 @@ class Slider {
         this.state = {
             activeIndex: 0,
             nextIndex: 1,
-            maxTextures: this.element.querySelectorAll("img").length,
+            maxTextures: this.images.length,
             isChanging: false,
             transitionTimer: 0
         };
@@ -55686,15 +55687,15 @@ class Slider {
                 })
             });
             // apply it to our next texture
-            this.next.setSource(this.plane.images[this.state.nextIndex]);
-            this.displacement.setSource(this.plane.images[this.state.activeIndex]);
+            this.next.setSource(this.images[this.state.nextIndex]);
+            this.displacement.setSource(this.images[this.state.activeIndex]);
             setTimeout(()=>{
                 // disable drawing now that the transition is over
                 //curtains.disableDrawing();
                 this.state.isChanging = false;
                 this.state.activeIndex = this.state.nextIndex;
                 // our next texture becomes our active texture
-                this.active.setSource(this.plane.images[this.state.activeIndex]);
+                this.active.setSource(this.images[this.state.activeIndex]);
                 // reset timer
                 this.state.transitionTimer = 0;
             }, 1700) // add a bit of margin to the timer

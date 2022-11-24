@@ -11,6 +11,7 @@ class Slider {
     this.triggers = [...trigger.querySelectorAll('.slider-dot')]
     this.num = [...trigger.querySelectorAll('.text-sml')]
     this.doms = [...this.dom.querySelectorAll('.cms-item')]
+    this.images = this.element.querySelectorAll('img')
 
 
     this.dom.querySelectorAll('img').forEach((e) =>{
@@ -35,7 +36,7 @@ class Slider {
     this.state = {
       activeIndex: 0,
       nextIndex: 1, // does not care for now
-      maxTextures: this.element.querySelectorAll('img').length, 
+      maxTextures: this.images.length, 
 
       isChanging: false,
       transitionTimer: 0,
@@ -155,8 +156,8 @@ class Slider {
   
 
       // apply it to our next texture
-      this.next.setSource(this.plane.images[this.state.nextIndex])
-      this.displacement.setSource(this.plane.images[this.state.activeIndex])
+      this.next.setSource(this.images[this.state.nextIndex])
+      this.displacement.setSource(this.images[this.state.activeIndex])
 
       setTimeout(() => {
         // disable drawing now that the transition is over
@@ -166,7 +167,7 @@ class Slider {
 
         this.state.activeIndex = this.state.nextIndex
         // our next texture becomes our active texture
-        this.active.setSource(this.plane.images[this.state.activeIndex])
+        this.active.setSource(this.images[this.state.activeIndex])
 
         // reset timer
         this.state.transitionTimer = 0
