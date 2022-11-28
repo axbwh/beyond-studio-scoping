@@ -443,7 +443,7 @@ class App {
 
                this.origin.loaded = true
                document.removeEventListener('click', () => this.startAnim())
-               window.removeEventListener("scroll", () => this.startAnim())
+               this.container.removeEventListener("scroll", () => this.startAnim())
         }
     }
 
