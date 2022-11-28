@@ -168,7 +168,7 @@ class App {
         timeline.add({
             duration: 0.00001
         }, this.container.scrollHeight - window.innerHeight - 0.00001)
-        console.log('height', this.container.scrollHeight)
+
 
         anime.set(this.colors, {
             ...this.colors
@@ -433,7 +433,6 @@ class App {
 
     startAnim(delay = 0){
         if(!this.origin.loaded){
-            console.log(delay)
             anime({
                 targets: this.origin,
                 range: 1,

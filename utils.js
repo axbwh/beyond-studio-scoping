@@ -39,7 +39,6 @@ const getCoord = (el) => {
     rotRange = isNaN(rotRange) ? 1 : rotRange
     let range = isNaN(stick) ? 1 : 1 - stick
 
-    console.log(keyframe)
 
     let hcolora = el.getAttribute('hcolora') ? el.getAttribute('hcolora') : false
     let hcolorb = el.getAttribute('hcolorb') ? el.getAttribute('hcolorb') : false

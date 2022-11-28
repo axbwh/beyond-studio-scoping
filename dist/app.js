@@ -702,7 +702,6 @@ class App {
         timeline.add({
             duration: 0.00001
         }, this.container.scrollHeight - window.innerHeight - 0.00001);
-        console.log("height", this.container.scrollHeight);
         (0, _animejsDefault.default).set(this.colors, {
             ...this.colors
         }) // to convert #hex to rgba when no colrs are defined
@@ -929,7 +928,6 @@ class App {
     }
     startAnim(delay = 0) {
         if (!this.origin.loaded) {
-            console.log(delay);
             (0, _animejsDefault.default)({
                 targets: this.origin,
                 range: 1,
@@ -55470,7 +55468,6 @@ const getCoord = (el)=>{
     let rotRange = el.getAttribute("rotrange") ? el.getAttribute("rotrange") : 1;
     rotRange = isNaN(rotRange) ? 1 : rotRange;
     let range = isNaN(stick) ? 1 : 1 - stick;
-    console.log(keyframe);
     let hcolora = el.getAttribute("hcolora") ? el.getAttribute("hcolora") : false;
     let hcolorb = el.getAttribute("hcolorb") ? el.getAttribute("hcolorb") : false;
     let hcolorc = el.getAttribute("hcolorc") ? el.getAttribute("hcolorc") : false;
