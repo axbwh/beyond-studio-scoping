@@ -23,8 +23,9 @@ const normCoord = (x, y) => {
 }
 const getCoord = (el) => {
     if(!el) return false
+    let scrollDom = document.querySelector('.scrolldom')
     let rect = el.getBoundingClientRect()
-    let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2
+    let keyframe = rect.top + rect.height / 2 + scrollDom.scrollTop - window.innerHeight / 2
     keyframe = keyframe < 0 ? 0 : keyframe;
     let scale = el.getAttribute('scale') ? el.getAttribute('scale') : 1
     let colora = el.getAttribute('colora') ? el.getAttribute('colora') : false
@@ -38,6 +39,8 @@ const getCoord = (el) => {
     rotRange = isNaN(rotRange) ? 1 : rotRange
     let range = isNaN(stick) ? 1 : 1 - stick
 
+    console.log(keyframe)
+
     let hcolora = el.getAttribute('hcolora') ? el.getAttribute('hcolora') : false
     let hcolorb = el.getAttribute('hcolorb') ? el.getAttribute('hcolorb') : false
     let hcolorc = el.getAttribute('hcolorc') ? el.getAttribute('hcolorc') : false
@@ -45,8 +48,8 @@ const getCoord = (el) => {
     let hopacity = el.getAttribute('hopacity') ? el.getAttribute('hopacity') : false
 
     return {
-        x: normX(rect.x + rect.width / 2) - window.scrollX,
-        y: el.getAttribute('yoffset') ? el.getAttribute('yoffset') === 'bottom' ? normY((rect.top + window.scrollY + rect.height/2) - (document.body.offsetHeight - window.innerHeight) ) : normY(rect.top + rect.height/2 + window.scrollY) : 0,
+        x: normX(rect.x + rect.width / 2) - scrollDom.scrollLeft,
+        y: el.getAttribute('yoffset') ? el.getAttribute('yoffset') === 'bottom' ? normY((rect.top + scrollDom.scrollTop + rect.height/2) - (scrollDom.scrollHeight - window.innerHeight) ) : normY(rect.top + rect.height/2 - keyframe) : 0,
         size: rect.width > rect.height ? rect.height * scale: rect.width * (scale /1.29),
         h: rect.height,
         w: rect.width,

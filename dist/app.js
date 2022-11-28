@@ -552,6 +552,8 @@ var _animejs = require("animejs");
 var _animejsDefault = parcelHelpers.interopDefault(_animejs);
 var _lodash = require("lodash");
 var _lodashDefault = parcelHelpers.interopDefault(_lodash);
+var _statsJs = require("stats.js");
+var _statsJsDefault = parcelHelpers.interopDefault(_statsJs);
 var _three = require("three");
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
@@ -615,8 +617,10 @@ class App {
         // create curtains instance
         this.curtains = new (0, _curtainsjs.Curtains)({
             container: "canvas",
-            pixelRatio: this.pixelRatio
+            pixelRatio: this.pixelRatio,
+            watchScroll: false
         });
+        this.container = document.querySelector(".scrolldom");
         this.curtains.onSuccess(this.onSuccess.bind(this));
         this.curtains.onError(this.onError.bind(this));
     }
@@ -697,7 +701,8 @@ class App {
         });
         timeline.add({
             duration: 0.00001
-        }, document.body.offsetHeight - window.innerHeight - 0.00001);
+        }, this.container.scrollHeight - window.innerHeight - 0.00001);
+        console.log("height", this.container.scrollHeight);
         (0, _animejsDefault.default).set(this.colors, {
             ...this.colors
         }) // to convert #hex to rgba when no colrs are defined
@@ -760,8 +765,9 @@ class App {
         });
     }
     onScroll() {
-        this.y = window.scrollY;
-        let y = this.y / (document.body.offsetHeight - window.innerHeight);
+        this.y = this.container.scrollTop;
+        this.curtains.updateScrollValues(0, this.y);
+        let y = this.y / (this.container.scrollHeight - window.innerHeight);
         this.timeline.seek(this.timeline.duration * y);
     }
     onResize() {
@@ -782,6 +788,10 @@ class App {
         ]).then(this.onLoaded.bind(this));
     }
     onLoaded() {
+        this.stats = new (0, _statsJsDefault.default)();
+        this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+        this.stats.dom.classList.add("stats");
+        document.body.appendChild(this.stats.dom);
         this.initTimeline();
         this.pass = new (0, _curtainsjs.ShaderPass)(this.curtains, {
             fragmentShader: (0, _pageFragDefault.default),
@@ -871,7 +881,7 @@ class App {
         this.pass.onRender(this.onRender.bind(this));
         let _mouse = (0, _lodashDefault.default).throttle(this.mouseEvent.bind(this), 10);
         let _scroll = (0, _lodashDefault.default).throttle(this.onScroll.bind(this), 10);
-        window.addEventListener("scroll", _scroll.bind(this));
+        this.container.addEventListener("scroll", _scroll.bind(this));
         document.addEventListener("mousemove", _mouse.bind(this), false);
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
@@ -911,10 +921,10 @@ class App {
                 display: "none"
             });
         });
-        if (window.scrollY > 10) this.startAnim(1500);
+        if (this.container.scrollTop > 10) this.startAnim(1500);
         else {
             document.addEventListener("click", ()=>this.startAnim());
-            window.addEventListener("scroll", ()=>this.startAnim());
+            this.container.addEventListener("scroll", ()=>this.startAnim());
         }
     }
     startAnim(delay = 0) {
@@ -960,6 +970,7 @@ class App {
         return delta;
     }
     onRender() {
+        this.stats.begin();
         let delta = this.getDelta();
         this.scroll.lastValue = this.scroll.value;
         this.scroll.value = this.y;
@@ -1003,6 +1014,7 @@ class App {
         this.pass.uniforms.colD.value = (0, _utils.lerpRgba)(this.pass.uniforms.colD.value, colDtarget, delta * 1.5);
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5);
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta * 1.5);
+        this.stats.end();
     }
     mouseEvent(event) {
         //event.preventDefault();
@@ -1016,7 +1028,7 @@ window.addEventListener("load", ()=>{
     app.init();
 });
 
-},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -55443,8 +55455,9 @@ const normCoord = (x, y)=>{
 };
 const getCoord = (el)=>{
     if (!el) return false;
+    let scrollDom = document.querySelector(".scrolldom");
     let rect = el.getBoundingClientRect();
-    let keyframe = rect.top + rect.height / 2 + window.scrollY - window.innerHeight / 2;
+    let keyframe = rect.top + rect.height / 2 + scrollDom.scrollTop - window.innerHeight / 2;
     keyframe = keyframe < 0 ? 0 : keyframe;
     let scale = el.getAttribute("scale") ? el.getAttribute("scale") : 1;
     let colora = el.getAttribute("colora") ? el.getAttribute("colora") : false;
@@ -55457,14 +55470,15 @@ const getCoord = (el)=>{
     let rotRange = el.getAttribute("rotrange") ? el.getAttribute("rotrange") : 1;
     rotRange = isNaN(rotRange) ? 1 : rotRange;
     let range = isNaN(stick) ? 1 : 1 - stick;
+    console.log(keyframe);
     let hcolora = el.getAttribute("hcolora") ? el.getAttribute("hcolora") : false;
     let hcolorb = el.getAttribute("hcolorb") ? el.getAttribute("hcolorb") : false;
     let hcolorc = el.getAttribute("hcolorc") ? el.getAttribute("hcolorc") : false;
     let hcolord = el.getAttribute("hcolord") ? el.getAttribute("hcolord") : false;
     let hopacity = el.getAttribute("hopacity") ? el.getAttribute("hopacity") : false;
     return {
-        x: normX(rect.x + rect.width / 2) - window.scrollX,
-        y: el.getAttribute("yoffset") ? el.getAttribute("yoffset") === "bottom" ? normY(rect.top + window.scrollY + rect.height / 2 - (document.body.offsetHeight - window.innerHeight)) : normY(rect.top + rect.height / 2 + window.scrollY) : 0,
+        x: normX(rect.x + rect.width / 2) - scrollDom.scrollLeft,
+        y: el.getAttribute("yoffset") ? el.getAttribute("yoffset") === "bottom" ? normY(rect.top + scrollDom.scrollTop + rect.height / 2 - (scrollDom.scrollHeight - window.innerHeight)) : normY(rect.top + rect.height / 2 - keyframe) : 0,
         size: rect.width > rect.height ? rect.height * scale : rect.width * (scale / 1.29),
         h: rect.height,
         w: rect.width,
@@ -57107,6 +57121,91 @@ class HoverSlider {
 }
 exports.default = HoverSlider;
 
-},{"curtainsjs":"9AjRS","./shaders/slider.frag":"7aA3N","./shaders/slider.vert":"3Tkxq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"curtainsjs":"9AjRS","./shaders/slider.frag":"7aA3N","./shaders/slider.vert":"3Tkxq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"9lwC6":[function(require,module,exports) {
+// stats.js - http://github.com/mrdoob/stats.js
+(function(f, e) {
+    module.exports = e();
+})(this, function() {
+    var f = function() {
+        function e(a) {
+            c.appendChild(a.dom);
+            return a;
+        }
+        function u(a) {
+            for(var d = 0; d < c.children.length; d++)c.children[d].style.display = d === a ? "block" : "none";
+            l = a;
+        }
+        var l = 0, c = document.createElement("div");
+        c.style.cssText = "position:fixed;top:0;left:0;cursor:pointer;opacity:0.9;z-index:10000";
+        c.addEventListener("click", function(a) {
+            a.preventDefault();
+            u(++l % c.children.length);
+        }, !1);
+        var k = (performance || Date).now(), g = k, a = 0, r = e(new f.Panel("FPS", "#0ff", "#002")), h = e(new f.Panel("MS", "#0f0", "#020"));
+        if (self.performance && self.performance.memory) var t = e(new f.Panel("MB", "#f08", "#201"));
+        u(0);
+        return {
+            REVISION: 16,
+            dom: c,
+            addPanel: e,
+            showPanel: u,
+            begin: function() {
+                k = (performance || Date).now();
+            },
+            end: function() {
+                a++;
+                var c = (performance || Date).now();
+                h.update(c - k, 200);
+                if (c > g + 1E3 && (r.update(1E3 * a / (c - g), 100), g = c, a = 0, t)) {
+                    var d = performance.memory;
+                    t.update(d.usedJSHeapSize / 1048576, d.jsHeapSizeLimit / 1048576);
+                }
+                return c;
+            },
+            update: function() {
+                k = this.end();
+            },
+            domElement: c,
+            setMode: u
+        };
+    };
+    f.Panel = function(e, f, l) {
+        var c = Infinity, k = 0, g = Math.round, a = g(window.devicePixelRatio || 1), r = 80 * a, h = 48 * a, t = 3 * a, v = 2 * a, d = 3 * a, m = 15 * a, n = 74 * a, p = 30 * a, q = document.createElement("canvas");
+        q.width = r;
+        q.height = h;
+        q.style.cssText = "width:80px;height:48px";
+        var b = q.getContext("2d");
+        b.font = "bold " + 9 * a + "px Helvetica,Arial,sans-serif";
+        b.textBaseline = "top";
+        b.fillStyle = l;
+        b.fillRect(0, 0, r, h);
+        b.fillStyle = f;
+        b.fillText(e, t, v);
+        b.fillRect(d, m, n, p);
+        b.fillStyle = l;
+        b.globalAlpha = .9;
+        b.fillRect(d, m, n, p);
+        return {
+            dom: q,
+            update: function(h, w) {
+                c = Math.min(c, h);
+                k = Math.max(k, h);
+                b.fillStyle = l;
+                b.globalAlpha = 1;
+                b.fillRect(0, 0, r, m);
+                b.fillStyle = f;
+                b.fillText(g(h) + " " + e + " (" + g(c) + "-" + g(k) + ")", t, v);
+                b.drawImage(q, d + a, m, n - a, p, d, m, n - a, p);
+                b.fillRect(d + n - a, m, a, p);
+                b.fillStyle = l;
+                b.globalAlpha = .9;
+                b.fillRect(d + n - a, m, a, g((1 - h / w) * p));
+            }
+        };
+    };
+    return f;
+});
+
+},{}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map

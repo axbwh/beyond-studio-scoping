@@ -9,12 +9,11 @@ import HoverSlider from './hoverSlider';
 import {hexToRgb, getCoord, rgbaToArray, lerpRgba }from './utils'
 import anime from 'animejs';
 import _, { delay } from 'lodash';
+import Stats from 'stats.js';
 import * as THREE from 'three'
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true
-
-
 
 class App {
     constructor(){
@@ -83,8 +82,11 @@ class App {
         // create curtains instance
         this.curtains = new Curtains({
             container: "canvas",
-            pixelRatio: this.pixelRatio
+            pixelRatio: this.pixelRatio,
+            watchScroll: false,
         })
+
+        this.container = document.querySelector('.scrolldom')
 
         this.curtains.onSuccess(this.onSuccess.bind(this))
         this.curtains.onError(this.onError.bind(this))
@@ -165,8 +167,8 @@ class App {
 
         timeline.add({
             duration: 0.00001
-        }, document.body.offsetHeight - window.innerHeight - 0.00001)
-
+        }, this.container.scrollHeight - window.innerHeight - 0.00001)
+        console.log('height', this.container.scrollHeight)
 
         anime.set(this.colors, {
             ...this.colors
@@ -240,8 +242,9 @@ class App {
 
 
     onScroll(){
-            this.y = window.scrollY
-            let y = this.y/ (document.body.offsetHeight - window.innerHeight)
+            this.y = this.container.scrollTop
+            this.curtains.updateScrollValues(0, this.y)
+            let y = this.y/ (this.container.scrollHeight - window.innerHeight)
             this.timeline.seek(this.timeline.duration * y)
     }
 
@@ -271,6 +274,13 @@ class App {
     }
 
     onLoaded(){
+
+        
+        this.stats = new Stats();
+        this.stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+        this.stats.dom.classList.add('stats');
+        document.body.appendChild( this.stats.dom );
+
         this.initTimeline()
 
 
@@ -362,7 +372,7 @@ class App {
         let _scroll = _.throttle(this.onScroll.bind(this), 10)
 
 
-       window.addEventListener("scroll", _scroll.bind(this));
+       this.container.addEventListener("scroll", _scroll.bind(this));
        document.addEventListener('mousemove', _mouse.bind(this), false);
 
 
@@ -412,11 +422,11 @@ class App {
                 display: 'none'
             })
         })
-        if(window.scrollY > 10){
+        if(this.container.scrollTop > 10){
             this.startAnim(1500)
         }else{
                 document.addEventListener('click', () => this.startAnim())
-                window.addEventListener("scroll", () => this.startAnim())
+                this.container.addEventListener("scroll", () => this.startAnim())
 
         }
     }
@@ -469,6 +479,7 @@ class App {
     }
 
     onRender(){
+        this.stats.begin()
 
         let delta = this.getDelta()
 
@@ -522,6 +533,7 @@ class App {
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5)
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta *1.5)
 
+        this.stats.end()
     }
 
     mouseEvent(event){
