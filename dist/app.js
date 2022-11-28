@@ -561,6 +561,7 @@ class App {
             x: 0.5,
             y: 0.5
         };
+        this.y = 0;
         // track scroll values
         this.scroll = {
             value: 0,
@@ -759,7 +760,8 @@ class App {
         });
     }
     onScroll() {
-        let y = window.scrollY / (document.body.offsetHeight - window.innerHeight);
+        this.y = window.scrollY;
+        let y = this.y / (document.body.offsetHeight - window.innerHeight);
         this.timeline.seek(this.timeline.duration * y);
     }
     onResize() {
@@ -966,7 +968,7 @@ class App {
     onRender() {
         let delta = this.getDelta();
         this.scroll.lastValue = this.scroll.value;
-        this.scroll.value = this.curtains.getScrollValues().y;
+        this.scroll.value = this.y;
         // clamp delta
         this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
         this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta);

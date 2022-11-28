@@ -19,6 +19,7 @@ const parceled = true
 class App {
     constructor(){
         this.mouse = { x : 0.5, y: 0.5}
+        this.y = 0
         // track scroll values
         this.scroll = {
             value: 0,
@@ -239,7 +240,8 @@ class App {
 
 
     onScroll(){
-            let y = window.scrollY / (document.body.offsetHeight - window.innerHeight)
+            this.y = window.scrollY
+            let y = this.y/ (document.body.offsetHeight - window.innerHeight)
             this.timeline.seek(this.timeline.duration * y)
     }
 
@@ -477,7 +479,7 @@ class App {
         let delta = this.getDelta()
 
         this.scroll.lastValue = this.scroll.value;
-        this.scroll.value = this.curtains.getScrollValues().y;
+        this.scroll.value = this.y;
         
 
         // clamp delta
