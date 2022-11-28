@@ -357,15 +357,9 @@ class App {
 
         this.pass.onRender(this.onRender.bind(this))
 
-        let _mouse = _.throttle(this.mouseEvent.bind(this), 10 ,{
-            trailing: true,
-            leading: true,
-        })
+        let _mouse = _.throttle(this.mouseEvent.bind(this), 10)
 
-        let _scroll = _.throttle(this.onScroll.bind(this), 10 ,{
-            trailing: true,
-            leading: true,
-        })
+        let _scroll = _.throttle(this.onScroll.bind(this), 10)
 
 
        window.addEventListener("scroll", _scroll.bind(this));
