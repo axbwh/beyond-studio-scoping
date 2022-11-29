@@ -554,7 +554,7 @@ scrollToId = () => {
                 anime({
                     targets: container,
                     scrollTop: 0,
-                    duration: container.scrollTop / 4,
+                    duration: container.scrollTop / 2,
                     easing: 'easeInOutSine'
                 })
             }) 
@@ -565,7 +565,7 @@ scrollToId = () => {
                 anime({
                     targets: container,
                     scrollTop: target,
-                    duration: Math.abs(container.scrollTop -  target) / 4,
+                    duration: Math.abs(container.scrollTop -  target) / 2,
                     easing: 'easeInOutSine'
                 })
             })
