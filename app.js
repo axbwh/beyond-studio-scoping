@@ -12,6 +12,7 @@ import _, { delay } from 'lodash';
 import Stats from 'stats.js';
 import * as THREE from 'three'
 
+
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true
 
@@ -169,10 +170,10 @@ class App {
             duration: 0.00001
         }, this.container.scrollHeight - window.innerHeight - 0.00001)
 
-
         anime.set(this.colors, {
-            ...this.colors
+            ...this.colors,
         }) // to convert #hex to rgba when no colrs are defined
+        console.log(this.colors)
 
         colorFrames.length > 0 && colorFrames.forEach( (frame, index) => {
             let previousTime = index > 0 ? colorFrames[index - 1].coord.keyframe : 0

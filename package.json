@@ -26,6 +26,7 @@
     "glsl-noise": "0.0.0",
     "lodash": "^4.17.21",
     "parcel": "^2.7.0",
+    "parse-color": "^1.0.0",
     "stats.js": "^0.17.0",
     "three": "^0.144.0",
     "three-subdivide": "^1.1.0"
