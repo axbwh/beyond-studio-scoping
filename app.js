@@ -548,15 +548,30 @@ scrollToId = () => {
   if (container) {
     console.log(document.querySelectorAll("a[href^='\#']"))
     document.querySelectorAll("a[href^='\#']").forEach((e) => {
-        let href = e.href.split("/").pop()
-        console.log(href.length)
+        let href = e.href.substring(e.href.lastIndexOf('#'))
+        console.log(href)
         if(href.length === 1){
             e.addEventListener('click', () => {
-                container.scrollTop = 0
+                anime({
+                    targets: container,
+                    scrollTop: 0,
+                    duration: container.scrollTop / 4,
+                    easing: 'easeInOutSine'
+                })
+                //container.scrollTop = 0
             }) 
         }else if(document.querySelector(href)){
             e.addEventListener('click', () => {
-            container.scrollTop = document.querySelector(href).offsetTop
+                let target = document.querySelector(href).offsetTop
+
+                anime({
+                    targets: container,
+                    scrollTop: target,
+                    duration: Math.abs(container.scrollTop -  target) / 4,
+                    easing: 'easeInOutSine'
+                })
+
+            //container.scrollTop = document.querySelector(href).offsetTop
             })
         }
 
