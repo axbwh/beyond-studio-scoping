@@ -1020,10 +1020,27 @@ class App {
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     }
 }
+scrollToId = ()=>{
+    let container = document.querySelector(".scrolldom");
+    if (container) {
+        console.log(document.querySelectorAll("a[href^='#']"));
+        document.querySelectorAll("a[href^='#']").forEach((e)=>{
+            let href = e.href.split("/").pop();
+            console.log(href.length);
+            if (href.length === 1) e.addEventListener("click", ()=>{
+                container.scrollTop = 0;
+            });
+            else if (document.querySelector(href)) e.addEventListener("click", ()=>{
+                container.scrollTop = document.querySelector(href).offsetTop;
+            });
+        });
+    }
+};
 window.addEventListener("load", ()=>{
     // create curtains instance
     const app = new App();
     app.init();
+    scrollToId();
 });
 
 },{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6"}],"9AjRS":[function(require,module,exports) {
