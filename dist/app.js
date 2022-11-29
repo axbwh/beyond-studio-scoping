@@ -921,7 +921,7 @@ class App {
                 display: "none"
             });
         });
-        if (this.container.scrollTop > 10) this.startAnim(1500);
+        if (this.container.scrollTop > -1) this.startAnim(1500);
         else {
             document.addEventListener("click", ()=>this.startAnim());
             this.container.addEventListener("scroll", ()=>this.startAnim());
