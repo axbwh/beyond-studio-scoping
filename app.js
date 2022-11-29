@@ -567,6 +567,14 @@ scrollToId = () => {
 }
 
 window.addEventListener('load', () => {
+    let rotation = 0
+    document.querySelectorAll('[rotation]').forEach( (e) => {
+        rotation = !isNaN(e.getAttribute('rotation')) ? e.getAttribute('rotation') : rotation
+        if(e.getAttribute('rotation') == "order"){
+            e.setAttribute('rotation', rotation >= 180 ? 0 : 180)
+            rotation = e.getAttribute('rotation')
+        }
+    })
     // create curtains instance
     const app = new App()
     app.init()
