@@ -1026,7 +1026,6 @@ scrollToId = ()=>{
         console.log(document.querySelectorAll("a[href^='#']"));
         document.querySelectorAll("a[href^='#']").forEach((e)=>{
             let href = e.href.substring(e.href.lastIndexOf("#"));
-            console.log(href);
             if (href.length === 1) e.addEventListener("click", ()=>{
                 (0, _animejsDefault.default)({
                     targets: container,
@@ -1034,7 +1033,6 @@ scrollToId = ()=>{
                     duration: container.scrollTop / 4,
                     easing: "easeInOutSine"
                 });
-            //container.scrollTop = 0
             });
             else if (document.querySelector(href)) e.addEventListener("click", ()=>{
                 let target = document.querySelector(href).offsetTop;
@@ -1044,7 +1042,6 @@ scrollToId = ()=>{
                     duration: Math.abs(container.scrollTop - target) / 4,
                     easing: "easeInOutSine"
                 });
-            //container.scrollTop = document.querySelector(href).offsetTop
             });
         });
     }
