@@ -116,7 +116,7 @@ class App {
             return {el: el, coord: getCoord(el)}
         })
 
-        let colorFrames = [...document.querySelectorAll('[colora], [colorb], [colorc], [colord], [opacity]')].map(el =>{
+        let colorFrames = [...document.querySelectorAll('[colora], [colorb], [colorc], [colord], [copacity]')].map(el =>{
             return {el:el, coord: getCoord(el)}
         })
 

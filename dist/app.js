@@ -649,7 +649,7 @@ class App {
             };
         });
         let colorFrames = [
-            ...document.querySelectorAll("[colora], [colorb], [colorc], [colord], [opacity]")
+            ...document.querySelectorAll("[colora], [colorb], [colorc], [colord], [copacity]")
         ].map((el)=>{
             return {
                 el: el,
@@ -55487,7 +55487,7 @@ const getCoord = (el)=>{
     let colorb = el.getAttribute("colorb") ? el.getAttribute("colorb") : false;
     let colorc = el.getAttribute("colorc") ? el.getAttribute("colorc") : false;
     let colord = el.getAttribute("colord") ? el.getAttribute("colord") : false;
-    let opacity = el.getAttribute("opacity") ? el.getAttribute("opacity") : false;
+    let opacity = el.getAttribute("copacity") ? el.getAttribute("copacity") : false;
     let rotation = el.getAttribute("rotation") ? parseInt(el.getAttribute("rotation")) : 0;
     let stick = el.getAttribute("stick");
     let rotRange = el.getAttribute("rotrange") ? el.getAttribute("rotrange") : 1;
