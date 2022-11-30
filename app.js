@@ -539,9 +539,9 @@ class App {
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
 
 
-        // anime.set('.section:not(#preloader)', {
-        //     translateY: `${-this.scroll.effect}vh`
-        // }) //smoothscroll
+        anime.set('.section', {
+            translateY: `${-this.scroll.effect}vh`
+        }) //smoothscroll
 
 
         let mouseVal = this.pass.uniforms.mouse.value;

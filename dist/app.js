@@ -1013,9 +1013,10 @@ class App {
         this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
         this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
-        // anime.set('.section:not(#preloader)', {
-        //     translateY: `${-this.scroll.effect}vh`
-        // }) //smoothscroll
+        (0, _animejsDefault.default).set(".section", {
+            translateY: `${-this.scroll.effect}vh`
+        }) //smoothscroll
+        ;
         let mouseVal = this.pass.uniforms.mouse.value;
         //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
         /// axes mixed with origin
