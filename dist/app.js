@@ -914,7 +914,12 @@ class App {
             e.addEventListener("click", (event)=>{
                 event.preventDefault();
                 let tag = e.querySelector("span").innerHTML.toLowerCase();
-                if (this.activeFilters.includes(tag)) {
+                if (tag === "reset") {
+                    this.activeFilters = [];
+                    this.filters.forEach((e)=>{
+                        e.classList.remove("active");
+                    });
+                } else if (this.activeFilters.includes(tag)) {
                     this.activeFilters = this.activeFilters.filter((f)=>f !== tag);
                     e.classList.remove("active");
                 } else {
