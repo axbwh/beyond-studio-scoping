@@ -987,10 +987,9 @@ class App {
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.7) {
                 let minus = total / 45 > 1 / 15 ? 0.3 : 0.1;
                 this.pixelRatio = this.pixelRatio - minus;
-                (0, _animejsDefault.default).set(this.container, {
-                    translateY: 0
-                }) //conteract smoothscroll
-                ;
+                // anime.set(this.container, {
+                //     translateY: 0
+                // }) //conteract smoothscroll
                 this.curtains.setPixelRatio(this.pixelRatio);
                 this.threeD.setPixelRatio(this.pixelRatio);
             }
@@ -1013,10 +1012,9 @@ class App {
         this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
         this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
-        (0, _animejsDefault.default).set(this.container, {
-            translateY: `${-this.scroll.effect}vh`
-        }) //smoothscroll
-        ;
+        // anime.set(this.container, {
+        //     translateY: `${-this.scroll.effect}vh`
+        // }) //smoothscroll
         let mouseVal = this.pass.uniforms.mouse.value;
         //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
         /// axes mixed with origin
