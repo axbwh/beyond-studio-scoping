@@ -928,6 +928,7 @@ class App {
                     e.style.display = this.activeFilters.includes(category) || this.activeFilters.length < 1 ? "" : "none";
                 });
                 this.curtains.resize();
+                this.onResize();
             });
         });
     // document.addEventListener('click', this.startAnim.bind(this))
