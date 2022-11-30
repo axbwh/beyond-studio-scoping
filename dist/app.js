@@ -987,7 +987,7 @@ class App {
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.7) {
                 let minus = total / 45 > 1 / 15 ? 0.3 : 0.1;
                 this.pixelRatio = this.pixelRatio - minus;
-                (0, _animejsDefault.default).set(".section:not(#preloader)", {
+                (0, _animejsDefault.default).set(this.container, {
                     translateY: 0
                 }) //conteract smoothscroll
                 ;
@@ -1013,7 +1013,7 @@ class App {
         this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
         this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
-        (0, _animejsDefault.default).set(".section", {
+        (0, _animejsDefault.default).set(this.container, {
             translateY: `${-this.scroll.effect}vh`
         }) //smoothscroll
         ;

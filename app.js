@@ -504,7 +504,7 @@ class App {
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.7){
                 let minus = total /45 > 1 / 15 ? 0.3 : 0.1
                 this.pixelRatio =  this.pixelRatio - minus
-                anime.set('.section:not(#preloader)', {
+                anime.set(this.container, {
                     translateY: 0
                 }) //conteract smoothscroll
                 this.curtains.setPixelRatio(this.pixelRatio)
@@ -539,7 +539,7 @@ class App {
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
 
 
-        anime.set('.section', {
+        anime.set(this.container, {
             translateY: `${-this.scroll.effect}vh`
         }) //smoothscroll
 
