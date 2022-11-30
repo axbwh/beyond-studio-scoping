@@ -430,14 +430,14 @@ class App {
                         e.classList.remove('active')
                     })
                 }else{
-                    if(this.activeFilters.includes(tag)){
-                    this.activeFilters = this.activeFilters.filter(f => f !== tag)
-                    e.classList.remove('active')
-                }else{
-                    this.activeFilters[this.activeFilters.length] = tag
-                    e.classList.add('active')
+                        if(this.activeFilters.includes(tag)){
+                        this.activeFilters = this.activeFilters.filter(f => f !== tag)
+                        e.classList.remove('active')
+                    }else{
+                        this.activeFilters[this.activeFilters.length] = tag
+                        e.classList.add('active')
+                    }
                 }
-            }
                 
                 
                 // let tagged = document.querySelectorAll(`[category*="${tag}"]`)
