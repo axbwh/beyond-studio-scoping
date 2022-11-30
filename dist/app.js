@@ -564,6 +564,7 @@ class App {
             y: 0.5
         };
         this.y = 0;
+        this.height = window.innerHeight;
         // track scroll values
         this.scroll = {
             value: 0,
@@ -612,7 +613,6 @@ class App {
         this.pixelRatio = Math.min(1.2, window.devicePixelRatio);
         this.threeD = new (0, _3DDefault.default)(this.pixelRatio);
         this.textTextures = [];
-        this.textures = [];
     }
     init() {
         // create curtains instance
@@ -703,7 +703,7 @@ class App {
         });
         timeline.add({
             duration: 0.00001
-        }, this.container.scrollHeight - window.innerHeight - 0.00001);
+        }, this.container.scrollHeight - this.height - 0.00001);
         (0, _animejsDefault.default).set(this.colors, {
             ...this.colors
         }) // to convert #hex to rgba when no colrs are defined
@@ -766,13 +766,15 @@ class App {
         });
     }
     onScroll() {
+        console.log(performance.now());
         this.y = this.container.scrollTop;
         this.curtains.updateScrollValues(0, this.y);
-        let y = this.y / (this.container.scrollHeight - window.innerHeight);
+        let y = this.y / (this.container.scrollHeight - this.height);
         this.timeline.seek(this.timeline.duration * y);
     }
     onResize() {
         this.initTimeline();
+        this.height = window.innerHeight;
     }
     onSuccess() {
         this.slider = document.getElementById("slider") ? new (0, _sliderDefault.default)(this.curtains, document.getElementById("slider"), document.getElementById("slider-dom"), document.getElementById("slider-trigger")) : false;
@@ -880,8 +882,14 @@ class App {
         this.slider && this.slider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         this.hoverSlider && this.hoverSlider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         this.pass.onRender(this.onRender.bind(this));
-        let _mouse = (0, _lodashDefault.default).throttle(this.mouseEvent.bind(this), 10);
-        let _scroll = (0, _lodashDefault.default).throttle(this.onScroll.bind(this), 10);
+        let _mouse = (0, _lodashDefault.default).throttle(this.mouseEvent.bind(this), 16, {
+            "trailing": true,
+            "leading": true
+        });
+        let _scroll = (0, _lodashDefault.default).throttle(this.onScroll.bind(this), 16, {
+            "trailing": true,
+            "leading": true
+        });
         this.container.addEventListener("scroll", _scroll.bind(this));
         document.addEventListener("mousemove", _mouse.bind(this), false);
         this.curtains.onAfterResize(this.onResize.bind(this));
@@ -991,7 +999,7 @@ class App {
     }
     getDelta() {
         let delta = (performance.now() - this.lastFrame) / 1000;
-        delta = delta > 0.5 ? 0.5 : delta;
+        delta = delta > 1.0 ? 1.0 : delta;
         this.lastFrame = performance.now();
         this.monitorPerformance(delta);
         return delta;
@@ -1046,7 +1054,7 @@ class App {
     mouseEvent(event) {
         //event.preventDefault();
         this.mouse.x = event.clientX / window.innerWidth * 2 - 1;
-        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        this.mouse.y = -(event.clientY / this.height) * 2 + 1;
     }
 }
 scrollToId = ()=>{
