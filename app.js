@@ -76,6 +76,7 @@ class App {
 
         this.threeD = new ThreeD(this.pixelRatio)
         this.textTextures = []
+        this.textures = []
 
     }
 
@@ -88,6 +89,7 @@ class App {
         })
 
         this.container = document.querySelector('.scrolldom')
+        this.filters = document.querySelectorAll('label.filters')
 
         this.curtains.onSuccess(this.onSuccess.bind(this))
         this.curtains.onError(this.onError.bind(this))
@@ -173,7 +175,6 @@ class App {
         anime.set(this.colors, {
             ...this.colors,
         }) // to convert #hex to rgba when no colrs are defined
-        console.log(this.colors)
 
         colorFrames.length > 0 && colorFrames.forEach( (frame, index) => {
             let previousTime = index > 0 ? colorFrames[index - 1].coord.keyframe : 0
@@ -195,7 +196,7 @@ class App {
     }
 
     
-    initText(target){
+    initText(target, pass=true){
 
         const textEls = document.querySelectorAll('[text]')
         textEls.forEach(textEl => {            
@@ -215,29 +216,38 @@ class App {
             plane.setRenderTarget(target)
             textEl.style.color = "#ff000000"//make text invisible bhut still highlightable
         })
-
-        this.pass.createTexture({
-            sampler: 'uTxt',
-            fromTexture: target.getTexture()
-        })
+        if(pass){
+            this.pass.createTexture({
+                sampler: 'uTxt',
+                fromTexture: target.getTexture()
+            })
+        }
     }
 
-    loadImg(query, target, sampler){
+    loadImg(query, target, sampler, pass=true){
         const imgs = document.querySelectorAll(query)
         imgs.forEach((el) => {
             const plane = new Plane(this.curtains, el, {
               vertexShader: textShader.vs,
               fragmentShader: imgFrag,
             })
-            plane.loadImage(el, { sampler: 'uTexture' })
+
+            plane.loadImage(el, { sampler: 'uTexture' }, () => {
+                this.curtains.resize()
+                
+            })
+
             plane.setRenderTarget(target)
             el.style.opacity = 0
           })
 
-        this.pass.createTexture({
-            sampler: sampler,
-            fromTexture: target.getTexture(),
-        })
+          if(pass){
+            this.pass.createTexture({
+                sampler: sampler,
+                fromTexture: target.getTexture(),
+            })
+
+          }
     }
 
 
@@ -405,6 +415,35 @@ class App {
             } )
         })
         this.preloader()
+
+        this.activeFilters = []
+
+        this.filters.forEach(e => {
+            e.addEventListener('click', (event)=>{
+                event.preventDefault()
+                let tag = e.querySelector('span').innerHTML.toLowerCase()
+
+                
+                if(this.activeFilters.includes(tag)){
+                    this.activeFilters = this.activeFilters.filter(f => f !== tag)
+                    e.classList.remove('active')
+                }else{
+                    this.activeFilters[this.activeFilters.length] = tag
+                    e.classList.add('active')
+                }
+                
+                
+                // let tagged = document.querySelectorAll(`[category*="${tag}"]`)
+                document.querySelectorAll('[role="listitem"]').forEach((e, i) =>{
+                    let category = e.querySelector(`[category]`).getAttribute('category').toLowerCase()
+                    console.log(tag, '/', category,'/', tag === category)
+
+                    e.style.display = this.activeFilters.includes(category) || this.activeFilters.length < 1 ? '' : 'none'                
+                })
+                this.curtains.resize()
+                
+            })
+        })
         // document.addEventListener('click', this.startAnim.bind(this))
         // window.addEventListener("scroll", this.startAnim.bind(this))
        
@@ -547,7 +586,6 @@ class App {
 scrollToId = () => {
   let container = document.querySelector('.scrolldom')
   if (container) {
-    console.log(document.querySelectorAll("a[href^='\#']"))
     document.querySelectorAll("a[href^='\#']").forEach((e) => {
         let href = e.href.substring(e.href.lastIndexOf('#'))
         if(href.length === 1){
