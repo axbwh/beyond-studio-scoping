@@ -232,10 +232,7 @@ class App {
               fragmentShader: imgFrag,
             })
 
-            plane.loadImage(el, { sampler: 'uTexture' }, () => {
-                this.curtains.resize()
-                
-            })
+            plane.loadImage(el, { sampler: 'uTexture' })
 
             plane.setRenderTarget(target)
             el.style.opacity = 0

@@ -756,8 +756,6 @@ class App {
             });
             plane.loadImage(el, {
                 sampler: "uTexture"
-            }, ()=>{
-                this.curtains.resize();
             });
             plane.setRenderTarget(target);
             el.style.opacity = 0;
