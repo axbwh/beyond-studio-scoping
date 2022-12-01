@@ -44,14 +44,15 @@ void main() {
     vec4 threeDCol = texture2D(threeDTexture, uv);
 
     // branching on an uniform is ok
-    if(uScrollEffect >= 0.0) {
-        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
-        horizontalStretch = sin(uv.y);
-    }
-    else if(uScrollEffect < 0.0) {
-        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
-        horizontalStretch = sin(-1.0 * (1.0 - uv.y));
-    }
+    // if(uScrollEffect >= 0.0) {
+    //     uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
+    //     horizontalStretch = sin(uv.y);
+    // }
+    // else if(uScrollEffect < 0.0) {
+    //     uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
+    //     horizontalStretch = sin(-1.0 * (1.0 - uv.y));
+    // }
+    horizontalStretch = 0.0;
 
     uv.x = uv.x * 2.0 - 1.0;
     uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;
@@ -126,7 +127,7 @@ void main() {
 
     mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
     mixCol = mix( gradient, mixCol, mixCol.a); // gradient
-    mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875); // highlights
+    mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875 * uMorph); // highlights
 
     gl_FragColor = mixCol;
 

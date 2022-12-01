@@ -468,7 +468,7 @@ class App {
                 display: 'none'
             })
         })
-        if(this.container.scrollTop > -1){
+        if(this.container.scrollTop > 10){
             this.startAnim(1500)
         }else{
                 document.addEventListener('click', () => this.startAnim())
