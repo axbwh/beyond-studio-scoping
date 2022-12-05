@@ -813,6 +813,9 @@ class App {
         this.initTimeline();
         this.loopSlider && this.loopSlider.resize();
         this.height = window.innerHeight;
+        this.cards.forEach((c)=>{
+            c.resize();
+        });
     }
     onSuccess() {
         this.slider = document.getElementById("slider") ? new (0, _sliderDefault.default)(this.curtains, document.getElementById("slider"), document.getElementById("slider-dom"), document.getElementById("slider-trigger")) : false;

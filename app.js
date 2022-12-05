@@ -293,6 +293,9 @@ class App {
         this.initTimeline()
         this.loopSlider && this.loopSlider.resize()
         this.height = window.innerHeight
+        this.cards.forEach(c => {
+            c.resize()
+        })
     }
 
     onSuccess(){
