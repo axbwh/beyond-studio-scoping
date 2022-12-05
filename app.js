@@ -1,6 +1,7 @@
 import {Curtains, Plane, RenderTarget, ShaderPass, TextureLoader} from 'curtainsjs';
 import {TextTexture} from './TextTexture';
 import imgFrag from './shaders/img.frag'
+import lineFrag from './shaders/line.frag'
 import textShader from './textShader';
 import pageFrag from './shaders/page.frag';
 import ThreeD from './3d';
@@ -11,6 +12,9 @@ import anime from 'animejs';
 import _, { delay } from 'lodash';
 import Stats from 'stats.js';
 import * as THREE from 'three'
+import Fade from './fadeIn';
+import LoopSlider from './LoopSlider';
+import parseColor from 'parse-color';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -247,6 +251,26 @@ class App {
           }
     }
 
+    initLines(){
+        const divs = document.querySelectorAll('.divider')
+        divs.forEach((el) => {
+            const plane = new Plane(this.curtains, el, {
+                vertexShader: textShader.vs,
+                fragmentShader: lineFrag,
+                uniforms:{
+                    color: {
+                        name: 'uColor',
+                        type: '4f',
+                        value: parseColor(window.getComputedStyle(el).backgroundColor).rgba.map((x,i) => i < 3 ? x/255 : x),
+                    }
+                  }
+              })
+  
+              plane.setRenderTarget(this.imgTarget)
+              el.style.opacity = 0
+        })
+    }
+
 
 
     onScroll(){
@@ -259,13 +283,14 @@ class App {
 
     onResize(){
         this.initTimeline()
+        this.loopSlider && this.loopSlider.resize()
         this.height = window.innerHeight
     }
 
     onSuccess(){
         
         this.slider = document.getElementById('slider') ?  new Slider(this.curtains, document.getElementById('slider'), document.getElementById('slider-dom'), document.getElementById('slider-trigger')) : false
-        this.hoverSlider = document.getElementById('hover-slider') ? new HoverSlider(this.curtains, document.getElementById('hover-slider'), document.getElementById('hover-slider-trigger')) : false
+        this.hoverSlider = document.getElementById('hover-slider') ? new HoverSlider(this.curtains, document.getElementById('hover-slider'), document.getElementById('hover-slider-trigger')) : false   
         this.puckTarget = new RenderTarget(this.curtains)
         this.bgTarget = new RenderTarget(this.curtains)
         this.imgTarget = new RenderTarget(this.curtains)
@@ -368,11 +393,17 @@ class App {
         this.loadImg('img[bg]', this.bgTarget, 'uBg')
         //images that will be inside the puck
         this.loadImg('img[puck]', this.puckTarget, 'uPuck')
+        this.initLines()
+        this.fadeIn = new Fade(this.curtains, document.querySelector('img[fade="in"]'), this.puckTarget)
+        this.fadeOut = new Fade(this.curtains, document.querySelector('img[fade="out"]'), this.puckTarget)
+
+
 
         this.slider && this.slider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
 
         this.hoverSlider && this.hoverSlider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
-  
+
+        this.loopSlider = document.querySelector("#scrolling-bar") ? new LoopSlider(this.curtains, document.querySelector("#scrolling-bar"), this.imgTarget) : null
 
         this.pass.onRender(this.onRender.bind(this))
 
@@ -571,6 +602,7 @@ class App {
         let colCtarget = lerpRgba(rgbaToArray(this.colors.c), rgbaToArray(this.hoverColors.c), this.hoverColors.mix)
         let colDtarget = lerpRgba(rgbaToArray(this.colors.d), rgbaToArray(this.hoverColors.d), this.hoverColors.mix)
         let colOtarget = this.curtains.lerp(this.colors.opacity, this.hoverColors.opacity, this.hoverColors.mix)
+        colOtarget = this.curtains.lerp(1.0, colOtarget, this.origin.range)
 
         this.pass.uniforms.colA.value = lerpRgba(this.pass.uniforms.colA.value, colAtarget, delta * 1.5)
         this.pass.uniforms.colB.value = lerpRgba(this.pass.uniforms.colB.value, colBtarget, delta * 1.5)
@@ -578,6 +610,11 @@ class App {
         this.pass.uniforms.colD.value = lerpRgba(this.pass.uniforms.colD.value, colDtarget, delta * 1.5)
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5)
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta *1.5)
+
+        this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4)
+        this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4)
+
+        this.loopSlider && this.loopSlider.update(delta)
 
         this.stats.end()
     }

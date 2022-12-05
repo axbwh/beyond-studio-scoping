@@ -537,6 +537,8 @@ var _curtainsjs = require("curtainsjs");
 var _textTexture = require("./TextTexture");
 var _imgFrag = require("./shaders/img.frag");
 var _imgFragDefault = parcelHelpers.interopDefault(_imgFrag);
+var _lineFrag = require("./shaders/line.frag");
+var _lineFragDefault = parcelHelpers.interopDefault(_lineFrag);
 var _textShader = require("./textShader");
 var _textShaderDefault = parcelHelpers.interopDefault(_textShader);
 var _pageFrag = require("./shaders/page.frag");
@@ -555,6 +557,12 @@ var _lodashDefault = parcelHelpers.interopDefault(_lodash);
 var _statsJs = require("stats.js");
 var _statsJsDefault = parcelHelpers.interopDefault(_statsJs);
 var _three = require("three");
+var _fadeIn = require("./fadeIn");
+var _fadeInDefault = parcelHelpers.interopDefault(_fadeIn);
+var _loopSlider = require("./LoopSlider");
+var _loopSliderDefault = parcelHelpers.interopDefault(_loopSlider);
+var _parseColor = require("parse-color");
+var _parseColorDefault = parcelHelpers.interopDefault(_parseColor);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -765,6 +773,24 @@ class App {
             fromTexture: target.getTexture()
         });
     }
+    initLines() {
+        const divs = document.querySelectorAll(".divider");
+        divs.forEach((el)=>{
+            const plane = new (0, _curtainsjs.Plane)(this.curtains, el, {
+                vertexShader: (0, _textShaderDefault.default).vs,
+                fragmentShader: (0, _lineFragDefault.default),
+                uniforms: {
+                    color: {
+                        name: "uColor",
+                        type: "4f",
+                        value: (0, _parseColorDefault.default)(window.getComputedStyle(el).backgroundColor).rgba.map((x, i)=>i < 3 ? x / 255 : x)
+                    }
+                }
+            });
+            plane.setRenderTarget(this.imgTarget);
+            el.style.opacity = 0;
+        });
+    }
     onScroll() {
         console.log(performance.now());
         this.y = this.container.scrollTop;
@@ -774,6 +800,7 @@ class App {
     }
     onResize() {
         this.initTimeline();
+        this.loopSlider && this.loopSlider.resize();
         this.height = window.innerHeight;
     }
     onSuccess() {
@@ -879,8 +906,12 @@ class App {
         this.loadImg("img[bg]", this.bgTarget, "uBg");
         //images that will be inside the puck
         this.loadImg("img[puck]", this.puckTarget, "uPuck");
+        this.initLines();
+        this.fadeIn = new (0, _fadeInDefault.default)(this.curtains, document.querySelector('img[fade="in"]'), this.puckTarget);
+        this.fadeOut = new (0, _fadeInDefault.default)(this.curtains, document.querySelector('img[fade="out"]'), this.puckTarget);
         this.slider && this.slider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         this.hoverSlider && this.hoverSlider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
+        this.loopSlider = document.querySelector("#scrolling-bar") ? new (0, _loopSliderDefault.default)(this.curtains, document.querySelector("#scrolling-bar"), this.imgTarget) : null;
         this.pass.onRender(this.onRender.bind(this));
         let _mouse = (0, _lodashDefault.default).throttle(this.mouseEvent.bind(this), 16, {
             "trailing": true,
@@ -1042,12 +1073,16 @@ class App {
         let colCtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.c), (0, _utils.rgbaToArray)(this.hoverColors.c), this.hoverColors.mix);
         let colDtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.d), (0, _utils.rgbaToArray)(this.hoverColors.d), this.hoverColors.mix);
         let colOtarget = this.curtains.lerp(this.colors.opacity, this.hoverColors.opacity, this.hoverColors.mix);
+        colOtarget = this.curtains.lerp(1.0, colOtarget, this.origin.range);
         this.pass.uniforms.colA.value = (0, _utils.lerpRgba)(this.pass.uniforms.colA.value, colAtarget, delta * 1.5);
         this.pass.uniforms.colB.value = (0, _utils.lerpRgba)(this.pass.uniforms.colB.value, colBtarget, delta * 1.5);
         this.pass.uniforms.colC.value = (0, _utils.lerpRgba)(this.pass.uniforms.colC.value, colCtarget, delta * 1.5);
         this.pass.uniforms.colD.value = (0, _utils.lerpRgba)(this.pass.uniforms.colD.value, colDtarget, delta * 1.5);
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5);
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta * 1.5);
+        this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4);
+        this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4);
+        this.loopSlider && this.loopSlider.update(delta);
         this.stats.end();
     }
     mouseEvent(event) {
@@ -1094,7 +1129,7 @@ window.addEventListener("load", ()=>{
     scrollToId();
 });
 
-},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6","./fadeIn":"4u8SK","./LoopSlider":"jV6RD","./shaders/line.frag":"h9zl2","parse-color":"1o9cL"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -58624,6 +58659,82 @@ exports.default = HoverSlider;
     };
     return f;
 });
+
+},{}],"4u8SK":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _curtainsjs = require("curtainsjs");
+var _fadeFrag = require("./shaders/fade.frag");
+var _fadeFragDefault = parcelHelpers.interopDefault(_fadeFrag);
+var _textShader = require("./textShader");
+var _textShaderDefault = parcelHelpers.interopDefault(_textShader);
+class Fade {
+    constructor(curtains, el, target){
+        this.plane = new (0, _curtainsjs.Plane)(curtains, el, {
+            vertexShader: (0, _textShaderDefault.default).vs,
+            fragmentShader: (0, _fadeFragDefault.default),
+            uniforms: {
+                opacity: {
+                    name: "uOpacity",
+                    type: "1f",
+                    value: 0
+                }
+            }
+        });
+        this.plane.loadImage(el, {
+            sampler: "uTexture"
+        });
+        this.plane.setRenderTarget(target);
+        el.style.opacity = 0;
+    }
+}
+exports.default = Fade;
+
+},{"curtainsjs":"9AjRS","./shaders/fade.frag":"fca4O","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./textShader":"l7Abs"}],"fca4O":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTexture;\nuniform float uOpacity;\n\nvoid main() {\n    // just display our texture\n    vec4 texture = texture2D(uTexture, vTextureCoord);\n    gl_FragColor = vec4(texture.rgb, texture.a * uOpacity);\n}";
+
+},{}],"jV6RD":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _curtainsjs = require("curtainsjs");
+var _imgFrag = require("./shaders/img.frag");
+var _imgFragDefault = parcelHelpers.interopDefault(_imgFrag);
+var _textShader = require("./textShader");
+var _textShaderDefault = parcelHelpers.interopDefault(_textShader);
+class LoopSlider {
+    constructor(curtains, el, target){
+        this.planes = [];
+        this.contentWrapper = el.querySelector(".loop-cms-wrapper");
+        this.width = this.contentWrapper.offsetWidth;
+        this.offset = 0;
+        el.querySelectorAll("img").forEach((e, i)=>{
+            this.planes[i] = new (0, _curtainsjs.Plane)(curtains, e, {
+                vertexShader: (0, _textShaderDefault.default).vs,
+                fragmentShader: (0, _imgFragDefault.default)
+            });
+            this.planes[i].loadImage(e, {
+                sampler: "uTexture"
+            });
+            this.planes[i].setRenderTarget(target);
+            e.style.opacity = 0;
+        });
+    }
+    resize() {
+        this.offset = 0;
+        this.width = this.contentWrapper.offsetWidth;
+    }
+    update(delta) {
+        this.offset = this.offset > -this.width ? this.offset - delta * 120 : 0;
+        console.log(this.offset);
+        this.planes.forEach((p, i)=>{
+            p.relativeTranslation.x = this.offset;
+        });
+    }
+}
+exports.default = LoopSlider;
+
+},{"curtainsjs":"9AjRS","./textShader":"l7Abs","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/img.frag":"7dXWc"}],"h9zl2":[function(require,module,exports) {
+module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform vec4 uColor;\n\nvoid main() {\n    // just display our texture\n    gl_FragColor = uColor;\n}";
 
 },{}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
