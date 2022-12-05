@@ -907,8 +907,8 @@ class App {
         //images that will be inside the puck
         this.loadImg("img[puck]", this.puckTarget, "uPuck");
         this.initLines();
-        this.fadeIn = new (0, _fadeInDefault.default)(this.curtains, document.querySelector('img[fade="in"]'), this.puckTarget);
-        this.fadeOut = new (0, _fadeInDefault.default)(this.curtains, document.querySelector('img[fade="out"]'), this.puckTarget);
+        this.fadeIn = document.querySelector('img[fade="in"]') ? new (0, _fadeInDefault.default)(this.curtains, document.querySelector('img[fade="in"]'), this.puckTarget) : null;
+        this.fadeOut = document.querySelector('img[fade="out"]') ? new (0, _fadeInDefault.default)(this.curtains, document.querySelector('img[fade="out"]'), this.puckTarget) : null;
         this.slider && this.slider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         this.hoverSlider && this.hoverSlider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         this.loopSlider = document.querySelector("#scrolling-bar") ? new (0, _loopSliderDefault.default)(this.curtains, document.querySelector("#scrolling-bar"), this.imgTarget) : null;
@@ -988,7 +988,7 @@ class App {
                 display: "none"
             });
         });
-        if (this.container.scrollTop > 10) this.startAnim(1500);
+        if (this.container.scrollTop > 10 || !this.fadeIn) this.startAnim(1500);
         else {
             document.addEventListener("click", ()=>this.startAnim());
             this.container.addEventListener("scroll", ()=>this.startAnim());
@@ -1080,8 +1080,10 @@ class App {
         this.pass.uniforms.colD.value = (0, _utils.lerpRgba)(this.pass.uniforms.colD.value, colDtarget, delta * 1.5);
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5);
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta * 1.5);
-        this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4);
-        this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4);
+        if (this.fadeIn && this.fadeOut) {
+            this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4);
+            this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4);
+        }
         this.loopSlider && this.loopSlider.update(delta);
         this.stats.end();
     }
@@ -58716,7 +58718,7 @@ class LoopSlider {
                 sampler: "uTexture"
             });
             this.planes[i].setRenderTarget(target);
-            e.style.opacity = 0;
+            e.parentElement.parentElement.style.opacity = 0;
         });
     }
     resize() {

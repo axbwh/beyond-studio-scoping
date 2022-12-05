@@ -15,7 +15,7 @@ class LoopSlider {
       })
       this.planes[i].loadImage(e, { sampler: 'uTexture' })
       this.planes[i].setRenderTarget(target)
-      e.style.opacity = 0
+      e.parentElement.parentElement.style.opacity = 0
     })
   }
 

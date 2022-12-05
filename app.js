@@ -394,8 +394,10 @@ class App {
         //images that will be inside the puck
         this.loadImg('img[puck]', this.puckTarget, 'uPuck')
         this.initLines()
-        this.fadeIn = new Fade(this.curtains, document.querySelector('img[fade="in"]'), this.puckTarget)
-        this.fadeOut = new Fade(this.curtains, document.querySelector('img[fade="out"]'), this.puckTarget)
+
+    
+        this.fadeIn = document.querySelector('img[fade="in"]') ? new Fade(this.curtains, document.querySelector('img[fade="in"]'), this.puckTarget) : null
+        this.fadeOut = document.querySelector('img[fade="out"]') ? new Fade(this.curtains, document.querySelector('img[fade="out"]'), this.puckTarget) : null
 
 
 
@@ -499,7 +501,7 @@ class App {
                 display: 'none'
             })
         })
-        if(this.container.scrollTop > 10){
+        if(this.container.scrollTop > 10 || !this.fadeIn){
             this.startAnim(1500)
         }else{
                 document.addEventListener('click', () => this.startAnim())
@@ -611,9 +613,10 @@ class App {
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5)
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta *1.5)
 
-        this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4)
-        this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4)
-
+        if(this.fadeIn && this.fadeOut){
+            this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4)
+            this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4)
+        }
         this.loopSlider && this.loopSlider.update(delta)
 
         this.stats.end()
