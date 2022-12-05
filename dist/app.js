@@ -563,6 +563,8 @@ var _loopSlider = require("./LoopSlider");
 var _loopSliderDefault = parcelHelpers.interopDefault(_loopSlider);
 var _parseColor = require("parse-color");
 var _parseColorDefault = parcelHelpers.interopDefault(_parseColor);
+var _card = require("./card");
+var _cardDefault = parcelHelpers.interopDefault(_card);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -570,6 +572,10 @@ class App {
         this.mouse = {
             x: 0.5,
             y: 0.5
+        };
+        this.mse = {
+            x: 0,
+            y: 0
         };
         this.y = 0;
         this.height = window.innerHeight;
@@ -774,7 +780,7 @@ class App {
         });
     }
     initLines() {
-        const divs = document.querySelectorAll(".divider");
+        const divs = document.querySelectorAll("[line]");
         divs.forEach((el)=>{
             const plane = new (0, _curtainsjs.Plane)(this.curtains, el, {
                 vertexShader: (0, _textShaderDefault.default).vs,
@@ -791,8 +797,13 @@ class App {
             el.style.opacity = 0;
         });
     }
+    initCards() {
+        this.cards = [];
+        document.querySelectorAll("[card]").forEach((e, i)=>{
+            this.cards[i] = new (0, _cardDefault.default)(this.curtains, e, this.imgTarget);
+        });
+    }
     onScroll() {
-        console.log(performance.now());
         this.y = this.container.scrollTop;
         this.curtains.updateScrollValues(0, this.y);
         let y = this.y / (this.container.scrollHeight - this.height);
@@ -907,6 +918,7 @@ class App {
         //images that will be inside the puck
         this.loadImg("img[puck]", this.puckTarget, "uPuck");
         this.initLines();
+        this.initCards();
         this.fadeIn = document.querySelector('img[fade="in"]') ? new (0, _fadeInDefault.default)(this.curtains, document.querySelector('img[fade="in"]'), this.puckTarget) : null;
         this.fadeOut = document.querySelector('img[fade="out"]') ? new (0, _fadeInDefault.default)(this.curtains, document.querySelector('img[fade="out"]'), this.puckTarget) : null;
         this.slider && this.slider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
@@ -1085,12 +1097,17 @@ class App {
             this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4);
         }
         this.loopSlider && this.loopSlider.update(delta);
+        this.cards.forEach((c)=>{
+            c.update(delta, this.mse);
+        });
         this.stats.end();
     }
     mouseEvent(event) {
         //event.preventDefault();
         this.mouse.x = event.clientX / window.innerWidth * 2 - 1;
         this.mouse.y = -(event.clientY / this.height) * 2 + 1;
+        this.mse.x = event.clientX;
+        this.mse.y = event.clientY;
     }
 }
 scrollToId = ()=>{
@@ -1131,7 +1148,7 @@ window.addEventListener("load", ()=>{
     scrollToId();
 });
 
-},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6","./fadeIn":"4u8SK","./LoopSlider":"jV6RD","./shaders/line.frag":"h9zl2","parse-color":"1o9cL"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6","./fadeIn":"4u8SK","./LoopSlider":"jV6RD","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","./card":"aXwzR"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -55539,6 +55556,7 @@ parcelHelpers.export(exports, "normCoord", ()=>normCoord);
 parcelHelpers.export(exports, "normX", ()=>normX);
 parcelHelpers.export(exports, "normY", ()=>normY);
 parcelHelpers.export(exports, "getCoord", ()=>getCoord);
+parcelHelpers.export(exports, "mapClamp", ()=>mapClamp);
 var _parseColor = require("parse-color");
 var _parseColorDefault = parcelHelpers.interopDefault(_parseColor);
 const hexToRgb = (hex)=>hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b)=>"#" + r + r + g + g + b + b).substring(1).match(/.{2}/g).map((x)=>parseInt(x, 16) / 255);
@@ -55626,6 +55644,11 @@ const getCoord = (el)=>{
         }
     };
 };
+const map_range = (value, low1, high1, low2, high2)=>{
+    return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
+};
+const clamp = (num, min, max)=>Math.min(Math.max(num, min), max);
+const mapClamp = (value, low1, high1, low2, high2)=>clamp(map_range(value, low1, high1, low2, high2), low2, high2);
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","parse-color":"1o9cL"}],"1o9cL":[function(require,module,exports) {
 var convert = require("color-convert");
@@ -58737,6 +58760,144 @@ exports.default = LoopSlider;
 },{"curtainsjs":"9AjRS","./textShader":"l7Abs","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/img.frag":"7dXWc"}],"h9zl2":[function(require,module,exports) {
 module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform vec4 uColor;\n\nvoid main() {\n    // just display our texture\n    gl_FragColor = uColor;\n}";
 
-},{}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{}],"aXwzR":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _curtainsjs = require("curtainsjs");
+var _imgFrag = require("./shaders/img.frag");
+var _imgFragDefault = parcelHelpers.interopDefault(_imgFrag);
+var _textShader = require("./textShader");
+var _textShaderDefault = parcelHelpers.interopDefault(_textShader);
+var _lineFrag = require("./shaders/line.frag");
+var _lineFragDefault = parcelHelpers.interopDefault(_lineFrag);
+var _textTexture = require("./TextTexture");
+var _parseColor = require("parse-color");
+var _parseColorDefault = parcelHelpers.interopDefault(_parseColor);
+var _utils = require("./utils");
+class Card {
+    constructor(curtains, el, target){
+        this.planes = [];
+        this.el = el;
+        this.curtains = curtains;
+        this.rotation = {
+            x: 0,
+            y: 0
+        };
+        this.hover = false;
+        this.color = (0, _parseColorDefault.default)(window.getComputedStyle(el.querySelector(".divider:not(.card-hover)")).backgroundColor).rgba.map((x, i)=>i < 3 ? x / 255 : x);
+        this.hColor = (0, _parseColorDefault.default)(window.getComputedStyle(el.querySelector(".card-hover")).backgroundColor).rgba.map((x, i)=>i < 3 ? x / 255 : x);
+        this.oColor = this.color;
+        this.scale = 1;
+        el.querySelectorAll("img").forEach((e, i)=>{
+            this.planes[i] = new (0, _curtainsjs.Plane)(curtains, e, {
+                vertexShader: (0, _textShaderDefault.default).vs,
+                fragmentShader: (0, _imgFragDefault.default)
+            });
+            this.planes[i].loadImage(e, {
+                sampler: "uTexture"
+            });
+            this.planes[i].setRenderTarget(target);
+            e.style.opacity = 0;
+        });
+        el.querySelectorAll("p").forEach((textEl)=>{
+            let i = this.planes.length;
+            this.planes[i] = new (0, _curtainsjs.Plane)(curtains, textEl, {
+                vertexShader: (0, _textShaderDefault.default).vs,
+                fragmentShader: (0, _textShaderDefault.default).fs
+            });
+            let texture = new (0, _textTexture.TextTexture)({
+                plane: this.planes[i],
+                textElement: this.planes[i].htmlElement,
+                sampler: "uTexture",
+                resolution: 1.2,
+                skipFontLoading: true
+            });
+            this.planes[i].setRenderTarget(target);
+            textEl.style.color = "#ff000000";
+        });
+        this.lines = [];
+        el.querySelectorAll(".divider:not(.card-hover)").forEach((e)=>{
+            let i = this.planes.length;
+            this.planes[i] = new (0, _curtainsjs.Plane)(curtains, e, {
+                vertexShader: (0, _textShaderDefault.default).vs,
+                fragmentShader: (0, _lineFragDefault.default),
+                uniforms: {
+                    color: {
+                        name: "uColor",
+                        type: "4f",
+                        value: this.color
+                    }
+                }
+            });
+            this.planes[i].setRenderTarget(target);
+            e.style.opacity = 0;
+            this.lines[this.lines.length] = i;
+        });
+        el.querySelectorAll(".card-hover").forEach((e)=>{
+            e.style.display = "none";
+        });
+        this.resize();
+        this.el.addEventListener("mouseenter", ()=>{
+            this.hover = true;
+            this.resize();
+        });
+        this.el.addEventListener("mouseleave", ()=>{
+            this.hover = false;
+        });
+    }
+    resize() {
+        let cardRect = this.el.getBoundingClientRect();
+        let center = {
+            x: (cardRect.left + cardRect.width / 2) * this.curtains.pixelRatio,
+            y: (cardRect.top + cardRect.height / 2) * this.curtains.pixelRatio
+        };
+        this.planes.forEach((p, i)=>{
+            let rect = p.getBoundingRect();
+            let cardCenter = {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+            let origin = {
+                x: (center.x - cardCenter.x) / rect.width + 0.5,
+                y: (center.y - cardCenter.y) / rect.height + 0.5,
+                z: -Math.abs((center.y - cardCenter.y) / cardRect.height) / 20
+            };
+            p.setTransformOrigin(new (0, _curtainsjs.Vec3)(origin.x, origin.y, origin.z));
+        });
+        this.center = {
+            x1: cardRect.left,
+            x: cardRect.left + cardRect.width / 2,
+            x2: cardRect.left + cardRect.width,
+            y1: cardRect.top,
+            y: cardRect.top + cardRect.height / 2,
+            y2: cardRect.top + cardRect.height
+        };
+    }
+    update(delta, mouse) {
+        let rotation = {
+            x: this.hover ? Math.PI / 4 * (this.center.y - mouse.x) : 0,
+            y: this.hover ? Math.PI / 2 * -(this.center.x - mouse.y) : 0
+        };
+        let deg = Math.PI / 180;
+        rotation = {
+            x: this.hover ? (0, _utils.mapClamp)(mouse.y, this.center.y1, this.center.y2, -30 * deg, 30 * deg) : 0,
+            y: this.hover ? (0, _utils.mapClamp)(mouse.x, this.center.x1, this.center.x2, -30 * deg, 30 * deg) : 0
+        };
+        this.rotation.y = this.curtains.lerp(this.rotation.y, rotation.y, delta);
+        this.rotation.x = this.curtains.lerp(this.rotation.x, rotation.x, delta);
+        this.color = (0, _utils.lerpRgba)(this.color, this.hover ? this.hColor : this.oColor, delta * 2);
+        this.scale = this.curtains.lerp(this.scale, this.hover ? 1 : 0.9, delta * 2);
+        this.planes.forEach((p, i)=>{
+            if (this.lines.includes(i)) p.uniforms.color.value = this.color;
+            p.rotation.y = this.rotation.y;
+            p.rotation.x = this.rotation.x;
+            p.scale.x = this.scale;
+            p.scale.y = this.scale;
+        });
+    }
+}
+exports.default = Card;
+
+},{"curtainsjs":"9AjRS","./shaders/img.frag":"7dXWc","./textShader":"l7Abs","./shaders/line.frag":"h9zl2","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./TextTexture":"foCCV","parse-color":"1o9cL","./utils":"bIDtH"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map

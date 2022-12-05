@@ -15,6 +15,7 @@ import * as THREE from 'three'
 import Fade from './fadeIn';
 import LoopSlider from './LoopSlider';
 import parseColor from 'parse-color';
+import Card from './card';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -23,6 +24,7 @@ const parceled = true
 class App {
     constructor(){
         this.mouse = { x : 0.5, y: 0.5}
+        this.mse = {x: 0, y: 0}
         this.y = 0
         this.height = window.innerHeight
         // track scroll values
@@ -252,7 +254,7 @@ class App {
     }
 
     initLines(){
-        const divs = document.querySelectorAll('.divider')
+        const divs = document.querySelectorAll('[line]')
         divs.forEach((el) => {
             const plane = new Plane(this.curtains, el, {
                 vertexShader: textShader.vs,
@@ -271,10 +273,16 @@ class App {
         })
     }
 
+    initCards(){
+        this.cards = []
+        document.querySelectorAll('[card]').forEach((e, i) => {
+            this.cards[i] = new Card(this.curtains, e, this.imgTarget)
+        })
+    }
+
 
 
     onScroll(){
-            console.log(performance.now())
             this.y = this.container.scrollTop
             this.curtains.updateScrollValues(0, this.y)
             let y = this.y/ (this.container.scrollHeight - this.height)
@@ -394,6 +402,7 @@ class App {
         //images that will be inside the puck
         this.loadImg('img[puck]', this.puckTarget, 'uPuck')
         this.initLines()
+        this.initCards()
 
     
         this.fadeIn = document.querySelector('img[fade="in"]') ? new Fade(this.curtains, document.querySelector('img[fade="in"]'), this.puckTarget) : null
@@ -619,6 +628,10 @@ class App {
         }
         this.loopSlider && this.loopSlider.update(delta)
 
+        this.cards.forEach(c => {
+            c.update(delta, this.mse)
+        })
+
         this.stats.end()
     }
 
@@ -626,6 +639,8 @@ class App {
         //event.preventDefault();
 	    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
 	    this.mouse.y = - (event.clientY / this.height) * 2 + 1;
+        this.mse.x = event.clientX
+        this.mse.y = event.clientY
     }
 }
 
