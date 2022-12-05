@@ -26,7 +26,6 @@ class LoopSlider {
 
   update(delta){
     this.offset = this.offset > -this.width ? this.offset - delta * 120 : 0
-    console.log(this.offset)
     this.planes.forEach((p, i) =>{
         p.relativeTranslation.x = this.offset
     })
