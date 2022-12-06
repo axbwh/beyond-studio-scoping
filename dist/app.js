@@ -631,7 +631,7 @@ class App {
             acceleration: 0.005,
             rotation: 0,
             morph: 0,
-            opacity: 1
+            opacity: 0
         };
         this.lastFrame = 0;
         this.frames = [];
@@ -825,6 +825,11 @@ class App {
         this.timeline.seek(this.timeline.duration * y);
     }
     onResize() {
+        this.inMenu && this.menuClose();
+        (0, _animejsDefault.default).set({
+            targets: this.container,
+            opacity: 1
+        });
         this.initTimeline();
         this.loopSlider && this.loopSlider.resize();
         this.height = window.innerHeight;
@@ -1034,6 +1039,13 @@ class App {
             (0, _animejsDefault.default).set("#preloader", {
                 display: "none"
             });
+        });
+        (0, _animejsDefault.default)({
+            targets: this.impulses,
+            opacity: 1,
+            duration: 1500,
+            delay: 1500,
+            easing: "easeInSine"
         });
         if (this.container.scrollTop > 10 || !this.fadeIn) this.startAnim(1500);
         else {
