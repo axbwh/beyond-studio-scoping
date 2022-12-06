@@ -16,6 +16,7 @@ import Fade from './fadeIn';
 import LoopSlider from './LoopSlider';
 import parseColor from 'parse-color';
 import Card from './card';
+import scrollToId from './scrollToId';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -760,8 +761,6 @@ class App {
         return delta
     }
 
-
-
     onRender(){
         this.stats.begin()
 
@@ -842,41 +841,7 @@ class App {
     }
 }
 
-
-scrollToId = () => {
-  let container = document.querySelector('.scrolldom')
-  if (container) {
-    document.querySelectorAll("a[href^='\#']").forEach((e) => {
-        let href = e.href.substring(e.href.lastIndexOf('#'))
-        if(href.length === 1){
-            e.addEventListener('click', () => {
-                anime({
-                    targets: container,
-                    scrollTop: 0,
-                    duration: container.scrollTop / 2,
-                    easing: 'easeInOutSine'
-                })
-            }) 
-        }else if(document.querySelector(href)){
-            e.addEventListener('click', () => {
-                let target = document.querySelector(href).offsetTop
-
-                anime({
-                    targets: container,
-                    scrollTop: target,
-                    duration: Math.abs(container.scrollTop -  target) / 2,
-                    easing: 'easeInOutSine'
-                })
-            })
-        }
-
-       
-
-    })
-  }
-}
-
-window.addEventListener('load', () => {
+const onReady = () => {
     let rotation = 0
     document.querySelectorAll('[rotation]').forEach( (e) => {
         rotation = !isNaN(e.getAttribute('rotation')) ? e.getAttribute('rotation') : rotation
@@ -889,4 +854,10 @@ window.addEventListener('load', () => {
     const app = new App()
     app.init()
     scrollToId()
-});
+}
+
+if (document.readyState !== 'loading') {
+  onReady()
+} else {
+  document.addEventListener('DOMContentLoaded', onReady)
+}

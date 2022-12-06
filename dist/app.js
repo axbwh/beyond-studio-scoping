@@ -565,6 +565,8 @@ var _parseColor = require("parse-color");
 var _parseColorDefault = parcelHelpers.interopDefault(_parseColor);
 var _card = require("./card");
 var _cardDefault = parcelHelpers.interopDefault(_card);
+var _scrollToId = require("./scrollToId");
+var _scrollToIdDefault = parcelHelpers.interopDefault(_scrollToId);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -1269,30 +1271,7 @@ class App {
         this.mse.y = event.clientY;
     }
 }
-scrollToId = ()=>{
-    let container = document.querySelector(".scrolldom");
-    if (container) document.querySelectorAll("a[href^='#']").forEach((e)=>{
-        let href = e.href.substring(e.href.lastIndexOf("#"));
-        if (href.length === 1) e.addEventListener("click", ()=>{
-            (0, _animejsDefault.default)({
-                targets: container,
-                scrollTop: 0,
-                duration: container.scrollTop / 2,
-                easing: "easeInOutSine"
-            });
-        });
-        else if (document.querySelector(href)) e.addEventListener("click", ()=>{
-            let target = document.querySelector(href).offsetTop;
-            (0, _animejsDefault.default)({
-                targets: container,
-                scrollTop: target,
-                duration: Math.abs(container.scrollTop - target) / 2,
-                easing: "easeInOutSine"
-            });
-        });
-    });
-};
-window.addEventListener("load", ()=>{
+const onReady = ()=>{
     let rotation = 0;
     document.querySelectorAll("[rotation]").forEach((e)=>{
         rotation = !isNaN(e.getAttribute("rotation")) ? e.getAttribute("rotation") : rotation;
@@ -1304,10 +1283,12 @@ window.addEventListener("load", ()=>{
     // create curtains instance
     const app = new App();
     app.init();
-    scrollToId();
-});
+    (0, _scrollToIdDefault.default)();
+};
+if (document.readyState !== "loading") onReady();
+else document.addEventListener("DOMContentLoaded", onReady);
 
-},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6","./fadeIn":"4u8SK","./LoopSlider":"jV6RD","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","./card":"aXwzR"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6","./fadeIn":"4u8SK","./LoopSlider":"jV6RD","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","./card":"aXwzR","./scrollToId":"eL6Au"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -62786,6 +62767,34 @@ var getPolyfill = require("./polyfill");
     return polyfill;
 };
 
-},{"define-properties":"6eq5U","./polyfill":"h00Nr"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"define-properties":"6eq5U","./polyfill":"h00Nr"}],"eL6Au":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+scrollToId = ()=>{
+    let container = document.querySelector(".scrolldom");
+    if (container) document.querySelectorAll("a[href^='#']").forEach((e)=>{
+        let href = e.href.substring(e.href.lastIndexOf("#"));
+        if (href.length === 1) e.addEventListener("click", ()=>{
+            anime({
+                targets: container,
+                scrollTop: 0,
+                duration: container.scrollTop / 2,
+                easing: "easeInOutSine"
+            });
+        });
+        else if (document.querySelector(href)) e.addEventListener("click", ()=>{
+            let target = document.querySelector(href).offsetTop;
+            anime({
+                targets: container,
+                scrollTop: target,
+                duration: Math.abs(container.scrollTop - target) / 2,
+                easing: "easeInOutSine"
+            });
+        });
+    });
+};
+exports.default = scrollToId;
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map
