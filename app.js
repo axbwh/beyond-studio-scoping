@@ -636,36 +636,48 @@ class App {
     }
 
     menuOpen(){
-        this.inMenu = true        
-        this.trans().finished.then( () => {
-            if(this.inMenu){
-                this.menuColors.mix = 1
-                anime({
-                    targets: this.hoverColors,
-                    a:"#040707",
-                    b:"#040707",
-                    c: "#040707",
-                    d: "#444",
-                    duration: 500,
-                })
-    
-                anime({
-                    targets: this.origin,
-                    x: window.innerWidth > window.innerHeight ? 1 : 0,
-                    y: window.innerWidth > window.innerHeight ? 0 : -1,
-                    size: window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth / 1.29,
-                    range: 0.3,
-                    duration: 1500,
-                    delay: 0,
-                    easing:"easeInOutExpo"
-                }).finished.then( () => {
-                    this.transition = false
-                })
-            }
+        this.inMenu = true
+        this.transition = true
+        this.impulses.opacity = 0      
+        this.menuColors.mix = 1
 
-
-
+        anime({
+            targets: this.hoverColors,
+            c:"#040707",
+            d:"#040707",
+            opacity: 1,
+            mix: 1,
+            duration: 1000,
+            easing: "easeInOutSine"
         })
+
+        anime({
+            targets: this.container,
+            opacity: 0,
+        })
+        
+        anime({
+            targets: this.hoverColors,
+            a:"#040707",
+            b:"#040707",
+            c: "#040707",
+            d: "#444",
+            duration: 500,
+        })
+
+        anime({
+            targets: this.origin,
+            x: window.innerWidth > window.innerHeight ? 1 : 0,
+            y: window.innerWidth > window.innerHeight ? 0 : -1,
+            size: window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth / 1.29,
+            range: 0.3,
+            duration: 1500,
+            delay: 0,
+            easing:"easeInOutExpo"
+        }).finished.then( () => {
+            this.transition = false
+        })
+
 
         anime.set('.burger-menu', {
             backgroundColor: "#00000000"
