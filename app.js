@@ -27,6 +27,7 @@ class App {
         this.mse = {x: 0, y: 0}
         this.y = 0
         this.height = window.innerHeight
+        this.transition = false
         // track scroll values
         this.scroll = {
             value: 0,
@@ -74,6 +75,7 @@ class App {
             acceleration: 0.005,
             rotation: 0,
             morph: 0,
+            opacity: 1
         }
 
         this.lastFrame = 0
@@ -392,6 +394,11 @@ class App {
                     name: 'uGradientOpacity',
                     type: '1f',
                     value: 0,
+                },
+                opacity:{
+                    name: 'uOpacity',
+                    type: '1f',
+                    value: 1,
                 }
             }
         })
@@ -436,15 +443,16 @@ class App {
 
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e) => {
             e.el.addEventListener('mouseenter', ()=> {
-                anime.set( this.hoverColors, {
+                
+                !this.transition && anime.set( this.hoverColors, {
                     ...this.hoverColors,
                     ...e.coord.hoverColors,
                     mix: 1
                 })
-
-               e.el.addEventListener('mouseleave', ()=>{
-                this.hoverColors.mix = 0
-               })
+            })
+            e.el.addEventListener('mouseleave', ()=>{
+                
+                if(!this.transition) this.hoverColors.mix = 0
             })
         })
 
@@ -457,6 +465,7 @@ class App {
                 this.impulses.morph = 1
             } )
         })
+
         this.preloader()
 
         this.activeFilters = []
@@ -497,6 +506,13 @@ class App {
         })
         // document.addEventListener('click', this.startAnim.bind(this))
         // window.addEventListener("scroll", this.startAnim.bind(this))
+
+        document.querySelectorAll('a:not([href^="#"])').forEach(e => {
+            e.addEventListener('click', event => {
+                event.preventDefault()
+                this.onPageChange(e.href)
+            })
+        })
        
     }
 
@@ -523,7 +539,7 @@ class App {
     }
 
     startAnim(delay = 0){
-        if(!this.origin.loaded){
+        if(!this.origin.loaded && !this.transition){
             anime({
                 targets: this.origin,
                 range: 1,
@@ -536,6 +552,48 @@ class App {
                document.removeEventListener('click', () => this.startAnim())
                this.container.removeEventListener("scroll", () => this.startAnim())
         }
+    }
+
+    onPageChange(href){
+        this.transition = true
+        anime({
+            targets: this.origin,
+            range:0,
+            duration: 1500,
+            x: 0,
+            y:0,
+            size: window.innerWidth > window.innerHeight ? window.innerHeight * 2.2: window.innerWidth * (2.2 /1.29),
+            easing: 'easeInOutExpo',
+        })
+
+        anime({
+            targets: this.hoverColors,
+            c:"#040707",
+            d:"#040707",
+            opacity: 1,
+            mix: 1,
+            duration: 1000,
+            easing: "easeInOutSine"
+        })
+
+        anime({
+            targets: this.container,
+            opacity: 0,
+        })
+
+        anime.set('#preloader', {
+            display: ''
+        })
+
+        this.impulses.opacity = 0
+
+        anime({
+            targets: '#preloader',
+            opacity: 1,
+            duration: 2000,
+            delay: 1500,
+            easing: 'easeInOutExpo',
+        }).finished.then(() => window.location.href = href)
     }
 
     onFlip(impulses){
@@ -567,6 +625,8 @@ class App {
         this.monitorPerformance(delta)
         return delta
     }
+
+
 
     onRender(){
         this.stats.begin()
@@ -624,6 +684,7 @@ class App {
         this.pass.uniforms.colD.value = lerpRgba(this.pass.uniforms.colD.value, colDtarget, delta * 1.5)
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5)
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta *1.5)
+        this.pass.uniforms.opacity.value = this.curtains.lerp(this.pass.uniforms.opacity.value, this.impulses.opacity, delta *3)
 
         if(this.fadeIn && this.fadeOut){
             this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4)

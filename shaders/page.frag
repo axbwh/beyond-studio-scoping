@@ -37,6 +37,7 @@ uniform vec2 uMouse;
 uniform float uTime;
 uniform float uGradientOpacity;
 uniform float uMorph;
+uniform float uOpacity;
 
 void main() {
     vec2 uv = vTextureCoord;
@@ -124,8 +125,8 @@ void main() {
     vec4 mixCol = mix(baseCol, defCol, alpha);
 
     vec4 bgCol = mix(uBgCol, puckGradient, uGradientOpacity);
-
-    mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0, 1.0));
+    mixCol.a *= uOpacity;
+    mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0 , 1.0));
     mixCol = mix( gradient, mixCol, mixCol.a); // gradient
     mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875 * uMorph); // highlights
 
