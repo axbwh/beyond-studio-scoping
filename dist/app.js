@@ -970,7 +970,8 @@ class App {
             });
             e.el.addEventListener("mouseleave", ()=>{
                 !this.transition && (0, _animejsDefault.default).set(this.hoverColors, {
-                    ...this.menuColors
+                    ...this.menuColors,
+                    mix: this.inMenu ? 1 : 0
                 });
             });
         });

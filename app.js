@@ -467,7 +467,8 @@ class App {
             e.el.addEventListener('mouseleave', ()=>{
                 
                 !this.transition && anime.set( this.hoverColors, {
-                    ...this.menuColors
+                    ...this.menuColors,
+                    mix: this.inMenu ? 1 : 0,
                 })
             })
         })
