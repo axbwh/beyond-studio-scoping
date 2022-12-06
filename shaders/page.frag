@@ -93,9 +93,9 @@ void main() {
     gradient.b = clamp(gradient.b, 0.0, 0.85);
     vec4 puckGradient = mix(uColC, uColD, noise);
     puckGradient = mix(puckGradient, uBgCol, black);
-    puckGradient.r = clamp(gradient.r, 0.0, 0.85);
-    puckGradient.g = clamp(gradient.g, 0.0, 0.85);
-    puckGradient.b = clamp(gradient.b, 0.0, 0.85);
+    puckGradient.r = clamp(puckGradient.r, 0.0, 0.85);
+    puckGradient.g = clamp(puckGradient.g, 0.0, 0.85);
+    puckGradient.b = clamp(puckGradient.b, 0.0, 0.85);
     //
 
 
