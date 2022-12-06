@@ -580,6 +580,7 @@ class App {
         this.y = 0;
         this.height = window.innerHeight;
         this.transition = false;
+        this.inMenu = false;
         // track scroll values
         this.scroll = {
             value: 0,
@@ -616,6 +617,14 @@ class App {
             c: "#F198C0",
             d: "#61FCC4",
             opacity: 0,
+            mix: 0
+        };
+        this.menuColors = {
+            a: "#040707",
+            b: "#040707",
+            c: "#040707",
+            d: "#444",
+            opacity: 1,
             mix: 0
         };
         this.impulses = {
@@ -697,6 +706,10 @@ class App {
             };
         }) // iterate backwards through array to reset colors to first value
         ;
+        this.hoverColors = {
+            ...this.hoverColors,
+            ...this.colors
+        };
         let timeline = (0, _animejsDefault.default).timeline({
             targets: this.axes,
             easing: "linear",
@@ -956,7 +969,9 @@ class App {
                 });
             });
             e.el.addEventListener("mouseleave", ()=>{
-                if (!this.transition) this.hoverColors.mix = 0;
+                !this.transition && (0, _animejsDefault.default).set(this.hoverColors, {
+                    ...this.menuColors
+                });
             });
         });
         document.querySelectorAll("a").forEach((e)=>{
@@ -995,13 +1010,16 @@ class App {
                 this.onResize();
             });
         });
-        // document.addEventListener('click', this.startAnim.bind(this))
-        // window.addEventListener("scroll", this.startAnim.bind(this))
         document.querySelectorAll('a:not([href^="#"])').forEach((e)=>{
             e.addEventListener("click", (event)=>{
                 event.preventDefault();
                 this.onPageChange(e.href);
             });
+        });
+        document.querySelector("#menu-trigger").addEventListener("click", (event)=>{
+            event.preventDefault();
+            if (this.inMenu) this.menuClose();
+            else this.menuOpen();
         });
     }
     preloader() {
@@ -1036,17 +1054,9 @@ class App {
             this.container.removeEventListener("scroll", ()=>this.startAnim());
         }
     }
-    onPageChange(href) {
+    trans() {
         this.transition = true;
-        (0, _animejsDefault.default)({
-            targets: this.origin,
-            range: 0,
-            duration: 1500,
-            x: 0,
-            y: 0,
-            size: window.innerWidth > window.innerHeight ? window.innerHeight * 2.2 : window.innerWidth * (2.2 / 1.29),
-            easing: "easeInOutExpo"
-        });
+        this.impulses.opacity = 0;
         (0, _animejsDefault.default)({
             targets: this.hoverColors,
             c: "#040707",
@@ -1060,10 +1070,27 @@ class App {
             targets: this.container,
             opacity: 0
         });
+        return (0, _animejsDefault.default)({
+            targets: this.origin,
+            range: 0,
+            duration: 1500,
+            x: 0,
+            y: 0,
+            size: window.innerWidth > window.innerHeight ? window.innerHeight * 2.2 : window.innerWidth * (2.2 / 1.29),
+            easing: "easeInOutExpo"
+        });
+    }
+    onPageChange(href) {
+        this.trans();
+        (0, _animejsDefault.default)({
+            targets: ".burger-menu",
+            opacity: 0,
+            duration: 1500,
+            easing: "easeInOutExpo"
+        });
         (0, _animejsDefault.default).set("#preloader", {
             display: ""
         });
-        this.impulses.opacity = 0;
         (0, _animejsDefault.default)({
             targets: "#preloader",
             opacity: 1,
@@ -1071,6 +1098,61 @@ class App {
             delay: 1500,
             easing: "easeInOutExpo"
         }).finished.then(()=>window.location.href = href);
+    }
+    menuOpen() {
+        this.inMenu = true;
+        this.trans().finished.then(()=>{
+            if (this.inMenu) {
+                this.menuColors.mix = 1;
+                (0, _animejsDefault.default)({
+                    targets: this.hoverColors,
+                    a: "#040707",
+                    b: "#040707",
+                    c: "#040707",
+                    d: "#444",
+                    duration: 500
+                });
+                (0, _animejsDefault.default)({
+                    targets: this.origin,
+                    x: window.innerWidth > window.innerHeight ? 1 : 0,
+                    y: window.innerWidth > window.innerHeight ? 0 : -1,
+                    size: window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth / 1.29,
+                    range: 0.3,
+                    duration: 1500,
+                    delay: 0,
+                    easing: "easeInOutExpo"
+                }).finished.then(()=>{
+                    this.transition = false;
+                });
+            }
+        });
+        (0, _animejsDefault.default).set(".burger-menu", {
+            backgroundColor: "#00000000"
+        });
+    }
+    menuClose() {
+        this.transition = true;
+        this.inMenu = false;
+        this.impulses.opacity = 1;
+        (0, _animejsDefault.default)({
+            targets: this.hoverColors,
+            ...this.menuColors,
+            mix: 0,
+            duration: 1000,
+            easing: "easeInOutSine"
+        });
+        (0, _animejsDefault.default)({
+            targets: this.container,
+            opacity: 1
+        });
+        (0, _animejsDefault.default)({
+            targets: this.origin,
+            range: 1,
+            duration: 2000,
+            easing: "easeOutBounce"
+        }).finished.then(()=>{
+            this.transition = false;
+        });
     }
     onFlip(impulses) {
         impulses.rotation += 180;

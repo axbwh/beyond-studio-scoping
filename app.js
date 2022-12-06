@@ -28,6 +28,7 @@ class App {
         this.y = 0
         this.height = window.innerHeight
         this.transition = false
+        this.inMenu = false
         // track scroll values
         this.scroll = {
             value: 0,
@@ -69,6 +70,15 @@ class App {
             d: "#61FCC4",
             opacity: 0,
             mix: 0
+        }
+
+        this.menuColors = {
+            a: '#040707',
+            b: '#040707',
+            c: '#040707',
+            d: "#444",
+            opacity: 1,
+            mix: 0,
         }
 
         this.impulses = {
@@ -151,6 +161,10 @@ class App {
             }
         }) // iterate backwards through array to reset colors to first value
 
+        this.hoverColors = {
+            ...this.hoverColors,
+            ...this.colors
+        }
 
 
         let timeline = anime.timeline({
@@ -452,7 +466,9 @@ class App {
             })
             e.el.addEventListener('mouseleave', ()=>{
                 
-                if(!this.transition) this.hoverColors.mix = 0
+                !this.transition && anime.set( this.hoverColors, {
+                    ...this.menuColors
+                })
             })
         })
 
@@ -504,14 +520,24 @@ class App {
                 
             })
         })
-        // document.addEventListener('click', this.startAnim.bind(this))
-        // window.addEventListener("scroll", this.startAnim.bind(this))
+
 
         document.querySelectorAll('a:not([href^="#"])').forEach(e => {
             e.addEventListener('click', event => {
                 event.preventDefault()
                 this.onPageChange(e.href)
             })
+        })
+
+        document.querySelector('#menu-trigger').addEventListener('click', (event) =>{
+            event.preventDefault()
+
+            if (this.inMenu){
+                this.menuClose()
+            }else{
+                this.menuOpen()
+            }
+            
         })
        
     }
@@ -554,17 +580,10 @@ class App {
         }
     }
 
-    onPageChange(href){
+    trans(){
         this.transition = true
-        anime({
-            targets: this.origin,
-            range:0,
-            duration: 1500,
-            x: 0,
-            y:0,
-            size: window.innerWidth > window.innerHeight ? window.innerHeight * 2.2: window.innerWidth * (2.2 /1.29),
-            easing: 'easeInOutExpo',
-        })
+
+        this.impulses.opacity = 0
 
         anime({
             targets: this.hoverColors,
@@ -581,11 +600,30 @@ class App {
             opacity: 0,
         })
 
+        return anime({
+            targets: this.origin,
+            range:0,
+            duration: 1500,
+            x: 0,
+            y: 0,
+            size: window.innerWidth > window.innerHeight ? window.innerHeight * 2.2: window.innerWidth * (2.2 /1.29),
+            easing: 'easeInOutExpo',
+        })
+    }
+
+    
+    onPageChange(href){
+        this.trans()
+        anime({
+            targets: '.burger-menu',
+            opacity: 0,
+            duration: 1500,
+            easing: 'easeInOutExpo'
+        })
+
         anime.set('#preloader', {
             display: ''
         })
-
-        this.impulses.opacity = 0
 
         anime({
             targets: '#preloader',
@@ -594,6 +632,72 @@ class App {
             delay: 1500,
             easing: 'easeInOutExpo',
         }).finished.then(() => window.location.href = href)
+    }
+
+    menuOpen(){
+        this.inMenu = true        
+        this.trans().finished.then( () => {
+            if(this.inMenu){
+                this.menuColors.mix = 1
+                anime({
+                    targets: this.hoverColors,
+                    a:"#040707",
+                    b:"#040707",
+                    c: "#040707",
+                    d: "#444",
+                    duration: 500,
+                })
+    
+                anime({
+                    targets: this.origin,
+                    x: window.innerWidth > window.innerHeight ? 1 : 0,
+                    y: window.innerWidth > window.innerHeight ? 0 : -1,
+                    size: window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth / 1.29,
+                    range: 0.3,
+                    duration: 1500,
+                    delay: 0,
+                    easing:"easeInOutExpo"
+                }).finished.then( () => {
+                    this.transition = false
+                })
+            }
+
+
+
+        })
+
+        anime.set('.burger-menu', {
+            backgroundColor: "#00000000"
+        })
+    }
+
+    menuClose(){
+        this.transition = true
+        this.inMenu = false
+
+        this.impulses.opacity = 1
+
+        anime({
+            targets: this.hoverColors,
+            ...this.menuColors,
+            mix: 0,
+            duration: 1000,
+            easing: "easeInOutSine"
+        })
+
+        anime({
+            targets: this.container,
+            opacity: 1,
+        })
+
+       anime({
+            targets: this.origin,
+            range:1,
+            duration: 2000,
+            easing: 'easeOutBounce'
+        }).finished.then( () =>{
+            this.transition = false
+        })
     }
 
     onFlip(impulses){
