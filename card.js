@@ -5,12 +5,14 @@ import lineFrag from './shaders/line.frag'
 import {TextTexture} from './TextTexture';
 import parseColor from 'parse-color';
 import { lerpRgba, mapClamp } from './utils';
+import { throws } from 'assert';
 
 class Card {
   constructor(curtains, el, target) {
     this.planes = []
     this.el = el
     this.curtains = curtains
+    this.target = target
     this.rotation = {x: 0, y: 0}
     this.hover = false
     this.color = parseColor(window.getComputedStyle(el.querySelector('.divider:not(.card-hover)')).backgroundColor).rgba.map((x,i) => i < 3 ? x/255 : x)
@@ -71,7 +73,7 @@ class Card {
             e.style.display = 'none'
         })
 
-
+        this.createSvg()
         this.resize()
         this.el.addEventListener('mouseenter', () => {
             this.hover = true
@@ -80,9 +82,49 @@ class Card {
         this.el.addEventListener('mouseleave', () =>{
             this.hover = false
         })
+
+       
+
+        
+  }
+
+  createSvg(){
+    this.svg = this.el.querySelector('svg')
+    this.canvas = document.createElement("canvas")
+    this.context = this.canvas.getContext("2d");
+    let pathString = this.svg.querySelector('path').getAttribute('d')
+
+    let i = this.planes.length
+    this.planes[i] = new Plane(this.curtains, this.svg, {
+        vertexShader: textShader.vs,
+        fragmentShader: textShader.fs,
+      })
+
+    this.svgPlane = i
+
+    this.sizeSvg()    
+
+    let p = new Path2D(pathString)
+    this.context.fillStyle = window.getComputedStyle(this.el.querySelector('.card-hover')).backgroundColor
+    this.context.fill(p)
+
+    this.planes[i].loadCanvas(this.canvas, {sampler: "uTexture"})
+    this.planes[i].setRenderTarget(this.target)
+    this.svg.style.opacity = 0 
+  }
+
+  sizeSvg(){
+    let rect = this.planes[this.svgPlane].getBoundingRect()
+    this.canvas.width = rect.width
+    this.canvas.height = rect.height
+    this.context.width = rect.width
+    this.context.height = rect.height
   }
 
   resize(){
+
+    //this.sizeSvg()
+
     let cardRect = this.el.getBoundingClientRect()
     let center = {
         x: (cardRect.left + cardRect.width /2) * this.curtains.pixelRatio,
