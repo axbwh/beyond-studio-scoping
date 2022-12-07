@@ -258,7 +258,7 @@ export class TextTexture {
 
         this.context.font = this.content.style.fontStyle + " " + this.content.style.fontWeight + " " + Math.floor(parseFloat(this.content.style.fontSize)) * this.plane.renderer.pixelRatio + "px " + this.content.style.fontFamily;
 
-        this.context.lineHeight = Math.floor(this.content.style.lineHeight);
+        this.context.lineHeight = this.content.style.lineHeight;
 
         const startingPos = this.content.innerBoundingRect.left ;
 
@@ -272,7 +272,7 @@ export class TextTexture {
 
         // top position needs to be adjusted based on line height and font size
         const lineHeightRatio = lineHeight / fontSize;
-        let adjustTopPos = fontSize * 0.1 + (lineHeightRatio - 1) * fontSize * 0.5;
+        let adjustTopPos = fontSize * 0 + (lineHeightRatio - 1) * fontSize * 0.5;
 
         // safari seems to handle this differently!
         if(navigator.userAgent.indexOf('Safari') !== -1 && navigator.userAgent.indexOf('Chrome') === -1) {

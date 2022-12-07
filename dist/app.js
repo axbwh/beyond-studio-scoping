@@ -1190,7 +1190,7 @@ class App {
         this.frames[this.frames.length] = delta;
         if (this.frames.length >= 45) {
             let total = this.frames.reduce((acc, val)=>acc + val);
-            if (total / 45 > 1 / 30 && this.pixelRatio > 0.7) {
+            if (total / 45 > 1 / 30 && this.pixelRatio > 0.8) {
                 let minus = total / 45 > 1 / 15 ? 0.3 : 0.1;
                 this.pixelRatio = this.pixelRatio - minus;
                 // anime.set(this.container, {
@@ -8672,7 +8672,7 @@ class TextTexture {
         this.context.fillStyle = this.content.style.color;
         this.context.strokeStyle = this.content.style.color;
         this.context.font = this.content.style.fontStyle + " " + this.content.style.fontWeight + " " + Math.floor(parseFloat(this.content.style.fontSize)) * this.plane.renderer.pixelRatio + "px " + this.content.style.fontFamily;
-        this.context.lineHeight = Math.floor(this.content.style.lineHeight);
+        this.context.lineHeight = this.content.style.lineHeight;
         const startingPos = this.content.innerBoundingRect.left;
         const lineHeight = Math.floor(parseFloat(this.content.style.lineHeight) * this.pixelRatio);
         const fontSize = Math.floor(parseFloat(this.content.style.fontSize) * this.pixelRatio);
@@ -8681,7 +8681,7 @@ class TextTexture {
         this.context.textBaseline = "top";
         // top position needs to be adjusted based on line height and font size
         const lineHeightRatio = lineHeight / fontSize;
-        let adjustTopPos = fontSize * 0.1 + (lineHeightRatio - 1) * fontSize * 0.5;
+        let adjustTopPos = fontSize * 0 + (lineHeightRatio - 1) * fontSize * 0.5;
         // safari seems to handle this differently!
         if (navigator.userAgent.indexOf("Safari") !== -1 && navigator.userAgent.indexOf("Chrome") === -1) adjustTopPos = (lineHeightRatio - 1.4) * fontSize / 2;
         const position = {
