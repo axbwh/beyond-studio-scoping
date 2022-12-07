@@ -567,6 +567,9 @@ var _card = require("./card");
 var _cardDefault = parcelHelpers.interopDefault(_card);
 var _scrollToId = require("./scrollToId");
 var _scrollToIdDefault = parcelHelpers.interopDefault(_scrollToId);
+var _detectGpu = require("detect-gpu");
+var _fallbackSlider = require("./fallbackSlider");
+var _fallbackSliderDefault = parcelHelpers.interopDefault(_fallbackSlider);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -1271,7 +1274,7 @@ class App {
         this.mse.y = event.clientY;
     }
 }
-const onReady = ()=>{
+const onReady = async ()=>{
     let rotation = 0;
     document.querySelectorAll("[rotation]").forEach((e)=>{
         rotation = !isNaN(e.getAttribute("rotation")) ? e.getAttribute("rotation") : rotation;
@@ -1280,15 +1283,39 @@ const onReady = ()=>{
             rotation = e.getAttribute("rotation");
         }
     });
-    // create curtains instance
-    const app = new App();
-    app.init();
+    document.querySelectorAll("#hover-slider-trigger a").forEach((e)=>{
+        e.removeAttribute("href");
+    });
+    let GPUTier = await (0, _detectGpu.getGPUTier)();
+    if (GPUTier.tier > 0) {
+        // create curtains instance
+        const app = new App();
+        app.init();
+    } else fallback();
     (0, _scrollToIdDefault.default)();
+};
+const fallback = ()=>{
+    (0, _animejsDefault.default)({
+        targets: "#preloader",
+        opacity: 0,
+        duration: 2000,
+        delay: 500,
+        easing: "easeInSine"
+    }).finished.then(()=>{
+        (0, _animejsDefault.default).set("#preloader", {
+            display: "none"
+        });
+    });
+    const slider = document.getElementById("slider") ? new (0, _fallbackSliderDefault.default)(document.getElementById("slider"), document.getElementById("slider-dom"), document.getElementById("slider-trigger")) : false;
+    slider && slider.init();
+    document.querySelectorAll(".section:not(:first-child)").forEach((e)=>{
+        e.style.backgroundColor = "#040707";
+    });
 };
 if (document.readyState !== "loading") onReady();
 else document.addEventListener("DOMContentLoaded", onReady);
 
-},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6","./fadeIn":"4u8SK","./LoopSlider":"jV6RD","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","./card":"aXwzR","./scrollToId":"eL6Au"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","./TextTexture":"foCCV","./textShader":"l7Abs","./3d":"didBu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","./utils":"bIDtH","./slider":"807TH","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","./hoverSlider":"4BH5P","stats.js":"9lwC6","./fadeIn":"4u8SK","./LoopSlider":"jV6RD","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","./card":"aXwzR","./scrollToId":"eL6Au","detect-gpu":"dAC0i","./fallbackSlider":"6rQRb"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -58676,6 +58703,9 @@ class HoverSlider {
         this.plane = new (0, _curtainsjs.Plane)(this.curtains, this.element, this.params) // create a plane for our slider
         ;
         this.plane.setRenderTarget(target);
+        this.triggers.forEach((e, i)=>{
+        // e.removeAttribute("href")
+        });
         //this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
         this.plane.onLoading((texture)=>{
             // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
@@ -62770,12 +62800,14 @@ var getPolyfill = require("./polyfill");
 },{"define-properties":"6eq5U","./polyfill":"h00Nr"}],"eL6Au":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
+var _animejs = require("animejs");
+var _animejsDefault = parcelHelpers.interopDefault(_animejs);
 scrollToId = ()=>{
     let container = document.querySelector(".scrolldom");
     if (container) document.querySelectorAll("a[href^='#']").forEach((e)=>{
         let href = e.href.substring(e.href.lastIndexOf("#"));
         if (href.length === 1) e.addEventListener("click", ()=>{
-            anime({
+            (0, _animejsDefault.default)({
                 targets: container,
                 scrollTop: 0,
                 duration: container.scrollTop / 2,
@@ -62784,7 +62816,7 @@ scrollToId = ()=>{
         });
         else if (document.querySelector(href)) e.addEventListener("click", ()=>{
             let target = document.querySelector(href).offsetTop;
-            anime({
+            (0, _animejsDefault.default)({
                 targets: container,
                 scrollTop: target,
                 duration: Math.abs(container.scrollTop - target) / 2,
@@ -62795,6 +62827,531 @@ scrollToId = ()=>{
 };
 exports.default = scrollToId;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","animejs":"jokr5"}],"dAC0i":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "getGPUTier", ()=>f);
+function e(e, t, n, r) {
+    return new (n || (n = Promise))(function(o, a) {
+        function i(e) {
+            try {
+                d(r.next(e));
+            } catch (e1) {
+                a(e1);
+            }
+        }
+        function c(e) {
+            try {
+                d(r.throw(e));
+            } catch (e1) {
+                a(e1);
+            }
+        }
+        function d(e) {
+            var t;
+            e.done ? o(e.value) : (t = e.value, t instanceof n ? t : new n(function(e) {
+                e(t);
+            })).then(i, c);
+        }
+        d((r = r.apply(e, t || [])).next());
+    });
+}
+const t = [
+    "geforce 320m",
+    "geforce 8600",
+    "geforce 8600m gt",
+    "geforce 8800 gs",
+    "geforce 8800 gt",
+    "geforce 9400",
+    "geforce 9400m g",
+    "geforce 9400m",
+    "geforce 9600m gt",
+    "geforce 9600m",
+    "geforce fx go5200",
+    "geforce gt 120",
+    "geforce gt 130",
+    "geforce gt 330m",
+    "geforce gtx 285",
+    "google swiftshader",
+    "intel g41",
+    "intel g45",
+    "intel gma 4500mhd",
+    "intel gma x3100",
+    "intel hd 3000",
+    "intel q45",
+    "legacy",
+    "mali-2",
+    "mali-3",
+    "mali-4",
+    "quadro fx 1500",
+    "quadro fx 4",
+    "quadro fx 5",
+    "radeon hd 2400",
+    "radeon hd 2600",
+    "radeon hd 4670",
+    "radeon hd 4850",
+    "radeon hd 4870",
+    "radeon hd 5670",
+    "radeon hd 5750",
+    "radeon hd 6290",
+    "radeon hd 6300",
+    "radeon hd 6310",
+    "radeon hd 6320",
+    "radeon hd 6490m",
+    "radeon hd 6630m",
+    "radeon hd 6750m",
+    "radeon hd 6770m",
+    "radeon hd 6970m",
+    "sgx 543",
+    "sgx543"
+];
+function n(e) {
+    return e = e.toLowerCase().replace(/.*angle ?\((.+)\)(?: on vulkan [0-9.]+)?$/i, "$1").replace(/\s(\d{1,2}gb|direct3d.+$)|\(r\)| \([^)]+\)$/g, "").replace(/(?:vulkan|opengl) \d+\.\d+(?:\.\d+)?(?: \((.*)\))?/, "$1");
+}
+const r = "undefined" == typeof window, o = (()=>{
+    if (r) return;
+    const { userAgent: e , platform: t , maxTouchPoints: n  } = window.navigator, o = /(iphone|ipod|ipad)/i.test(e), a = "iPad" === t || "MacIntel" === t && n > 0 && !window.MSStream;
+    return {
+        isIpad: a,
+        isMobile: /android/i.test(e) || o || a,
+        isSafari12: /Version\/12.+Safari/.test(e)
+    };
+})();
+function a(e, t, n) {
+    if (!n) return [
+        t
+    ];
+    const r = function(e) {
+        const t = "\n    precision highp float;\n    attribute vec3 aPosition;\n    varying float vvv;\n    void main() {\n      vvv = 0.31622776601683794;\n      gl_Position = vec4(aPosition, 1.0);\n    }\n  ", n = "\n    precision highp float;\n    varying float vvv;\n    void main() {\n      vec4 enc = vec4(1.0, 255.0, 65025.0, 16581375.0) * vvv;\n      enc = fract(enc);\n      enc -= enc.yzww * vec4(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0);\n      gl_FragColor = enc;\n    }\n  ", r = e.createShader(35633), o = e.createShader(35632), a = e.createProgram();
+        if (!(o && r && a)) return;
+        e.shaderSource(r, t), e.shaderSource(o, n), e.compileShader(r), e.compileShader(o), e.attachShader(a, r), e.attachShader(a, o), e.linkProgram(a), e.detachShader(a, r), e.detachShader(a, o), e.deleteShader(r), e.deleteShader(o), e.useProgram(a);
+        const i = e.createBuffer();
+        e.bindBuffer(34962, i), e.bufferData(34962, new Float32Array([
+            -1,
+            -1,
+            0,
+            3,
+            -1,
+            0,
+            -1,
+            3,
+            0
+        ]), 35044);
+        const c = e.getAttribLocation(a, "aPosition");
+        e.vertexAttribPointer(c, 3, 5126, !1, 0, 0), e.enableVertexAttribArray(c), e.clearColor(1, 1, 1, 1), e.clear(16384), e.viewport(0, 0, 1, 1), e.drawArrays(4, 0, 3);
+        const d = new Uint8Array(4);
+        return e.readPixels(0, 0, 1, 1, 6408, 5121, d), e.deleteProgram(a), e.deleteBuffer(i), d.join("");
+    }(e), a = "801621810", i = "8016218135", c = "80162181161", d = (null == o ? void 0 : o.isIpad) ? [
+        [
+            "a7",
+            c,
+            12
+        ],
+        [
+            "a8",
+            i,
+            15
+        ],
+        [
+            "a8x",
+            i,
+            15
+        ],
+        [
+            "a9",
+            i,
+            15
+        ],
+        [
+            "a9x",
+            i,
+            15
+        ],
+        [
+            "a10",
+            i,
+            15
+        ],
+        [
+            "a10x",
+            i,
+            15
+        ],
+        [
+            "a12",
+            a,
+            15
+        ],
+        [
+            "a12x",
+            a,
+            15
+        ],
+        [
+            "a12z",
+            a,
+            15
+        ],
+        [
+            "a14",
+            a,
+            15
+        ],
+        [
+            "m1",
+            a,
+            15
+        ]
+    ] : [
+        [
+            "a7",
+            c,
+            12
+        ],
+        [
+            "a8",
+            i,
+            12
+        ],
+        [
+            "a9",
+            i,
+            15
+        ],
+        [
+            "a10",
+            i,
+            15
+        ],
+        [
+            "a11",
+            a,
+            15
+        ],
+        [
+            "a12",
+            a,
+            15
+        ],
+        [
+            "a13",
+            a,
+            15
+        ],
+        [
+            "a14",
+            a,
+            15
+        ]
+    ];
+    let l;
+    "80162181255" === r ? l = d.filter(([, , e])=>e >= 14) : (l = d.filter(([, e])=>e === r), l.length || (l = d));
+    return l.map(([e])=>`apple ${e} gpu`);
+}
+class i extends Error {
+    constructor(e){
+        super(e), Object.setPrototypeOf(this, new.target.prototype);
+    }
+}
+const c = [], d = [];
+function l(e, t) {
+    if (e === t) return 0;
+    const n = e;
+    e.length > t.length && (e = t, t = n);
+    let r = e.length, o = t.length;
+    for(; r > 0 && e.charCodeAt(~-r) === t.charCodeAt(~-o);)r--, o--;
+    let a, i = 0;
+    for(; i < r && e.charCodeAt(i) === t.charCodeAt(i);)i++;
+    if (r -= i, o -= i, 0 === r) return o;
+    let l, s, f = 0, u = 0, h = 0;
+    for(; u < r;)d[u] = e.charCodeAt(i + u), c[u] = ++u;
+    for(; h < o;)for(a = t.charCodeAt(i + h), l = h++, f = h, u = 0; u < r; u++)s = a === d[u] ? l : l + 1, l = c[u], f = c[u] = l > f ? s > f ? f + 1 : s : s > l ? l + 1 : s;
+    return f;
+}
+function s(e) {
+    return null != e;
+}
+const f = ({ mobileTiers: c = [
+    0,
+    15,
+    30,
+    60
+] , desktopTiers: d = [
+    0,
+    15,
+    30,
+    60
+] , override: f = {} , glContext: u , failIfMajorPerformanceCaveat: h = !1 , benchmarksURL: g = "https://unpkg.com/detect-gpu@5.0.1/dist/benchmarks"  } = {})=>e(void 0, void 0, void 0, function*() {
+        const p = {};
+        if (r) return {
+            tier: 0,
+            type: "SSR"
+        };
+        const { isIpad: m = !!(null == o ? void 0 : o.isIpad) , isMobile: v = !!(null == o ? void 0 : o.isMobile) , screenSize: w = window.screen , loadBenchmarks: x = (t)=>e(void 0, void 0, void 0, function*() {
+                const e = yield fetch(`${g}/${t}`).then((e)=>e.json());
+                if (parseInt(e.shift().split(".")[0], 10) < 4) throw new i("Detect GPU benchmark data is out of date. Please update to version 4x");
+                return e;
+            })  } = f;
+        let { renderer: A  } = f;
+        const P = (e, t, n, r, o)=>({
+                device: o,
+                fps: r,
+                gpu: n,
+                isMobile: v,
+                tier: e,
+                type: t
+            });
+        let b, S = "";
+        if (A) A = n(A), b = [
+            A
+        ];
+        else {
+            const e1 = u || function(e, t = !1) {
+                const n = {
+                    alpha: !1,
+                    antialias: !1,
+                    depth: !1,
+                    failIfMajorPerformanceCaveat: t,
+                    powerPreference: "high-performance",
+                    stencil: !1
+                };
+                e && delete n.powerPreference;
+                const r = window.document.createElement("canvas"), o = r.getContext("webgl", n) || r.getContext("experimental-webgl", n);
+                return null != o ? o : void 0;
+            }(null == o ? void 0 : o.isSafari12, h);
+            if (!e1) return P(0, "WEBGL_UNSUPPORTED");
+            const t1 = e1.getExtension("WEBGL_debug_renderer_info");
+            if (t1 && (A = e1.getParameter(t1.UNMASKED_RENDERER_WEBGL)), !A) return P(1, "FALLBACK");
+            S = A, A = n(A), b = function(e, t, n) {
+                return "apple gpu" === t ? a(e, t, n) : [
+                    t
+                ];
+            }(e1, A, v);
+        }
+        const y = (yield Promise.all(b.map(function(t) {
+            var n;
+            return e(this, void 0, void 0, function*() {
+                const e = ((e)=>{
+                    const t = v ? [
+                        "adreno",
+                        "apple",
+                        "mali-t",
+                        "mali",
+                        "nvidia",
+                        "powervr",
+                        "samsung"
+                    ] : [
+                        "intel",
+                        "apple",
+                        "amd",
+                        "radeon",
+                        "nvidia",
+                        "geforce"
+                    ];
+                    for (const n of t)if (e.includes(n)) return n;
+                })(t);
+                if (!e) return;
+                const r = `${v ? "m" : "d"}-${e}${m ? "-ipad" : ""}.json`, o = p[r] = null !== (n = p[r]) && void 0 !== n ? n : x(r);
+                let a;
+                try {
+                    a = yield o;
+                } catch (e1) {
+                    if (e1 instanceof i) throw e1;
+                    return;
+                }
+                const c = function(e) {
+                    var t;
+                    const n = (e = e.replace(/\([^)]+\)/, "")).match(/\d+/) || e.match(/(\W|^)([A-Za-z]{1,3})(\W|$)/g);
+                    return null !== (t = null == n ? void 0 : n.join("").replace(/\W|amd/g, "")) && void 0 !== t ? t : "";
+                }(t);
+                let d = a.filter(([, e])=>e === c);
+                d.length || (d = a.filter(([e])=>e.includes(t)));
+                const s = d.length;
+                if (0 === s) return;
+                const f = t.split(/[.,()\[\]/\s]/g).sort().filter((e, t, n)=>0 === t || e !== n[t - 1]).join(" ");
+                let u, [h, , , , g] = s > 1 ? d.map((e)=>[
+                        e,
+                        l(f, e[2])
+                    ]).sort(([, e], [, t])=>e - t)[0][0] : d[0], A = Number.MAX_VALUE;
+                const { devicePixelRatio: P  } = window, b = w.width * P * w.height * P;
+                for (const e2 of g){
+                    const [t1, n1] = e2, r1 = t1 * n1, o1 = Math.abs(b - r1);
+                    o1 < A && (A = o1, u = e2);
+                }
+                if (!u) return;
+                const [, , S, y] = u;
+                return [
+                    A,
+                    S,
+                    h,
+                    y
+                ];
+            });
+        }))).filter(s).sort(([e = Number.MAX_VALUE, t], [n = Number.MAX_VALUE, r])=>e === n ? t - r : e - n);
+        if (!y.length) {
+            const e2 = t.find((e)=>A.includes(e));
+            return e2 ? P(0, "BLOCKLISTED", e2) : P(1, "FALLBACK", `${A} (${S})`);
+        }
+        const [, C, E, L] = y[0];
+        if (-1 === C) return P(0, "BLOCKLISTED", E, C, L);
+        const M = v ? c : d;
+        let $ = 0;
+        for(let e3 = 0; e3 < M.length; e3++)C >= M[e3] && ($ = e3);
+        return P($, "BENCHMARK", E, C, L);
+    });
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"6rQRb":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _animejs = require("animejs");
+var _animejsDefault = parcelHelpers.interopDefault(_animejs);
+class FallbackSlider {
+    constructor(el, dom, trigger){
+        this.element = el;
+        this.dom = dom;
+        this.triggers = [
+            ...trigger.querySelectorAll(".slider-dot")
+        ];
+        this.num = [
+            ...trigger.querySelectorAll(".text-sml")
+        ];
+        this.doms = [
+            ...this.dom.querySelectorAll(".cms-item")
+        ];
+        this.images = this.element.querySelectorAll("img");
+        this.element.style.display = "none";
+        // here we will handle which texture is visible and the timer to transition between images
+        this.state = {
+            activeIndex: 0,
+            nextIndex: 1,
+            maxTextures: this.images.length,
+            isChanging: false,
+            transitionTimer: 0
+        };
+    }
+    init(target, callback) {
+        this.doms.forEach((e, i)=>{
+            if (i != this.state.activeIndex) {
+                (0, _animejsDefault.default).set(e.querySelectorAll("p, h3"), {
+                    opacity: 0,
+                    translateY: "4vh"
+                });
+                (0, _animejsDefault.default).set(e.querySelectorAll(".img"), {
+                    opacity: 0
+                });
+            }
+        }) // hide sliders
+        ;
+        this.num[2].innerText = this.state.maxTextures;
+        this.triggers.forEach((e, i)=>{
+            e.addEventListener("click", ()=>{
+                this.onClick(i);
+            });
+        });
+    }
+    onClick(i) {
+        if (!this.state.isChanging) {
+            // enable drawing for now
+            //curtains.enableDrawing();
+            this.state.isChanging = true;
+            if (i < 1) {
+                // check what will be next image
+                if (this.state.activeIndex < this.state.maxTextures - 1) this.state.nextIndex = this.state.activeIndex + 1;
+                else this.state.nextIndex = 0;
+            } else if (this.state.activeIndex > 0) this.state.nextIndex = this.state.activeIndex - 1;
+            else this.state.nextIndex = this.state.maxTextures - 1;
+            (0, _animejsDefault.default)({
+                targets: this.doms[this.state.activeIndex].querySelectorAll("p, h3"),
+                opacity: {
+                    value: 0,
+                    duration: 400,
+                    easing: "easeInSine"
+                },
+                translateY: {
+                    value: "-4vh",
+                    duration: 400,
+                    easing: "easeInSine"
+                },
+                delay: (0, _animejsDefault.default).stagger(100)
+            });
+            (0, _animejsDefault.default)({
+                targets: this.num[0],
+                opacity: {
+                    value: 0,
+                    duration: 400,
+                    easing: "easeInSine"
+                },
+                translateY: {
+                    value: "-4vh",
+                    duration: 400,
+                    easing: "easeInSine"
+                }
+            }).finished.then(()=>{
+                this.num[0].innerText = this.state.nextIndex + 1;
+                (0, _animejsDefault.default)({
+                    targets: this.num[0],
+                    opacity: {
+                        value: 1,
+                        duration: 400,
+                        easing: "easeOutSine"
+                    },
+                    translateY: {
+                        value: [
+                            "4vh",
+                            "0vh"
+                        ],
+                        duration: 400,
+                        easing: "easeOutSine"
+                    }
+                });
+            });
+            (0, _animejsDefault.default)({
+                targets: this.doms[this.state.activeIndex].querySelectorAll("img"),
+                opacity: {
+                    value: 0,
+                    duration: 800,
+                    easing: "easeInSine"
+                }
+            });
+            (0, _animejsDefault.default)({
+                targets: this.doms[this.state.nextIndex].querySelectorAll("img"),
+                opacity: {
+                    value: 1,
+                    duration: 800,
+                    easing: "easeOutSine"
+                }
+            });
+            (0, _animejsDefault.default)({
+                targets: this.doms[this.state.nextIndex].querySelectorAll("p, h3"),
+                opacity: {
+                    value: 1,
+                    duration: 400,
+                    easing: "easeOutSine"
+                },
+                translateY: {
+                    value: [
+                        "4vh",
+                        "0vh"
+                    ],
+                    duration: 400,
+                    easing: "easeOutSine"
+                },
+                delay: (0, _animejsDefault.default).stagger(100, {
+                    start: 400
+                })
+            });
+            setTimeout(()=>{
+                this.state.isChanging = false;
+                this.state.activeIndex = this.state.nextIndex;
+                // reset timer
+                this.state.transitionTimer = 0;
+            }, 800) // add a bit of margin to the timer
+            ;
+        }
+    }
+}
+exports.default = FallbackSlider;
+
+},{"animejs":"jokr5","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map

@@ -17,6 +17,8 @@ import LoopSlider from './LoopSlider';
 import parseColor from 'parse-color';
 import Card from './card';
 import scrollToId from './scrollToId';
+import { getGPUTier, getGPUTier } from 'detect-gpu';
+import FallbackSlider from './fallbackSlider';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -841,7 +843,7 @@ class App {
     }
 }
 
-const onReady = () => {
+const onReady = async () => {
     let rotation = 0
     document.querySelectorAll('[rotation]').forEach( (e) => {
         rotation = !isNaN(e.getAttribute('rotation')) ? e.getAttribute('rotation') : rotation
@@ -850,10 +852,43 @@ const onReady = () => {
             rotation = e.getAttribute('rotation')
         }
     })
+    document.querySelectorAll('#hover-slider-trigger a').forEach( e => {
+        e.removeAttribute('href')
+    })
+
+
+    let GPUTier = await getGPUTier()
+
+    if(GPUTier.tier > 0){
     // create curtains instance
     const app = new App()
     app.init()
+    }else{
+       fallback()
+    }
+
     scrollToId()
+}
+
+const fallback = ()=> {
+    anime({
+        targets: '#preloader',
+        opacity: 0,
+        duration: 2000,
+        delay: 500,
+        easing: 'easeInSine',
+
+    }).finished.then(() => {
+        anime.set('#preloader', {
+            display: 'none'
+        })
+    })
+
+    const slider =  document.getElementById('slider') ?  new FallbackSlider(document.getElementById('slider'), document.getElementById('slider-dom'), document.getElementById('slider-trigger')) : false
+    slider && slider.init()
+    document.querySelectorAll('.section:not(:first-child)').forEach((e)=> {
+        e.style.backgroundColor = "#040707"
+    })
 }
 
 if (document.readyState !== 'loading') {

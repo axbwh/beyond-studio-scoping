@@ -39,6 +39,9 @@ class HoverSlider {
     this.target = target
     this.plane = new Plane(this.curtains, this.element, this.params) // create a plane for our slider
     this.plane.setRenderTarget(target)
+    this.triggers.forEach((e, i)=> {
+      // e.removeAttribute("href")
+    })
     //this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
 
     this.plane.onLoading((texture) => {

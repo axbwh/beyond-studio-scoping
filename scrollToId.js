@@ -1,3 +1,5 @@
+import anime from "animejs"
+
 scrollToId = () => {
     let container = document.querySelector('.scrolldom')
     if (container) {
