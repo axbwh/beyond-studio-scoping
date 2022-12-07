@@ -9,6 +9,11 @@ class FallbackSlider {
     this.doms = [...this.dom.querySelectorAll('.cms-item')]
     this.images = this.element.querySelectorAll('img')
 
+    // this.images.forEach( (e, i) =>{
+    //     e.style.clipPath = 'path("M356,4.4c341.2,38.1,513.2,204.3,523.7,282.3c27.4,123.6-242.9,288.3-328.9,338c-86.1,49.6-298.4,151.4-439.6,89.5C-1.8,664.6-6.8,459.1,4.8,362.5C32,229.5,27.2-32.3,356,4.4z")'
+    // })
+
+
     this.element.style.display = 'none'
 
     // here we will handle which texture is visible and the timer to transition between images
@@ -31,7 +36,7 @@ class FallbackSlider {
           translateY: '4vh'
         })
 
-        anime.set(e.querySelectorAll('.img'), {
+        anime.set(e.querySelectorAll('.casestudy-img-wrapper'), {
             opacity:0,
         })
       }
@@ -93,12 +98,12 @@ class FallbackSlider {
       })
 
       anime({
-        targets: this.doms[this.state.activeIndex].querySelectorAll('img'),
+        targets: this.doms[this.state.activeIndex].querySelectorAll('.casestudy-img-wrapper'),
         opacity: { value: 0, duration: 800, easing: 'easeInSine'},
       })
 
       anime({
-        targets: this.doms[this.state.nextIndex].querySelectorAll('img'),
+        targets: this.doms[this.state.nextIndex].querySelectorAll('.casestudy-img-wrapper'),
         opacity: { value: 1, duration: 800, easing: 'easeOutSine'},
       })
 

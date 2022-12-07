@@ -1295,6 +1295,9 @@ const onReady = async ()=>{
     (0, _scrollToIdDefault.default)();
 };
 const fallback = ()=>{
+    document.querySelectorAll(".casestudy-img-wrapper").forEach((e, i)=>{
+        e.style.clipPath = i % 2 === 0 ? 'path("M356,4.4c341.2,38.1,513.2,204.3,523.7,282.3c27.4,123.6-242.9,288.3-328.9,338c-86.1,49.6-298.4,151.4-439.6,89.5C-1.8,664.6-6.8,459.1,4.8,362.5C32,229.5,27.2-32.3,356,4.4z")' : 'path("M877.4,362.5C889,459.1,884,664.6,771,714.2c-141.2,61.9-353.5-39.9-439.6-89.5c-86.1-49.6-356.3-214.4-328.9-338C13,208.7,184.9,42.5,526.2,4.4C855-32.3,850.1,229.5,877.4,362.5z")';
+    });
     (0, _animejsDefault.default)({
         targets: "#preloader",
         opacity: 0,
@@ -63219,6 +63222,9 @@ class FallbackSlider {
             ...this.dom.querySelectorAll(".cms-item")
         ];
         this.images = this.element.querySelectorAll("img");
+        // this.images.forEach( (e, i) =>{
+        //     e.style.clipPath = 'path("M356,4.4c341.2,38.1,513.2,204.3,523.7,282.3c27.4,123.6-242.9,288.3-328.9,338c-86.1,49.6-298.4,151.4-439.6,89.5C-1.8,664.6-6.8,459.1,4.8,362.5C32,229.5,27.2-32.3,356,4.4z")'
+        // })
         this.element.style.display = "none";
         // here we will handle which texture is visible and the timer to transition between images
         this.state = {
@@ -63236,7 +63242,7 @@ class FallbackSlider {
                     opacity: 0,
                     translateY: "4vh"
                 });
-                (0, _animejsDefault.default).set(e.querySelectorAll(".img"), {
+                (0, _animejsDefault.default).set(e.querySelectorAll(".casestudy-img-wrapper"), {
                     opacity: 0
                 });
             }
@@ -63306,7 +63312,7 @@ class FallbackSlider {
                 });
             });
             (0, _animejsDefault.default)({
-                targets: this.doms[this.state.activeIndex].querySelectorAll("img"),
+                targets: this.doms[this.state.activeIndex].querySelectorAll(".casestudy-img-wrapper"),
                 opacity: {
                     value: 0,
                     duration: 800,
@@ -63314,7 +63320,7 @@ class FallbackSlider {
                 }
             });
             (0, _animejsDefault.default)({
-                targets: this.doms[this.state.nextIndex].querySelectorAll("img"),
+                targets: this.doms[this.state.nextIndex].querySelectorAll(".casestudy-img-wrapper"),
                 opacity: {
                     value: 1,
                     duration: 800,
