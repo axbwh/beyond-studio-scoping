@@ -137,6 +137,7 @@ void main() {
     mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875 * uMorph); // highlights
 
     gl_FragColor = mixCol;
+    //gl_FragColor.rgb *= gl_FragColor.a;
 
     //gl_FragColor = gradient;
     //gl_FragColor = texture2D(threeDTexture, uv);

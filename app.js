@@ -78,7 +78,7 @@ class App {
         this.menuColors = {
             a: '#040707',
             b: '#040707',
-            c: '#040707',
+            c: '#222',
             d: "#444",
             opacity: 1,
             mix: 0,
@@ -107,7 +107,18 @@ class App {
             container: "canvas",
             pixelRatio: this.pixelRatio,
             watchScroll: false,
+            // premultipliedAlpha: true,
+            //antialias: false,
         })
+
+        // this.curtains.gl.blendFunc(this.curtains.gl.ONE, this.curtains.gl.ONE_MINUS_SRC_ALPHA)
+        // this.curtains.gl.pixelStorei(this.curtains.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+
+        this.textureOptions = {
+            // premultiplyAlpha: true,
+            // minFilter: this.curtains.gl.LINEAR_MIPMAP_NEAREST,
+            // anisotropy: 16,
+        }
 
         this.container = document.querySelector('.scrolldom')
         this.filters = document.querySelectorAll('label.filters')
@@ -169,6 +180,9 @@ class App {
             ...this.colors
         }
 
+        this.menuColors.c = this.colors.a
+        this.menuColors.d = this.colors.b
+
 
         let timeline = anime.timeline({
             targets: this.axes,
@@ -218,6 +232,8 @@ class App {
             ...this.hoverColors,
         })
 
+       
+
     }
 
     
@@ -244,7 +260,7 @@ class App {
         if(pass){
             this.pass.createTexture({
                 sampler: 'uTxt',
-                fromTexture: target.getTexture()
+                fromTexture: target.getTexture(),
             })
         }
     }
@@ -287,7 +303,7 @@ class App {
                   }
               })
   
-              plane.setRenderTarget(this.imgTarget)
+              plane.setRenderTarget(this.textTarget)
               el.style.opacity = 0
         })
     }
@@ -327,11 +343,27 @@ class App {
         
         this.slider = document.getElementById('slider') ?  new Slider(this.curtains, document.getElementById('slider'), document.getElementById('slider-dom'), document.getElementById('slider-trigger')) : false
         this.hoverSlider = document.getElementById('hover-slider') ? new HoverSlider(this.curtains, document.getElementById('hover-slider'), document.getElementById('hover-slider-trigger')) : false   
-        this.puckTarget = new RenderTarget(this.curtains)
-        this.bgTarget = new RenderTarget(this.curtains)
-        this.imgTarget = new RenderTarget(this.curtains)
-        this.textTarget = new RenderTarget(this.curtains)
-
+        this.puckTarget = new RenderTarget(this.curtains, {
+            texturesOptions : {
+                ...this.textureOptions
+            }
+        })
+        this.bgTarget = new RenderTarget(this.curtains, {
+            texturesOptions : {
+                ...this.textureOptions
+            }
+        })
+        this.imgTarget = new RenderTarget(this.curtains, {
+            texturesOptions : {
+                ...this.textureOptions
+            }
+        })
+        this.textTarget = new RenderTarget(this.curtains, {
+            texturesOptions : {
+                ...this.textureOptions
+            }
+        })
+        console.log(this.puckTarget)
 
         Promise.all([
             document.fonts.load('300 1.375em "Atosmose", sans-serif'),
@@ -371,7 +403,7 @@ class App {
                 bgCol:{
                     name: "uBgCol",
                     type: '4f',
-                    value: [...hexToRgb("#040707"), 1.0],
+                    value: [...hexToRgb("#111"), 1.0],
                 },
                 fgCol:{
                     name: "uFgCol",
@@ -434,7 +466,7 @@ class App {
         this.loadImg('img[bg]', this.bgTarget, 'uBg')
         //images that will be inside the puck
         this.loadImg('img[puck]', this.puckTarget, 'uPuck')
-        this.initLines()
+        //this.initLines()
         this.initCards()
 
     
@@ -661,15 +693,15 @@ class App {
         this.impulses.opacity = 0      
         this.menuColors.mix = 1
 
-        anime({
-            targets: this.hoverColors,
-            c:"#040707",
-            d:"#040707",
-            opacity: 1,
-            mix: 1,
-            duration: 1000,
-            easing: "easeInOutSine"
-        })
+        // anime({
+        //     targets: this.hoverColors,
+        //     c:"#040707",
+        //     d:"#040707",
+        //     opacity: 1,
+        //     mix: 1,
+        //     duration: 1000,
+        //     easing: "easeInOutSine"
+        // })
 
         anime({
             targets: this.container,
@@ -678,11 +710,11 @@ class App {
         
         anime({
             targets: this.hoverColors,
-            a:"#040707",
-            b:"#040707",
-            c: "#040707",
-            d: "#444",
-            duration: 500,
+            ...this.menuColors,
+            opacity: 1,
+            mix: 1,
+            duration: 1000,
+            easing: "easeInOutSine"
         })
 
         anime({
