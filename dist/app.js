@@ -8871,21 +8871,13 @@ var _meshGlsl = require("./shaders/mesh.glsl");
 var _meshGlslDefault = parcelHelpers.interopDefault(_meshGlsl);
 var _headGlsl = require("./shaders/head.glsl");
 var _headGlslDefault = parcelHelpers.interopDefault(_headGlsl);
+var _meshVert = require("./shaders/mesh.vert");
+var _meshVertDefault = parcelHelpers.interopDefault(_meshVert);
+var _headVert = require("./shaders/vertex/head.vert");
+var _headVertDefault = parcelHelpers.interopDefault(_headVert);
+var _bodyVert = require("./shaders/vertex/body.vert");
+var _bodyVertDefault = parcelHelpers.interopDefault(_bodyVert);
 var _lodash = require("lodash");
-const vs = `
-varying vec4 mvPosition;
-varying mat3 vNormalMatrix;
-varying mat4 mvMatrix;
-varying vec2 vUv;
-void main()
-{
-  // is a predefined vertex attribute (see WebGLProgram)
-  vNormalMatrix =  normalMatrix;
-  mvMatrix = modelViewMatrix;
-  mvPosition = modelViewMatrix * vec4(position, 1.0);
-  vUv = uv;
-  gl_Position = projectionMatrix * mvPosition;
-}`;
 const clamp = (num, min, max)=>Math.min(Math.max(num, min), max);
 class ThreeD {
     constructor(pixelRatio){
@@ -8898,14 +8890,20 @@ class ThreeD {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(pixelRatio);
         this.canvas = this.renderer.domElement;
+        this.velocity = new _three.Vector3();
+        this.vectorUtil = new _three.Vector3();
         this.canvas.setAttribute("data-sampler", "threeDTexture") // this data attribute will automatically load our canvas 
         ;
         // as a uniform sampler2D called threeDTexture when we call ShaderPass.loadCanvas(theeD.canvas)
+        //attractor
         this.material = new _three.ShaderMaterial({
-            vertexShader: vs,
+            vertexShader: (0, _meshVertDefault.default),
             fragmentShader: (0, _meshFragDefault.default),
             side: _three.DoubleSide
         });
+        let geo = new _three.IcosahedronBufferGeometry(0, 0);
+        this.attractor = new _three.Mesh(geo, this.material);
+        this.scene.add(this.attractor);
         this.material = new _three.MeshPhongMaterial({
             side: _three.DoubleSide,
             reflectivity: 0,
@@ -8913,9 +8911,16 @@ class ThreeD {
             color: new _three.Color("black"),
             specular: new _three.Color("white")
         });
-        this.material.onBeforeCompile = function(shader) {
-            shader.vertexShader = shader.vertexShader.replace("#include <uv_pars_vertex>", "varying vec2 vUv;").replace("#include <uv_vertex>", "vUv = uv;");
+        this.material.onBeforeCompile = (shader)=>{
+            shader.uniforms.uAttractor = {
+                value: this.attractor.position
+            };
+            shader.uniforms.uVelocity = {
+                value: this.velocity
+            };
+            shader.vertexShader = shader.vertexShader.replace("#include <uv_pars_vertex>", (0, _headVertDefault.default)).replace("#include <uv_vertex>", "vUv = uv;").replace("#include <worldpos_vertex>", (0, _bodyVertDefault.default));
             shader.fragmentShader = shader.fragmentShader.replace("#include <dithering_fragment>", (0, _meshGlslDefault.default)).replace("#define PHONG", (0, _headGlslDefault.default)).replace("#include <uv_pars_fragment>", "varying vec2 vUv;");
+            this.material.userData.shader = shader;
         };
         this.scale = 5;
         this.camera.position.z = 10;
@@ -8961,9 +8966,9 @@ class ThreeD {
         });
     }
     screenToPos(x, y) {
-        var vector = new _three.Vector3(x, y, 0);
-        vector.unproject(this.camera);
-        var dir = vector.sub(this.camera.position).normalize();
+        this.vectorUtil.set(x, y, 0);
+        this.vectorUtil.unproject(this.camera);
+        var dir = this.vectorUtil.sub(this.camera.position).normalize();
         var distance = -this.camera.position.z / dir.z;
         var pos = this.camera.position.clone().add(dir.multiplyScalar(distance));
         return pos;
@@ -9003,6 +9008,16 @@ class ThreeD {
         pos.lerp(mpos, axes.range);
         this.mesh.rotation.z += this.mesh.position.distanceTo(pos) * delta * 0.4 * axes.range;
         this.mesh.position.lerp(pos, delta * 1.5);
+        if (this.material.userData.shader) {
+            this.vectorUtil.copy(this.attractor.position);
+            this.attractor.position.lerp(mpos, delta * 2);
+            //this.velocity.copy(this.attractor.position).sub(this.vectorUtil).clampLength(-0.8, 0.8)
+            let velocityDelta = this.velocity.clone().copy(this.attractor.position).sub(this.vectorUtil);
+            this.velocity.add(velocityDelta).clampLength(-1.5, 1.5);
+            let friction = this.velocity.clone().negate().multiplyScalar(delta * 12);
+            this.velocity.add(friction);
+            this.material.userData.shader.uniforms.uAttractor.value = this.attractor.position;
+        }
         // this.mesh.scale.x = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
@@ -9025,7 +9040,7 @@ class ThreeD {
 }
 exports.default = ThreeD;
 
-},{"three":"ktPTu","three/examples/jsm/loaders/GLTFLoader.js":"dVRsF","three/examples/jsm/loaders/DRACOLoader.js":"lkdU4","three-subdivide":"e6vhA","./icon.glb":"8EsCM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/mesh.frag":"6rbg6","./shaders/mesh.glsl":"4WpWv","./shaders/head.glsl":"jmFLf","lodash":"3qBDj"}],"ktPTu":[function(require,module,exports) {
+},{"three":"ktPTu","three/examples/jsm/loaders/GLTFLoader.js":"dVRsF","three/examples/jsm/loaders/DRACOLoader.js":"lkdU4","three-subdivide":"e6vhA","./icon.glb":"8EsCM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/mesh.frag":"6rbg6","./shaders/mesh.glsl":"4WpWv","./shaders/head.glsl":"jmFLf","lodash":"3qBDj","./shaders/mesh.vert":"ecnln","./shaders/vertex/head.vert":"dcjQH","./shaders/vertex/body.vert":"dSMi7"}],"ktPTu":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "ACESFilmicToneMapping", ()=>ACESFilmicToneMapping);
@@ -55736,6 +55751,15 @@ var global = arguments[3];
     } else // Export to the global object.
     root._ = _;
 }).call(this);
+
+},{}],"ecnln":[function(require,module,exports) {
+module.exports = "#define GLSLIFY 1\nvarying vec4 mvPosition;\nvarying mat3 vNormalMatrix;\nvarying mat4 mvMatrix;\nvarying vec2 vUv;\nvoid main()\n{\n  // is a predefined vertex attribute (see WebGLProgram)\n  vNormalMatrix =  normalMatrix;\n  mvMatrix = modelViewMatrix;\n  mvPosition = modelViewMatrix * vec4(position, 1.0);\n  vUv = uv;\n  gl_Position = projectionMatrix * mvPosition;\n}";
+
+},{}],"dcjQH":[function(require,module,exports) {
+module.exports = "#define GLSLIFY 1\n#ifndef HALF_PI\n#define HALF_PI 1.5707963267948966\n#endif\n\nfloat sineIn(float t) {\n  return sin((t - 1.0) * HALF_PI) + 1.0;\n}\n\nvarying vec2 vUv;\nuniform vec3 uAttractor;\nuniform vec3 uVelocity;";
+
+},{}],"dSMi7":[function(require,module,exports) {
+module.exports = "#define GLSLIFY 1\nvec4 worldPosition = vec4( transformed, 1.0 );\nworldPosition = modelMatrix * worldPosition;\n\nvec4 atPos = vec4(uAttractor, 1.0);\nfloat dist = distance(uAttractor, worldPosition.xyz);\nvec4 direction = normalize(atPos - worldPosition);\nworldPosition =  vec4(worldPosition.xyz + uVelocity * sineIn( (3.5 - clamp(dist, 0.0, 3.5)) / 3.5), 1.0);\n\ngl_Position = projectionMatrix * viewMatrix * worldPosition;\n";
 
 },{}],"i90JS":[function(require,module,exports) {
 module.exports = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#define GLSLIFY 1\n#endif\n\n//\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat snoise(vec3 v)\n  {\n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g_0 = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g_0;\n  vec3 i1 = min( g_0.xyz, l.zxy );\n  vec3 i2 = max( g_0.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i);\n  vec4 p = permute( permute( permute(\n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))\n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),\n                                dot(p2,x2), dot(p3,x3) ) );\n  }\n\n#ifndef HALF_PI\n#define HALF_PI 1.5707963267948966\n#endif\n\nfloat elasticIn(float t) {\n  return sin(13.0 * t * HALF_PI) * pow(2.0, 10.0 * (t - 1.0));\n}\n\nvec3 blendOverlay(vec3 base, vec3 blend) {\n    return mix(1.0 - 2.0 * (1.0 - base) * (1.0 - blend), 2.0 * base * blend, step(base, vec3(0.5)));\n    // with conditionals, may be worth benchmarking\n    // return vec3(\n    //     base.r < 0.5 ? (2.0 * base.r * blend.r) : (1.0 - 2.0 * (1.0 - base.r) * (1.0 - blend.r)),\n    //     base.g < 0.5 ? (2.0 * base.g * blend.g) : (1.0 - 2.0 * (1.0 - base.g) * (1.0 - blend.g)),\n    //     base.b < 0.5 ? (2.0 * base.b * blend.b) : (1.0 - 2.0 * (1.0 - base.b) * (1.0 - blend.b))\n    // );\n}\n\nvarying vec3 vVertexPosition;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uTxt;\nuniform sampler2D threeDTexture;\nuniform sampler2D uPuck;\nuniform sampler2D uBg;\nuniform sampler2D uImg;\n\n// lerped scroll deltas\n// negative when scrolling down, positive when scrolling up\nuniform float uScrollEffect;\n\n// default to 2.5\nuniform float uScrollStrength;\n\nuniform vec4 uBgCol;\nuniform vec4 uFgCol;\nuniform vec4 uColA;\nuniform vec4 uColB;\nuniform vec4 uColC;\nuniform vec4 uColD;\nuniform vec2 uMouse;\nuniform float uTime;\nuniform float uGradientOpacity;\nuniform float uMorph;\nuniform float uOpacity;\n\nvoid main() {\n    vec2 uv = vTextureCoord;\n    float horizontalStretch;\n    vec4 threeDCol = texture2D(threeDTexture, uv);\n\n    // branching on an uniform is ok\n    // if(uScrollEffect >= 0.0) {\n    //     uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;\n    //     horizontalStretch = sin(uv.y);\n    // }\n    // else if(uScrollEffect < 0.0) {\n    //     uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;\n    //     horizontalStretch = sin(-1.0 * (1.0 - uv.y));\n    // }\n    horizontalStretch = 0.0;\n\n    uv.x = uv.x * 2.0 - 1.0;\n    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;\n    uv.x = (uv.x + 1.0) * 0.5;\n    // moving the content underneath the square\n\n    float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;\n    //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);\n    float morphStrength = 0.005  * uMorph;\n    float morph = elasticIn(threeDCol.r);\n    float baseStrength = 0.02 * uMorph;\n\n    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);\n\n    //rgb split\n    vec2 uvR = muv;\n    vec2 uvG = muv;\n    vec2 uvB = muv;\n\n    uvR.x += morph * morphStrength;\n    uvR.y += morph * morphStrength;\n    uvG.x -= morph * morphStrength;\n    uvG.y += morph * morphStrength;\n    uvB.y -= morph * morphStrength;\n\n    \n    float t = uTime /1000.0  ;\n\n    // gradient noise\n    float noise = snoise(vec3(uv.x - uMouse.x / 20.0 + t, uv.y - uMouse.y *0.2, (uMouse.x + uMouse.y) / 20.0 + t));\n    float black = snoise(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));\n\n    vec4 gradient = mix(uColA, uColB, noise);\n    gradient = mix(gradient, uBgCol, black);\n    gradient.r = clamp(gradient.r, 0.0, 0.85);\n    gradient.g = clamp(gradient.g, 0.0, 0.85);\n    gradient.b = clamp(gradient.b, 0.0, 0.85);\n    vec4 puckGradient = mix(uColC, uColD, noise);\n    puckGradient = mix(puckGradient, uBgCol, black);\n    puckGradient.r = clamp(puckGradient.r, 0.0, 0.85);\n    puckGradient.g = clamp(puckGradient.g, 0.0, 0.85);\n    puckGradient.b = clamp(puckGradient.b, 0.0, 0.85);\n    //\n\n    vec4 colR =  texture2D(uTxt, uvR);\n    vec4 colG =  texture2D(uTxt, uvG);\n    vec4 colB =  texture2D(uTxt, uvB);\n\n    vec4 bg = texture2D(uBg, uv); // images not in the puck\n    vec4 puckCol =  vec4(texture2D(uPuck, uvR).r, texture2D(uPuck, uvG).g, texture2D(uPuck, uvB).b, 1.0); //images only in the pcuk\n\n    puckCol.a = max(texture2D(uPuck, uvR).a, max(texture2D(uPuck, uvG).a, texture2D(uPuck, uvB).a));\n\n    vec4 imgCol =  vec4(texture2D(uImg, uvR).r, texture2D(uImg, uvG).g, texture2D(uImg, uvB).b, 1.0); //images\n    imgCol.a = max( max(texture2D(uImg, uvR).a, texture2D(uImg, uvG).a), texture2D(uImg, uvB).a);\n \n    float maxA = max(max(colR.a, colG.a), colB.a);\n    //maxA = max(colR.a, colG.a);\n    //maxA = colR.a;\n\n    vec4 splitCol = vec4(colR.r, colG.g, colB.b, maxA);\n    vec4 baseCol =  texture2D(uTxt, uv) + bg + imgCol; // baseColor\n\n    vec4 defCol = (1.0 - splitCol);\n    defCol.a = splitCol.a;\n    defCol =  mix(puckCol + imgCol, defCol, defCol.a);\n\n    float alpha = threeDCol.a;\n\n    defCol = vec4(blendOverlay(defCol.rgb, puckGradient.rgb), defCol.a);\n    //mix in gradient\n    vec4 mixCol = mix(baseCol, defCol, alpha);\n\n    vec4 bgCol = mix(uBgCol, puckGradient, uGradientOpacity);\n    mixCol.a *= uOpacity;\n    mixCol = mix(mixCol, bgCol, clamp(alpha - mixCol.a, 0.0 , 1.0));\n    mixCol = mix( gradient, mixCol, mixCol.a); // gradient\n    mixCol = mix( clamp(puckGradient* 2.0, 0.7, 1.0), mixCol, 1.0 - threeDCol.g * 0.875 * uMorph); // highlights\n\n    gl_FragColor = mixCol;\n\n    //gl_FragColor = gradient;\n    //gl_FragColor = texture2D(threeDTexture, uv);\n    //gl_FragColor = vec4(texture2D(uImg, muv).rgb, 1.0);\n    //gl_FragColor = vec4(baseMorph, 0.0,0.0,1.0);\n    //gl_FragColor = threeDCol;\n}";

@@ -6,22 +6,10 @@ import glb from './icon.glb'
 import frag from './shaders/mesh.frag'
 import meshdither from './shaders/mesh.glsl'
 import headfrag from'./shaders/head.glsl'
+import vs from'./shaders/mesh.vert'
+import vertHead from './shaders/vertex/head.vert'
+import vertBody from './shaders/vertex/body.vert'
 import { times } from 'lodash';
-
-const vs = `
-varying vec4 mvPosition;
-varying mat3 vNormalMatrix;
-varying mat4 mvMatrix;
-varying vec2 vUv;
-void main()
-{
-  // is a predefined vertex attribute (see WebGLProgram)
-  vNormalMatrix =  normalMatrix;
-  mvMatrix = modelViewMatrix;
-  mvPosition = modelViewMatrix * vec4(position, 1.0);
-  vUv = uv;
-  gl_Position = projectionMatrix * mvPosition;
-}`
 
 
 const clamp = (num, min, max) => Math.min(Math.max(num, min), max)
@@ -36,14 +24,22 @@ class ThreeD {
         this.renderer.setSize( window.innerWidth, window.innerHeight );
         this.renderer.setPixelRatio(pixelRatio)
         this.canvas = this.renderer.domElement
+        this.velocity = new THREE.Vector3()
+        this.vectorUtil = new THREE.Vector3()
+
         this.canvas.setAttribute('data-sampler', 'threeDTexture') // this data attribute will automatically load our canvas 
         // as a uniform sampler2D called threeDTexture when we call ShaderPass.loadCanvas(theeD.canvas)
 
+        //attractor
         this.material = new THREE.ShaderMaterial({
             vertexShader : vs,
             fragmentShader: frag,
             side : THREE.DoubleSide
         })
+
+        let geo = new THREE.IcosahedronBufferGeometry(0, 0)
+        this.attractor = new THREE.Mesh(geo, this.material)
+        this.scene.add( this.attractor );
 
         this.material = new THREE.MeshPhongMaterial({
             side: THREE.DoubleSide,
@@ -51,16 +47,22 @@ class ThreeD {
             shininess: 200,
             color:  new THREE.Color('black'),
             specular: new THREE.Color('white'),
-            
         })
 
-        this.material.onBeforeCompile = function ( shader ) {
+
+
+        this.material.onBeforeCompile =  ( shader ) => {
+            shader.uniforms.uAttractor = { value: this.attractor.position}
+            shader.uniforms.uVelocity = { value: this.velocity}
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <uv_pars_vertex>',
-                'varying vec2 vUv;'
+                vertHead
             ).replace(
                 '#include <uv_vertex>',
                 'vUv = uv;'
+            ).replace(
+                '#include <worldpos_vertex>',
+                vertBody
             )
 
             shader.fragmentShader = shader.fragmentShader.replace(
@@ -73,6 +75,8 @@ class ThreeD {
                 '#include <uv_pars_fragment>',
                 'varying vec2 vUv;'
             )
+
+            this.material.userData.shader = shader
         }
 
         this.scale = 5
@@ -129,9 +133,9 @@ class ThreeD {
 
 
     screenToPos(x, y){
-        var vector = new THREE.Vector3(x, y, 0);
-        vector.unproject( this.camera );
-        var dir = vector.sub( this.camera.position ).normalize();
+        this.vectorUtil.set(x, y, 0);
+        this.vectorUtil.unproject( this.camera );
+        var dir = this.vectorUtil.sub( this.camera.position ).normalize();
         var distance = - this.camera.position.z / dir.z;
         var pos = this.camera.position.clone().add( dir.multiplyScalar( distance ) );
         return pos
@@ -169,6 +173,19 @@ class ThreeD {
 
         this.mesh.rotation.z += (this.mesh.position.distanceTo(pos) * delta * 0.4)* axes.range
         this.mesh.position.lerp(pos, delta * 1.5)
+
+        if(this.material.userData.shader){
+            this.vectorUtil.copy(this.attractor.position)
+            this.attractor.position.lerp(mpos, delta * 2)
+            //this.velocity.copy(this.attractor.position).sub(this.vectorUtil).clampLength(-0.8, 0.8)
+
+            let velocityDelta = this.velocity.clone().copy(this.attractor.position).sub(this.vectorUtil)
+            this.velocity.add(velocityDelta).clampLength(-1.5, 1.5)
+            let friction = this.velocity.clone().negate().multiplyScalar(delta * 12)
+            this.velocity.add(friction)
+
+            this.material.userData.shader.uniforms.uAttractor.value = this.attractor.position
+        }
 
         // this.mesh.scale.x = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
