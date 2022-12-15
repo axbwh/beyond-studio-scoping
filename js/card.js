@@ -89,6 +89,7 @@ class Card {
   }
 
   createSvg(){
+    
     this.svg = this.el.querySelector('svg')
     this.canvas = document.createElement("canvas")
     this.context = this.canvas.getContext("2d");
