@@ -15,12 +15,12 @@ import { times } from 'lodash';
 const clamp = (num, min, max) => Math.min(Math.max(num, min), max)
 
 class ThreeD {
-    constructor(pixelRatio){ //lets set up our three.js scene
+    constructor(pixelRatio, tier){ //lets set up our three.js scene
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 1000 );
         this.bbox = new THREE.Vector3()
     
-        this.renderer = new THREE.WebGLRenderer({ alpha: true });
+        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: tier > 2 ? true : false });
         this.renderer.setSize( window.innerWidth, window.innerHeight );
         this.renderer.setPixelRatio(pixelRatio)
         this.canvas = this.renderer.domElement

@@ -26,7 +26,8 @@ import SvgPlane from './js/svg';
 const parceled = true
 
 class App {
-    constructor(){
+    constructor(tier){
+        this.tier = tier
         this.mouse = { x : 0.5, y: 0.5}
         this.mse = {x: 0, y: 0}
         this.y = 0
@@ -95,9 +96,9 @@ class App {
         this.lastFrame = 0
 
         this.frames = []
-        this.pixelRatio = Math.min(1.2, window.devicePixelRatio)
+        this.pixelRatio = Math.min(this.tier > 1 ? 1 + tier / 2 : 1, window.devicePixelRatio)
 
-        this.threeD = new ThreeD(this.pixelRatio)
+        this.threeD = new ThreeD(this.pixelRatio, this.tier)
         this.textTextures = []
 
     }
@@ -108,12 +109,14 @@ class App {
             container: "canvas",
             pixelRatio: this.pixelRatio,
             watchScroll: false,
-            // premultipliedAlpha: true,
+            //premultipliedAlpha: true,
             //antialias: false,
         })
 
-        // this.curtains.gl.blendFunc(this.curtains.gl.ONE, this.curtains.gl.ONE_MINUS_SRC_ALPHA)
-        // this.curtains.gl.pixelStorei(this.curtains.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+        this.curtains.gl.blendFunc(this.curtains.gl.SRC_ALPHA, this.curtains.gl.ONE_MINUS_SRC_ALPHA)
+        this.curtains.gl.blendFunc( this.curtains.gl.ONE_MINUS_DST_ALPHA, this.curtains.gl.DST_ALPHA)
+        //this.curtains.gl.blendFunc(this.curtains.gl.SRC_COLOR, this.curtains.gl.ONE_MINUS_SRC_COLOR)
+        this.curtains.gl.pixelStorei(this.curtains.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
         this.textureOptions = {
             // premultiplyAlpha: true,
@@ -251,7 +254,7 @@ class App {
                 plane: plane,
                 textElement: plane.htmlElement,
                 sampler: "uTexture",
-                resolution: 1.2,
+                resolution: 1.5,
                 skipFontLoading: true, // we've already loaded the fonts
             })
 
@@ -278,8 +281,7 @@ class App {
                   plane.setRenderTarget(target)
                   el.style.opacity = 0
             }else{
-                let color = window.getComputedStyle(el).color
-                const plane = new SvgPlane(this.curtains, el, target, color)
+                const plane = new SvgPlane(this.curtains, el, target)
             }
           })
 
@@ -477,8 +479,6 @@ class App {
         this.loadImg('img[puck], svg[puck]', this.puckTarget, 'uPuck')
         //this.initLines()
         this.initCards()
-
-        console.log(document.querySelector('[fade="out"]'))
         this.fadeIn = document.querySelector('[fade="in"]') ? new Fade(this.curtains, document.querySelector('[fade="in"]'), this.puckTarget) : null
         this.fadeOut = document.querySelector('[fade="out"]') ? new Fade(this.curtains, document.querySelector('[fade="out"]'), this.puckTarget) : null
 
@@ -859,7 +859,10 @@ class App {
         this.pass.uniforms.colD.value = lerpRgba(this.pass.uniforms.colD.value, colDtarget, delta * 1.5)
         this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5)
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta *1.5)
+        // this.pass.uniforms.morph.value = this.pass.uniforms.morph.value > 0.01 ? this.pass.uniforms.morph.value : 0
         this.pass.uniforms.opacity.value = this.curtains.lerp(this.pass.uniforms.opacity.value, this.impulses.opacity, delta *4)
+        console.log(this.pass.uniforms.morph.value)
+
 
         if(this.fadeIn && this.fadeOut){
             this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4)
@@ -922,7 +925,7 @@ const onReady = async () => {
 
     if(GPUTier.tier > 0){
     // create curtains instance
-    const app = new App()
+    const app = new App(GPUTier.tier)
     app.init()
     }else{
        fallback()

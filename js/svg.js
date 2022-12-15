@@ -2,13 +2,17 @@ import textShader from '/shaders/textShader'
 import fadeFrag from '/shaders/fade.frag'
 import { Plane } from 'curtainsjs'
 import { Canvg } from 'canvg'
+import parseColor from 'parse-color'
 
 class SvgPlane {
     constructor(curtains, el, target, color){
     this.svg = el
-    this.color = color
+    this.color = color ? color : window.getComputedStyle(el).fill
+    console.log(el, this.color)
+    this.bgColor = [...parseColor(this.color).rgba]
+    this.bgColor = `rgba(${this.bgColor[0]}, ${this.bgColor[1]}, ${this.bgColor[2]}, 0%)`
     this.canvas = document.createElement("canvas")
-    this.context = this.canvas.getContext("2d");
+    this.context = this.canvas.getContext("2d")
     this.paths = [...this.svg.querySelectorAll('path')].map(p => p.getAttribute('d'))
     
     //let pathString = this.svg.querySelector('path').getAttribute('d')
@@ -40,6 +44,9 @@ class SvgPlane {
     this.canvas.height = rect.height
     this.context.width = rect.width
     this.context.height = rect.height
+    this.context.fillStyle = this.bgColor
+    this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.fillStyle = this.color
     let v =  Canvg.from(this.context, this.svg.outerHTML)
     v.then( (svg)=>{
         svg.render()

@@ -66,7 +66,7 @@ void main() {
     float morph = ease(threeDCol.r);
     float baseStrength = 0.02 * uMorph;
 
-    vec2 muv = vec2(clamp(uv.x, 0.0, 1.0) + baseMorph * baseStrength, clamp(uv.y, 0.0, 1.0)  + baseMorph * baseStrength);
+    vec2 muv = vec2(uv.x + baseMorph * baseStrength, uv.y  + baseMorph * baseStrength);
 
     //rgb split
     vec2 uvR = muv;

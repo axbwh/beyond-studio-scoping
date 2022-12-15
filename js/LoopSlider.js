@@ -6,7 +6,6 @@ class LoopSlider {
   constructor(curtains, el, target) {
     this.planes = []
     this.contentWrapper = el.querySelector('.loop')
-    console.log(this.contentWrapper.style)
     this.contentWrapper.style.animation='none'
     this.width = this.contentWrapper.offsetWidth
     this.offset = 0

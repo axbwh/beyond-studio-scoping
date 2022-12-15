@@ -93,7 +93,8 @@ class Card {
 
     this.svg = this.el.querySelector('svg')
     let color = window.getComputedStyle(this.el.querySelector('.card-hover')).backgroundColor
-    this.svgPlane = new  SvgPlane(this.curtains, this.svg, this.target, color)
+    //this.svg.style.fill = color
+    this.svgPlane = new  SvgPlane(this.curtains, this.svg, this.target)
     let i = this.planes.length
     this.planes[i] = this.svgPlane.plane
     this.svgPlane = i

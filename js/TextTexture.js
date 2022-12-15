@@ -53,6 +53,8 @@
 
  ***/
 
+import parseColor from "parse-color";
+
 export class TextTexture {
     constructor({
         plane,
@@ -253,6 +255,12 @@ export class TextTexture {
         // then we'll write those lines with the correct vertical/horizontal alignment on the canvas
 
         // first, apply the correct styles
+        let bgColor = [...parseColor(this.content.style.color).rgba]
+        bgColor = `rgba(${bgColor[0]}, ${bgColor[1]}, ${bgColor[2]}, 0%)`
+        this.context.fillStyle = bgColor
+        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height)
+
+
         this.context.fillStyle = this.content.style.color;
         this.context.strokeStyle = this.content.style.color;
 

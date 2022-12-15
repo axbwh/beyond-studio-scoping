@@ -5,7 +5,6 @@ import textShader from '/shaders/textShader';
 
 class Fade {
   constructor(curtains, el, target) {
-    console.log(el)
     if(el.tagName.toLowerCase() == 'img'){
       this.plane = new Plane(curtains, el, {
         vertexShader: textShader.vs,
@@ -23,7 +22,6 @@ class Fade {
       el.style.opacity = 0
     }else{
     this.plane = new SvgPlane(curtains, el, target).plane
-    console.log(this.plane)
     }
   }
 }
