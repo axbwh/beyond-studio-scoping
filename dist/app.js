@@ -59596,6 +59596,8 @@ var _parseColor = require("parse-color");
 var _parseColorDefault = parcelHelpers.interopDefault(_parseColor);
 var _utils = require("/js/utils");
 var _assert = require("assert");
+var _svg = require("./svg");
+var _svgDefault = parcelHelpers.interopDefault(_svg);
 class Card {
     constructor(curtains, el, target){
         this.planes = [];
@@ -59671,31 +59673,12 @@ class Card {
     }
     createSvg() {
         this.svg = this.el.querySelector("svg");
-        this.canvas = document.createElement("canvas");
-        this.context = this.canvas.getContext("2d");
-        let pathString = this.svg.querySelector("path").getAttribute("d");
+        let color = window.getComputedStyle(this.el.querySelector(".card-hover")).backgroundColor;
+        console.log(color);
+        this.svgPlane = new (0, _svgDefault.default)(this.curtains, this.svg, this.target, color);
         let i = this.planes.length;
-        this.planes[i] = new (0, _curtainsjs.Plane)(this.curtains, this.svg, {
-            vertexShader: (0, _textShaderDefault.default).vs,
-            fragmentShader: (0, _textShaderDefault.default).fs
-        });
+        this.planes[i] = this.svgPlane.plane;
         this.svgPlane = i;
-        this.sizeSvg();
-        let p = new Path2D(pathString);
-        this.context.fillStyle = window.getComputedStyle(this.el.querySelector(".card-hover")).backgroundColor;
-        this.context.fill(p);
-        this.planes[i].loadCanvas(this.canvas, {
-            sampler: "uTexture"
-        });
-        this.planes[i].setRenderTarget(this.target);
-        this.svg.style.opacity = 0;
-    }
-    sizeSvg() {
-        let rect = this.planes[this.svgPlane].getBoundingRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
-        this.context.width = rect.width;
-        this.context.height = rect.height;
     }
     resize() {
         //this.sizeSvg()
@@ -59751,7 +59734,7 @@ class Card {
 }
 exports.default = Card;
 
-},{"curtainsjs":"9AjRS","parse-color":"1o9cL","assert":"f3tT4","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/shaders/img.frag":"7dXWc","/shaders/line.frag":"h9zl2","/shaders/textShader":"1VzNt","/js/utils":"eYK4L","/js/TextTexture":"cmqb9"}],"f3tT4":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","parse-color":"1o9cL","assert":"f3tT4","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/shaders/img.frag":"7dXWc","/shaders/line.frag":"h9zl2","/shaders/textShader":"1VzNt","/js/utils":"eYK4L","/js/TextTexture":"cmqb9","./svg":"ghtJt"}],"f3tT4":[function(require,module,exports) {
 // Currently in sync with Node.js lib/assert.js
 // https://github.com/nodejs/node/commit/2a51ae424a513ec9a6aa3466baa0cc1d55dd4f3b
 // Originally from narwhal.js (http://narwhaljs.org)
@@ -63448,6 +63431,51 @@ var getPolyfill = require("./polyfill");
     return polyfill;
 };
 
-},{"define-properties":"6eq5U","./polyfill":"h00Nr"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"define-properties":"6eq5U","./polyfill":"h00Nr"}],"ghtJt":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _textShader = require("/shaders/textShader");
+var _textShaderDefault = parcelHelpers.interopDefault(_textShader);
+var _curtainsjs = require("curtainsjs");
+class SvgPlane {
+    constructor(curtains, el, target, color){
+        this.svg = el;
+        this.color = color;
+        this.canvas = document.createElement("canvas");
+        this.context = this.canvas.getContext("2d");
+        this.paths = [
+            ...this.svg.querySelectorAll("path")
+        ].map((p)=>p.getAttribute("d"));
+        //let pathString = this.svg.querySelector('path').getAttribute('d')
+        this.plane = new (0, _curtainsjs.Plane)(curtains, this.svg, {
+            vertexShader: (0, _textShaderDefault.default).vs,
+            fragmentShader: (0, _textShaderDefault.default).fs,
+            onAfterResize: ()=>{
+                this.sizeSvg();
+            }
+        });
+        this.sizeSvg();
+        this.plane.loadCanvas(this.canvas, {
+            sampler: "uTexture"
+        });
+        this.plane.setRenderTarget(target);
+        this.svg.style.opacity = 0;
+    }
+    sizeSvg() {
+        let rect = this.plane.getBoundingRect();
+        this.canvas.width = rect.width;
+        this.canvas.height = rect.height;
+        this.context.width = rect.width;
+        this.context.height = rect.height;
+        this.paths.forEach((path)=>{
+            let p = new Path2D(path);
+            this.context.fillStyle = this.color;
+            this.context.fill(p);
+        });
+    }
+}
+exports.default = SvgPlane;
+
+},{"/shaders/textShader":"1VzNt","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","curtainsjs":"9AjRS"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map
