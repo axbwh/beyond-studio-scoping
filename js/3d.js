@@ -180,8 +180,8 @@ class ThreeD {
             //this.velocity.copy(this.attractor.position).sub(this.vectorUtil).clampLength(-0.8, 0.8)
 
             let velocityDelta = this.velocity.clone().copy(this.attractor.position).sub(this.vectorUtil)
-            this.velocity.add(velocityDelta).clampLength(-1.5, 1.5)
-            let friction = this.velocity.clone().negate().multiplyScalar(delta * 12)
+            this.velocity.add(velocityDelta).clampLength(-2.5, 2.5)
+            let friction = this.velocity.clone().negate().multiplyScalar(delta * 8)
             this.velocity.add(friction)
 
             this.material.userData.shader.uniforms.uAttractor.value = this.attractor.position
