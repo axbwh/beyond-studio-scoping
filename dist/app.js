@@ -65327,7 +65327,7 @@ class HoverSlider {
     constructor(curtains, el, trigger){
         this.curtains = curtains;
         this.element = el;
-        this.triggers = trigger.querySelectorAll("a");
+        this.triggers = trigger.querySelectorAll(".service");
         this.params = {
             vertexShader: (0, _sliderVertDefault.default),
             fragmentShader: (0, _sliderFragDefault.default),
