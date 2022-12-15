@@ -5,7 +5,7 @@ import textShader from '/shaders/textShader'
 class LoopSlider {
   constructor(curtains, el, target) {
     this.planes = []
-    this.contentWrapper = el.querySelector('.loop-cms-wrapper')
+    this.contentWrapper = el.querySelector('.loop')
     this.width = this.contentWrapper.offsetWidth
     this.offset = 0
     el.querySelectorAll('img').forEach((e, i) => {
@@ -25,7 +25,8 @@ class LoopSlider {
   }
 
   update(delta){
-    this.offset = this.offset > -this.width ? this.offset - delta * 120 : 0
+    this.offset = this.offset > -this.width / 2 ? this.offset - delta * 120 : 0
+    console.log(this.offset, this.width)
     this.planes.forEach((p, i) =>{
         p.relativeTranslation.x = this.offset
     })
