@@ -494,7 +494,7 @@ class App {
 
         let _mouse = _.throttle(this.mouseEvent.bind(this), 16, {'trailing' : true, 'leading': true})
 
-        let _scroll = _.throttle(this.onScroll.bind(this), 1, {'trailing' : true, 'leading': true})
+        let _scroll = _.throttle(this.onScroll.bind(this), 16, {'trailing' : true, 'leading': true})
 
 
        this.container.addEventListener("scroll", _scroll.bind(this));
