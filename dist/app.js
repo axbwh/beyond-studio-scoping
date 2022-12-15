@@ -996,7 +996,7 @@ class App {
             "trailing": true,
             "leading": true
         });
-        let _scroll = (0, _lodashDefault.default).throttle(this.onScroll.bind(this), 16, {
+        let _scroll = (0, _lodashDefault.default).throttle(this.onScroll.bind(this), 1, {
             "trailing": true,
             "leading": true
         });
