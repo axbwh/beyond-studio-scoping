@@ -1,6 +1,6 @@
 import { Plane } from 'curtainsjs'
-import frag from './shaders/img.frag'
-import textShader from './textShader'
+import frag from '/shaders/img.frag'
+import textShader from '/shaders/textShader'
 
 class LoopSlider {
   constructor(curtains, el, target) {

@@ -1,24 +1,24 @@
 import {Curtains, Plane, RenderTarget, ShaderPass, TextureLoader} from 'curtainsjs';
-import {TextTexture} from './TextTexture';
+import {TextTexture} from './js/TextTexture';
 import imgFrag from './shaders/img.frag'
 import lineFrag from './shaders/line.frag'
-import textShader from './textShader';
+import textShader from '/shaders/textShader';
 import pageFrag from './shaders/page.frag';
-import ThreeD from './3d';
-import Slider from './slider';
-import HoverSlider from './hoverSlider';
-import {hexToRgb, getCoord, rgbaToArray, lerpRgba }from './utils'
+import ThreeD from './js/3d';
+import Slider from './js/slider';
+import HoverSlider from './js/hoverSlider';
+import {hexToRgb, getCoord, rgbaToArray, lerpRgba }from './js/utils'
 import anime from 'animejs';
 import _, { delay } from 'lodash';
 import Stats from 'stats.js';
 import * as THREE from 'three'
-import Fade from './fadeIn';
-import LoopSlider from './LoopSlider';
+import Fade from './js/fadeIn';
+import LoopSlider from './js/LoopSlider';
 import parseColor from 'parse-color';
-import Card from './card';
-import scrollToId from './scrollToId';
+import Card from './js/card';
+import scrollToId from './js/scrollToId';
 import { getGPUTier, getGPUTier } from 'detect-gpu';
-import FallbackSlider from './fallbackSlider';
+import FallbackSlider from './js/fallbackSlider';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js

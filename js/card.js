@@ -1,10 +1,10 @@
 import { Plane, Vec3 } from 'curtainsjs'
-import frag from './shaders/img.frag'
-import textShader from './textShader'
-import lineFrag from './shaders/line.frag'
-import {TextTexture} from './TextTexture';
+import frag from '/shaders/img.frag'
+import textShader from '/shaders/textShader'
+import lineFrag from '/shaders/line.frag'
+import {TextTexture} from '/js/TextTexture';
 import parseColor from 'parse-color';
-import { lerpRgba, mapClamp } from './utils';
+import { lerpRgba, mapClamp } from '/js/utils';
 import { throws } from 'assert';
 
 class Card {

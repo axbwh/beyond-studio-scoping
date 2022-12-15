@@ -2,13 +2,13 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { LoopSubdivision } from 'three-subdivide';
-import glb from './icon.glb'
-import frag from './shaders/mesh.frag'
-import meshdither from './shaders/mesh.glsl'
-import headfrag from'./shaders/head.glsl'
-import vs from'./shaders/mesh.vert'
-import vertHead from './shaders/vertex/head.vert'
-import vertBody from './shaders/vertex/body.vert'
+import glb from '/icon.glb'
+import frag from '/shaders/mesh.frag'
+import meshdither from '/shaders/mesh.glsl'
+import headfrag from'/shaders/head.glsl'
+import vs from'/shaders/mesh.vert'
+import vertHead from '/shaders/vertex/head.vert'
+import vertBody from '/shaders/vertex/body.vert'
 import { times } from 'lodash';
 
 

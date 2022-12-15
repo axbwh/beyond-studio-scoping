@@ -1,6 +1,6 @@
 import {Plane, RenderTarget, ShaderPass} from 'curtainsjs';
-import sliderFrag from './shaders/slider.frag'
-import sliderVert from './shaders/slider.vert'
+import sliderFrag from '/shaders/slider.frag'
+import sliderVert from '/shaders/slider.vert'
 
 class HoverSlider {
   constructor(curtains, el, trigger) {

@@ -1,6 +1,6 @@
 import {Plane, RenderTarget, ShaderPass} from 'curtainsjs';
-import fadeFrag from './shaders/fade.frag'
-import textShader from './textShader';
+import fadeFrag from '/shaders/fade.frag'
+import textShader from '/shaders/textShader';
 
 class Fade {
   constructor(curtains, el, target) {
