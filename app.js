@@ -888,6 +888,8 @@ const onReady = async () => {
         e.removeAttribute('href')
     })
 
+
+    if( document.querySelector('#scrolling-bar')){
     //logo loop 
     var outer = document.querySelector("#scrolling-bar");
     var content = outer.querySelector('#content');
@@ -906,10 +908,7 @@ const onReady = async () => {
         counter += 1;
         }
     }
-    
-
-
-
+    }
 
     let GPUTier = await getGPUTier()
 
