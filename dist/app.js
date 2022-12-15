@@ -1309,8 +1309,21 @@ const onReady = async ()=>{
     document.querySelectorAll("#hover-slider-trigger a").forEach((e)=>{
         e.removeAttribute("href");
     });
+    //logo loop 
+    var outer = document.querySelector("#scrolling-bar");
+    var content = outer.querySelector("#content");
+    repeatContent(content, outer.offsetWidth);
+    var el = outer.querySelector("#loop");
+    el.innerHTML = el.innerHTML + el.innerHTML;
+    function repeatContent(el, untill) {
+        var html = el.innerHTML;
+        var counter = 0; // prevents infinite loop
+        while(el.offsetWidth < untill && counter < 100){
+            el.innerHTML += html;
+            counter += 1;
+        }
+    }
     let GPUTier = await (0, _detectGpu.getGPUTier)();
-    console.log("heyooo");
     if (GPUTier.tier > 0) {
         // create curtains instance
         const app = new App();
