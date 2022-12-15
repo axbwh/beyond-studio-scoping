@@ -19,6 +19,7 @@ import Card from './js/card';
 import scrollToId from './js/scrollToId';
 import { getGPUTier, getGPUTier } from 'detect-gpu';
 import FallbackSlider from './js/fallbackSlider';
+import SvgPlane from './js/svg';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -268,15 +269,18 @@ class App {
     loadImg(query, target, sampler, pass=true){
         const imgs = document.querySelectorAll(query)
         imgs.forEach((el) => {
-            const plane = new Plane(this.curtains, el, {
-              vertexShader: textShader.vs,
-              fragmentShader: imgFrag,
-            })
-
-            plane.loadImage(el, { sampler: 'uTexture' })
-
-            plane.setRenderTarget(target)
-            el.style.opacity = 0
+            if(el.tagName.toLowerCase() == 'img'){
+                const plane = new Plane(this.curtains, el, {
+                    vertexShader: textShader.vs,
+                    fragmentShader: imgFrag,
+                  })
+                  plane.loadImage(el, { sampler: 'uTexture' })
+                  plane.setRenderTarget(target)
+                  el.style.opacity = 0
+            }else{
+                let color = window.getComputedStyle(el).color
+                const plane = new SvgPlane(this.curtains, el, target, color)
+            }
           })
 
           if(pass){
@@ -286,6 +290,12 @@ class App {
             })
 
           }
+
+
+    }
+
+    loadSvg(query, target, sampler, pass=true){
+        const svgs = document.querySelectorAll(query)
     }
 
     initLines(){
@@ -363,7 +373,6 @@ class App {
                 ...this.textureOptions
             }
         })
-        console.log(this.puckTarget)
 
         Promise.all([
             document.fonts.load('300 1.375em "Atosmose", sans-serif'),
@@ -461,17 +470,17 @@ class App {
         this.pass.loadCanvas(this.threeD.canvas)
         this.initText(this.textTarget)
         //our img elements that will be in the puck & outside of it
-        this.loadImg('img[gl]', this.imgTarget, 'uImg')
+        this.loadImg('img[gl], svg[gl]', this.imgTarget, 'uImg')
         // images that will be outside the puck
-        this.loadImg('img[bg]', this.bgTarget, 'uBg')
+        this.loadImg('img[bg], svg[bg]', this.bgTarget, 'uBg')
         //images that will be inside the puck
-        this.loadImg('img[puck]', this.puckTarget, 'uPuck')
+        this.loadImg('img[puck], svg[puck]', this.puckTarget, 'uPuck')
         //this.initLines()
         this.initCards()
 
-    
-        this.fadeIn = document.querySelector('img[fade="in"]') ? new Fade(this.curtains, document.querySelector('img[fade="in"]'), this.puckTarget) : null
-        this.fadeOut = document.querySelector('img[fade="out"]') ? new Fade(this.curtains, document.querySelector('img[fade="out"]'), this.puckTarget) : null
+        console.log(document.querySelector('[fade="out"]'))
+        this.fadeIn = document.querySelector('[fade="in"]') ? new Fade(this.curtains, document.querySelector('[fade="in"]'), this.puckTarget) : null
+        this.fadeOut = document.querySelector('[fade="out"]') ? new Fade(this.curtains, document.querySelector('[fade="out"]'), this.puckTarget) : null
 
 
 
@@ -553,7 +562,6 @@ class App {
                 // let tagged = document.querySelectorAll(`[category*="${tag}"]`)
                 document.querySelectorAll('[role="listitem"]').forEach((e, i) =>{
                     let category = e.querySelector(`[category]`).getAttribute('category').toLowerCase()
-                    console.log(tag, '/', category,'/', tag === category)
 
                     e.style.display = this.activeFilters.includes(category) || this.activeFilters.length < 1 ? '' : 'none'                
                 })

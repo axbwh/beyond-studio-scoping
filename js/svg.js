@@ -1,5 +1,7 @@
 import textShader from '/shaders/textShader'
+import fadeFrag from '/shaders/fade.frag'
 import { Plane } from 'curtainsjs'
+import { Canvg } from 'canvg'
 
 class SvgPlane {
     constructor(curtains, el, target, color){
@@ -13,7 +15,14 @@ class SvgPlane {
 
     this.plane = new Plane(curtains, this.svg, {
         vertexShader: textShader.vs,
-        fragmentShader: textShader.fs,
+        fragmentShader: fadeFrag,
+        uniforms:{
+            opacity: {
+                name: 'uOpacity',
+                type: '1f',
+                value: 1,
+            }
+        },
         onAfterResize: () => {
             this.sizeSvg()
         }
@@ -31,12 +40,18 @@ class SvgPlane {
     this.canvas.height = rect.height
     this.context.width = rect.width
     this.context.height = rect.height
-
-    this.paths.forEach(path => {
-        let p = new Path2D(path)
-        this.context.fillStyle = this.color
-        this.context.fill(p)
+    let v =  Canvg.from(this.context, this.svg.outerHTML)
+    v.then( (svg)=>{
+        svg.render()
     })
+    //console.log(v)
+    //v.render()
+
+    // this.paths.forEach(path => {
+    //     let p = new Path2D(path)
+    //     this.context.fillStyle = this.color
+    //     this.context.fill(p)
+    // })
   }
 }
 
