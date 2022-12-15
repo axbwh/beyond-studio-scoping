@@ -120,7 +120,9 @@ void main() {
 
     vec4 defCol = (1.0 - splitCol);
     defCol.a = splitCol.a;
-    defCol =  mix(puckCol + imgCol, defCol, defCol.a);
+    imgCol.rgb*= imgCol.a;
+    vec4 puckImgCol = max(puckCol, imgCol);
+    defCol =  mix(puckImgCol, defCol, defCol.a);
 
 
 
