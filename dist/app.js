@@ -568,10 +568,10 @@ var _cardDefault = parcelHelpers.interopDefault(_card);
 var _scrollToId = require("./js/scrollToId");
 var _scrollToIdDefault = parcelHelpers.interopDefault(_scrollToId);
 var _detectGpu = require("detect-gpu");
-var _fallbackSlider = require("./js/fallbackSlider");
-var _fallbackSliderDefault = parcelHelpers.interopDefault(_fallbackSlider);
 var _svg = require("./js/svg");
 var _svgDefault = parcelHelpers.interopDefault(_svg);
+var _fallback = require("./js/fallback");
+var _fallbackDefault = parcelHelpers.interopDefault(_fallback);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -643,8 +643,8 @@ class App {
         };
         this.lastFrame = 0;
         this.frames = [];
-        this.pixelRatio = Math.min(this.tier > 1 ? 1 + tier / 2 : 1, window.devicePixelRatio);
-        this.threeD = new (0, _3DDefault.default)(this.pixelRatio, this.tier);
+        this.pixelRatio = Math.min(this.tier.tier > 1 ? 1 + this.tier.tier / 2 : 1, window.devicePixelRatio);
+        this.threeD = new (0, _3DDefault.default)(this.pixelRatio, this.tier.tier);
         this.textTextures = [];
     }
     init() {
@@ -666,8 +666,8 @@ class App {
         this.curtains.onError(this.onError.bind(this));
     }
     onError() {
-        document.querySelectorAll("img[puck]").forEach((el)=>{
-            el.style.display = "none";
+        document.querySelectorAll("img[puck]").forEach((el1)=>{
+            el1.style.display = "none";
         });
     }
     initTimeline() {
@@ -683,26 +683,26 @@ class App {
         } : this.origin;
         let frames = [
             ...document.querySelectorAll("[stick]")
-        ].map((el)=>{
+        ].map((el1)=>{
             return {
-                el: el,
-                coord: (0, _utils.getCoord)(el)
+                el: el1,
+                coord: (0, _utils.getCoord)(el1)
             };
         });
         let colorFrames = [
             ...document.querySelectorAll("[colora], [colorb], [colorc], [colord], [copacity]")
-        ].map((el)=>{
+        ].map((el1)=>{
             return {
-                el: el,
-                coord: (0, _utils.getCoord)(el)
+                el: el1,
+                coord: (0, _utils.getCoord)(el1)
             };
         });
         this.colorTriggers = [
             ...document.querySelectorAll("[hcolora], [hcolorb], [hcolorc], [hcolord], [hopacity]")
-        ].map((el)=>{
+        ].map((el1)=>{
             return {
-                el: el,
-                coord: (0, _utils.getCoord)(el)
+                el: el1,
+                coord: (0, _utils.getCoord)(el1)
             };
         });
         this.axes = frames[0] ? {
@@ -770,7 +770,8 @@ class App {
     }
     initText(target, pass = true) {
         const textEls = document.querySelectorAll("[text]");
-        textEls.forEach((textEl)=>{
+        if (!this.tier.isMobile) textEls.forEach((textEl)=>{
+            console.log(el.style.fontSize);
             const plane = new (0, _curtainsjs.Plane)(this.curtains, textEl, {
                 vertexShader: (0, _textShaderDefault.default).vs,
                 fragmentShader: (0, _textShaderDefault.default).fs
@@ -794,19 +795,25 @@ class App {
     }
     loadImg(query, target, sampler, pass = true) {
         const imgs = document.querySelectorAll(query);
-        imgs.forEach((el)=>{
-            if (el.tagName.toLowerCase() == "img") {
-                const plane = new (0, _curtainsjs.Plane)(this.curtains, el, {
+        imgs.forEach((el1)=>{
+            if (el1.tagName.toLowerCase() == "img") {
+                const plane = new (0, _curtainsjs.Plane)(this.curtains, el1, {
                     vertexShader: (0, _textShaderDefault.default).vs,
                     fragmentShader: (0, _imgFragDefault.default)
                 });
-                plane.loadImage(el, {
+                plane.loadImage(el1, {
                     sampler: "uTexture"
                 });
                 plane.setRenderTarget(target);
-                el.style.opacity = 0;
+                el1.style.opacity = 0;
             } else {
-                const plane1 = new (0, _svgDefault.default)(this.curtains, el, target);
+                if (!this.tier.isMobile) {
+                    const plane1 = new (0, _svgDefault.default)(this.curtains, el1, target);
+                } else if (el1.parentElement.parentElement === document.querySelector(".footer-logo-wrapper")) {
+                    if (el1.parentElement === document.querySelector(".footer-logo-wrapper .logo")) el1.style.opacity = 0;
+                } else {
+                    const plane2 = new (0, _svgDefault.default)(this.curtains, el1, target);
+                }
             }
         });
         if (pass) this.pass.createTexture({
@@ -819,27 +826,28 @@ class App {
     }
     initLines() {
         const divs = document.querySelectorAll("[line]");
-        divs.forEach((el)=>{
-            const plane = new (0, _curtainsjs.Plane)(this.curtains, el, {
+        divs.forEach((el1)=>{
+            const plane = new (0, _curtainsjs.Plane)(this.curtains, el1, {
                 vertexShader: (0, _textShaderDefault.default).vs,
                 fragmentShader: (0, _lineFragDefault.default),
                 uniforms: {
                     color: {
                         name: "uColor",
                         type: "4f",
-                        value: (0, _parseColorDefault.default)(window.getComputedStyle(el).backgroundColor).rgba.map((x, i)=>i < 3 ? x / 255 : x)
+                        value: (0, _parseColorDefault.default)(window.getComputedStyle(el1).backgroundColor).rgba.map((x, i)=>i < 3 ? x / 255 : x)
                     }
                 }
             });
             plane.setRenderTarget(this.textTarget);
-            el.style.opacity = 0;
+            el1.style.opacity = 0;
         });
     }
     initCards() {
         this.cards = [];
-        document.querySelectorAll("[card]").forEach((e, i)=>{
+        if (this.tier.tier > 1 && !this.tier.isMobile) document.querySelectorAll("[card]").forEach((e, i)=>{
             this.cards[i] = new (0, _cardDefault.default)(this.curtains, e, this.imgTarget);
         });
+        else this.loadImg("[card] img", this.imgTarget, "uImg", false);
     }
     onScroll() {
         this.y = this.container.scrollTop;
@@ -1326,76 +1334,30 @@ const onReady = async ()=>{
         var outer = document.querySelector("#scrolling-bar");
         var content = outer.querySelector("#content");
         repeatContent(content, outer.offsetWidth);
-        var el = outer.querySelector("#loop");
-        el.innerHTML = el.innerHTML + el.innerHTML;
-        function repeatContent(el, untill) {
-            var html = el.innerHTML;
+        var el1 = outer.querySelector("#loop");
+        el1.innerHTML = el1.innerHTML + el1.innerHTML;
+        function repeatContent(el1, untill) {
+            var html = el1.innerHTML;
             var counter = 0; // prevents infinite loop
-            while(el.offsetWidth < untill && counter < 100){
-                el.innerHTML += html;
+            while(el1.offsetWidth < untill && counter < 100){
+                el1.innerHTML += html;
                 counter += 1;
             }
         }
     }
     let GPUTier = await (0, _detectGpu.getGPUTier)();
+    //GPUTier.tier = 0
     if (GPUTier.tier > 0) {
         // create curtains instance
-        const app = new App(GPUTier.tier);
+        const app = new App(GPUTier);
         app.init();
-    } else fallback();
+    } else (0, _fallbackDefault.default)();
     (0, _scrollToIdDefault.default)();
-};
-const fallback = ()=>{
-    document.querySelectorAll(".casestudy-img-wrapper").forEach((e, i)=>{
-        let evenPath = "M0.404,0.006 c0.387,0.052,0.582,0.279,0.594,0.385 c0.031,0.169,-0.276,0.393,-0.373,0.461 c-0.098,0.068,-0.339,0.207,-0.499,0.122 C-0.002,0.907,-0.008,0.627,0.005,0.495 C0.036,0.313,0.031,-0.044,0.404,0.006";
-        let oddPath = "M0.996,0.495 C1,0.627,1,0.907,0.875,0.975 c-0.16,0.084,-0.401,-0.054,-0.499,-0.122 c-0.098,-0.068,-0.404,-0.293,-0.373,-0.461 C0.015,0.285,0.21,0.058,0.597,0.006 C0.97,-0.044,0.965,0.313,0.996,0.495";
-        let svgpath = "http://www.w3.org/2000/svg";
-        if (i < 2) {
-            let svg = document.createElementNS(svgpath, "svg");
-            svg.setAttributeNS(null, "viewBox", "0 0 882 753");
-            svg.style.position = "absolute";
-            svg.style.width = "100%";
-            svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-            svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-            let clipPath = document.createElementNS(svgpath, "clipPath");
-            clipPath.setAttributeNS(null, "id", `clipper${i}`);
-            clipPath.setAttributeNS(null, "clipPathUnits", `objectBoundingBox`);
-            let path = document.createElementNS(svgpath, "path");
-            path.setAttributeNS(null, "d", i % 2 == 0 ? evenPath : oddPath);
-            clipPath.appendChild(path);
-            svg.appendChild(clipPath);
-            e.appendChild(svg);
-        }
-        let div = document.createElement("div");
-        div.style.position = "absolute";
-        div.style.height = "100%";
-        div.style.maxWidth = "100%";
-        div.style.aspectRatio = 1.17;
-        div.style.clipPath = `url(#clipper${i % 2 == 0 ? 0 : 1})`;
-        div.appendChild(e.querySelector("img"));
-        e.appendChild(div);
-    });
-    (0, _animejsDefault.default)({
-        targets: "#preloader",
-        opacity: 0,
-        duration: 2000,
-        delay: 500,
-        easing: "easeInSine"
-    }).finished.then(()=>{
-        (0, _animejsDefault.default).set("#preloader", {
-            display: "none"
-        });
-    });
-    const slider = document.getElementById("slider") ? new (0, _fallbackSliderDefault.default)(document.getElementById("slider"), document.getElementById("slider-dom"), document.getElementById("slider-trigger")) : false;
-    slider && slider.init();
-    document.querySelectorAll(".section:not(:first-child)").forEach((e)=>{
-        e.style.backgroundColor = "#040707";
-    });
 };
 if (document.readyState !== "loading") onReady();
 else document.addEventListener("DOMContentLoaded", onReady);
 
-},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/LoopSlider":"4BR9x","./js/fallbackSlider":"bQnMu","./js/slider":"23FV9","./js/scrollToId":"gsXiN","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/LoopSlider":"4BR9x","./js/slider":"23FV9","./js/scrollToId":"gsXiN","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -65468,162 +65430,7 @@ class LoopSlider {
 }
 exports.default = LoopSlider;
 
-},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/shaders/img.frag":"7dXWc","/shaders/textShader":"1VzNt"}],"bQnMu":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _animejs = require("animejs");
-var _animejsDefault = parcelHelpers.interopDefault(_animejs);
-class FallbackSlider {
-    constructor(el, dom, trigger){
-        this.element = el;
-        this.dom = dom;
-        this.triggers = [
-            ...trigger.querySelectorAll(".slider-dot")
-        ];
-        this.num = [
-            ...trigger.querySelectorAll(".text-sml")
-        ];
-        this.doms = [
-            ...this.dom.querySelectorAll(".cms-item")
-        ];
-        this.images = this.element.querySelectorAll("img");
-        // this.images.forEach( (e, i) =>{
-        //     e.style.clipPath = 'path("M356,4.4c341.2,38.1,513.2,204.3,523.7,282.3c27.4,123.6-242.9,288.3-328.9,338c-86.1,49.6-298.4,151.4-439.6,89.5C-1.8,664.6-6.8,459.1,4.8,362.5C32,229.5,27.2-32.3,356,4.4z")'
-        // })
-        this.element.style.display = "none";
-        // here we will handle which texture is visible and the timer to transition between images
-        this.state = {
-            activeIndex: 0,
-            nextIndex: 1,
-            maxTextures: this.images.length,
-            isChanging: false,
-            transitionTimer: 0
-        };
-    }
-    init(target, callback) {
-        this.doms.forEach((e, i)=>{
-            if (i != this.state.activeIndex) {
-                (0, _animejsDefault.default).set(e.querySelectorAll("p, h3"), {
-                    opacity: 0,
-                    translateY: "4vh"
-                });
-                (0, _animejsDefault.default).set(e.querySelectorAll(".casestudy-img-wrapper"), {
-                    opacity: 0
-                });
-            }
-        }) // hide sliders
-        ;
-        this.num[2].innerText = this.state.maxTextures;
-        this.triggers.forEach((e, i)=>{
-            e.addEventListener("click", ()=>{
-                this.onClick(i);
-            });
-        });
-    }
-    onClick(i) {
-        if (!this.state.isChanging) {
-            // enable drawing for now
-            //curtains.enableDrawing();
-            this.state.isChanging = true;
-            if (i < 1) {
-                // check what will be next image
-                if (this.state.activeIndex < this.state.maxTextures - 1) this.state.nextIndex = this.state.activeIndex + 1;
-                else this.state.nextIndex = 0;
-            } else if (this.state.activeIndex > 0) this.state.nextIndex = this.state.activeIndex - 1;
-            else this.state.nextIndex = this.state.maxTextures - 1;
-            (0, _animejsDefault.default)({
-                targets: this.doms[this.state.activeIndex].querySelectorAll("p, h3"),
-                opacity: {
-                    value: 0,
-                    duration: 400,
-                    easing: "easeInSine"
-                },
-                translateY: {
-                    value: "-4vh",
-                    duration: 400,
-                    easing: "easeInSine"
-                },
-                delay: (0, _animejsDefault.default).stagger(100)
-            });
-            (0, _animejsDefault.default)({
-                targets: this.num[0],
-                opacity: {
-                    value: 0,
-                    duration: 400,
-                    easing: "easeInSine"
-                },
-                translateY: {
-                    value: "-4vh",
-                    duration: 400,
-                    easing: "easeInSine"
-                }
-            }).finished.then(()=>{
-                this.num[0].innerText = this.state.nextIndex + 1;
-                (0, _animejsDefault.default)({
-                    targets: this.num[0],
-                    opacity: {
-                        value: 1,
-                        duration: 400,
-                        easing: "easeOutSine"
-                    },
-                    translateY: {
-                        value: [
-                            "4vh",
-                            "0vh"
-                        ],
-                        duration: 400,
-                        easing: "easeOutSine"
-                    }
-                });
-            });
-            (0, _animejsDefault.default)({
-                targets: this.doms[this.state.activeIndex].querySelectorAll(".casestudy-img-wrapper"),
-                opacity: {
-                    value: 0,
-                    duration: 800,
-                    easing: "easeInSine"
-                }
-            });
-            (0, _animejsDefault.default)({
-                targets: this.doms[this.state.nextIndex].querySelectorAll(".casestudy-img-wrapper"),
-                opacity: {
-                    value: 1,
-                    duration: 800,
-                    easing: "easeOutSine"
-                }
-            });
-            (0, _animejsDefault.default)({
-                targets: this.doms[this.state.nextIndex].querySelectorAll("p, h3"),
-                opacity: {
-                    value: 1,
-                    duration: 400,
-                    easing: "easeOutSine"
-                },
-                translateY: {
-                    value: [
-                        "4vh",
-                        "0vh"
-                    ],
-                    duration: 400,
-                    easing: "easeOutSine"
-                },
-                delay: (0, _animejsDefault.default).stagger(100, {
-                    start: 400
-                })
-            });
-            setTimeout(()=>{
-                this.state.isChanging = false;
-                this.state.activeIndex = this.state.nextIndex;
-                // reset timer
-                this.state.transitionTimer = 0;
-            }, 800) // add a bit of margin to the timer
-            ;
-        }
-    }
-}
-exports.default = FallbackSlider;
-
-},{"animejs":"jokr5","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"23FV9":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/shaders/img.frag":"7dXWc","/shaders/textShader":"1VzNt"}],"23FV9":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _animejs = require("animejs");
@@ -69983,6 +69790,217 @@ var getPolyfill = require("./polyfill");
     return polyfill;
 };
 
-},{"define-properties":"6eq5U","./polyfill":"h00Nr"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"define-properties":"6eq5U","./polyfill":"h00Nr"}],"aSat7":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _animejs = require("animejs");
+var _animejsDefault = parcelHelpers.interopDefault(_animejs);
+var _fallbackSlider = require("./fallbackSlider");
+var _fallbackSliderDefault = parcelHelpers.interopDefault(_fallbackSlider);
+exports.default = fallback = ()=>{
+    document.querySelectorAll(".casestudy-img-wrapper").forEach((e, i)=>{
+        let evenPath = "M0.404,0.006 c0.387,0.052,0.582,0.279,0.594,0.385 c0.031,0.169,-0.276,0.393,-0.373,0.461 c-0.098,0.068,-0.339,0.207,-0.499,0.122 C-0.002,0.907,-0.008,0.627,0.005,0.495 C0.036,0.313,0.031,-0.044,0.404,0.006";
+        let oddPath = "M0.996,0.495 C1,0.627,1,0.907,0.875,0.975 c-0.16,0.084,-0.401,-0.054,-0.499,-0.122 c-0.098,-0.068,-0.404,-0.293,-0.373,-0.461 C0.015,0.285,0.21,0.058,0.597,0.006 C0.97,-0.044,0.965,0.313,0.996,0.495";
+        let svgpath = "http://www.w3.org/2000/svg";
+        if (i < 2) {
+            let svg = document.createElementNS(svgpath, "svg");
+            svg.setAttributeNS(null, "viewBox", "0 0 882 753");
+            svg.style.position = "absolute";
+            svg.style.width = "100%";
+            svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+            svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+            let clipPath = document.createElementNS(svgpath, "clipPath");
+            clipPath.setAttributeNS(null, "id", `clipper${i}`);
+            clipPath.setAttributeNS(null, "clipPathUnits", `objectBoundingBox`);
+            let path = document.createElementNS(svgpath, "path");
+            path.setAttributeNS(null, "d", i % 2 == 0 ? evenPath : oddPath);
+            clipPath.appendChild(path);
+            svg.appendChild(clipPath);
+            e.appendChild(svg);
+        }
+        let div = document.createElement("div");
+        div.style.position = "absolute";
+        div.style.height = "100%";
+        div.style.maxWidth = "100%";
+        div.style.aspectRatio = 1.17;
+        div.style.clipPath = `url(#clipper${i % 2 == 0 ? 0 : 1})`;
+        div.appendChild(e.querySelector("img"));
+        e.appendChild(div);
+    });
+    (0, _animejsDefault.default)({
+        targets: "#preloader",
+        opacity: 0,
+        duration: 2000,
+        delay: 500,
+        easing: "easeInSine"
+    }).finished.then(()=>{
+        (0, _animejsDefault.default).set("#preloader", {
+            display: "none"
+        });
+    });
+    const slider = document.getElementById("slider") ? new (0, _fallbackSliderDefault.default)(document.getElementById("slider"), document.getElementById("slider-dom"), document.getElementById("slider-trigger")) : false;
+    slider && slider.init();
+    document.querySelectorAll(".section:not(:first-child)").forEach((e)=>{
+        e.style.backgroundColor = "#040707";
+    });
+    document.querySelectorAll("[bg]").forEach((e)=>e.style.opacity = 0);
+};
+
+},{"./fallbackSlider":"bQnMu","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","animejs":"jokr5"}],"bQnMu":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _animejs = require("animejs");
+var _animejsDefault = parcelHelpers.interopDefault(_animejs);
+class FallbackSlider {
+    constructor(el, dom, trigger){
+        this.element = el;
+        this.dom = dom;
+        this.triggers = [
+            ...trigger.querySelectorAll(".slider-dot")
+        ];
+        this.num = [
+            ...trigger.querySelectorAll(".text-sml")
+        ];
+        this.doms = [
+            ...this.dom.querySelectorAll(".cms-item")
+        ];
+        this.images = this.element.querySelectorAll("img");
+        // this.images.forEach( (e, i) =>{
+        //     e.style.clipPath = 'path("M356,4.4c341.2,38.1,513.2,204.3,523.7,282.3c27.4,123.6-242.9,288.3-328.9,338c-86.1,49.6-298.4,151.4-439.6,89.5C-1.8,664.6-6.8,459.1,4.8,362.5C32,229.5,27.2-32.3,356,4.4z")'
+        // })
+        this.element.style.display = "none";
+        // here we will handle which texture is visible and the timer to transition between images
+        this.state = {
+            activeIndex: 0,
+            nextIndex: 1,
+            maxTextures: this.images.length,
+            isChanging: false,
+            transitionTimer: 0
+        };
+    }
+    init(target, callback) {
+        this.doms.forEach((e, i)=>{
+            if (i != this.state.activeIndex) {
+                (0, _animejsDefault.default).set(e.querySelectorAll("p, h3"), {
+                    opacity: 0,
+                    translateY: "4vh"
+                });
+                (0, _animejsDefault.default).set(e.querySelectorAll(".casestudy-img-wrapper"), {
+                    opacity: 0
+                });
+            }
+        }) // hide sliders
+        ;
+        this.num[2].innerText = this.state.maxTextures;
+        this.triggers.forEach((e, i)=>{
+            e.addEventListener("click", ()=>{
+                this.onClick(i);
+            });
+        });
+    }
+    onClick(i) {
+        if (!this.state.isChanging) {
+            // enable drawing for now
+            //curtains.enableDrawing();
+            this.state.isChanging = true;
+            if (i < 1) {
+                // check what will be next image
+                if (this.state.activeIndex < this.state.maxTextures - 1) this.state.nextIndex = this.state.activeIndex + 1;
+                else this.state.nextIndex = 0;
+            } else if (this.state.activeIndex > 0) this.state.nextIndex = this.state.activeIndex - 1;
+            else this.state.nextIndex = this.state.maxTextures - 1;
+            (0, _animejsDefault.default)({
+                targets: this.doms[this.state.activeIndex].querySelectorAll("p, h3"),
+                opacity: {
+                    value: 0,
+                    duration: 400,
+                    easing: "easeInSine"
+                },
+                translateY: {
+                    value: "-4vh",
+                    duration: 400,
+                    easing: "easeInSine"
+                },
+                delay: (0, _animejsDefault.default).stagger(100)
+            });
+            (0, _animejsDefault.default)({
+                targets: this.num[0],
+                opacity: {
+                    value: 0,
+                    duration: 400,
+                    easing: "easeInSine"
+                },
+                translateY: {
+                    value: "-4vh",
+                    duration: 400,
+                    easing: "easeInSine"
+                }
+            }).finished.then(()=>{
+                this.num[0].innerText = this.state.nextIndex + 1;
+                (0, _animejsDefault.default)({
+                    targets: this.num[0],
+                    opacity: {
+                        value: 1,
+                        duration: 400,
+                        easing: "easeOutSine"
+                    },
+                    translateY: {
+                        value: [
+                            "4vh",
+                            "0vh"
+                        ],
+                        duration: 400,
+                        easing: "easeOutSine"
+                    }
+                });
+            });
+            (0, _animejsDefault.default)({
+                targets: this.doms[this.state.activeIndex].querySelectorAll(".casestudy-img-wrapper"),
+                opacity: {
+                    value: 0,
+                    duration: 800,
+                    easing: "easeInSine"
+                }
+            });
+            (0, _animejsDefault.default)({
+                targets: this.doms[this.state.nextIndex].querySelectorAll(".casestudy-img-wrapper"),
+                opacity: {
+                    value: 1,
+                    duration: 800,
+                    easing: "easeOutSine"
+                }
+            });
+            (0, _animejsDefault.default)({
+                targets: this.doms[this.state.nextIndex].querySelectorAll("p, h3"),
+                opacity: {
+                    value: 1,
+                    duration: 400,
+                    easing: "easeOutSine"
+                },
+                translateY: {
+                    value: [
+                        "4vh",
+                        "0vh"
+                    ],
+                    duration: 400,
+                    easing: "easeOutSine"
+                },
+                delay: (0, _animejsDefault.default).stagger(100, {
+                    start: 400
+                })
+            });
+            setTimeout(()=>{
+                this.state.isChanging = false;
+                this.state.activeIndex = this.state.nextIndex;
+                // reset timer
+                this.state.transitionTimer = 0;
+            }, 800) // add a bit of margin to the timer
+            ;
+        }
+    }
+}
+exports.default = FallbackSlider;
+
+},{"animejs":"jokr5","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map
