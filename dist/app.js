@@ -666,8 +666,8 @@ class App {
         this.curtains.onError(this.onError.bind(this));
     }
     onError() {
-        document.querySelectorAll("img[puck]").forEach((el1)=>{
-            el1.style.display = "none";
+        document.querySelectorAll("img[puck]").forEach((el)=>{
+            el.style.display = "none";
         });
     }
     initTimeline() {
@@ -683,26 +683,26 @@ class App {
         } : this.origin;
         let frames = [
             ...document.querySelectorAll("[stick]")
-        ].map((el1)=>{
+        ].map((el)=>{
             return {
-                el: el1,
-                coord: (0, _utils.getCoord)(el1)
+                el: el,
+                coord: (0, _utils.getCoord)(el)
             };
         });
         let colorFrames = [
             ...document.querySelectorAll("[colora], [colorb], [colorc], [colord], [copacity]")
-        ].map((el1)=>{
+        ].map((el)=>{
             return {
-                el: el1,
-                coord: (0, _utils.getCoord)(el1)
+                el: el,
+                coord: (0, _utils.getCoord)(el)
             };
         });
         this.colorTriggers = [
             ...document.querySelectorAll("[hcolora], [hcolorb], [hcolorc], [hcolord], [hopacity]")
-        ].map((el1)=>{
+        ].map((el)=>{
             return {
-                el: el1,
-                coord: (0, _utils.getCoord)(el1)
+                el: el,
+                coord: (0, _utils.getCoord)(el)
             };
         });
         this.axes = frames[0] ? {
@@ -743,7 +743,7 @@ class App {
                 rotation: frame.coord.rotation,
                 rotRange: frame.coord.rotRange,
                 duration: duration,
-                easing: "easeInOutSine"
+                easing: frame.coord.easing
             }, previousTime);
         });
         timeline.add({
@@ -771,7 +771,7 @@ class App {
     initText(target, pass = true) {
         const textEls = document.querySelectorAll("[text]");
         if (!this.tier.isMobile) textEls.forEach((textEl)=>{
-            console.log(el.style.fontSize);
+            //console.log(textEl.style.fontSize)
             const plane = new (0, _curtainsjs.Plane)(this.curtains, textEl, {
                 vertexShader: (0, _textShaderDefault.default).vs,
                 fragmentShader: (0, _textShaderDefault.default).fs
@@ -795,24 +795,24 @@ class App {
     }
     loadImg(query, target, sampler, pass = true) {
         const imgs = document.querySelectorAll(query);
-        imgs.forEach((el1)=>{
-            if (el1.tagName.toLowerCase() == "img") {
-                const plane = new (0, _curtainsjs.Plane)(this.curtains, el1, {
+        imgs.forEach((el)=>{
+            if (el.tagName.toLowerCase() == "img") {
+                const plane = new (0, _curtainsjs.Plane)(this.curtains, el, {
                     vertexShader: (0, _textShaderDefault.default).vs,
                     fragmentShader: (0, _imgFragDefault.default)
                 });
-                plane.loadImage(el1, {
+                plane.loadImage(el, {
                     sampler: "uTexture"
                 });
                 plane.setRenderTarget(target);
-                el1.style.opacity = 0;
+                el.style.opacity = 0;
             } else {
                 if (!this.tier.isMobile) {
-                    const plane1 = new (0, _svgDefault.default)(this.curtains, el1, target);
-                } else if (el1.parentElement.parentElement === document.querySelector(".footer-logo-wrapper")) {
-                    if (el1.parentElement === document.querySelector(".footer-logo-wrapper .logo")) el1.style.opacity = 0;
+                    const plane1 = new (0, _svgDefault.default)(this.curtains, el, target);
+                } else if (el.parentElement.parentElement === document.querySelector(".footer-logo-wrapper")) {
+                    if (el.parentElement === document.querySelector(".footer-logo-wrapper .logo")) el.style.opacity = 0;
                 } else {
-                    const plane2 = new (0, _svgDefault.default)(this.curtains, el1, target);
+                    const plane2 = new (0, _svgDefault.default)(this.curtains, el, target);
                 }
             }
         });
@@ -826,20 +826,20 @@ class App {
     }
     initLines() {
         const divs = document.querySelectorAll("[line]");
-        divs.forEach((el1)=>{
-            const plane = new (0, _curtainsjs.Plane)(this.curtains, el1, {
+        divs.forEach((el)=>{
+            const plane = new (0, _curtainsjs.Plane)(this.curtains, el, {
                 vertexShader: (0, _textShaderDefault.default).vs,
                 fragmentShader: (0, _lineFragDefault.default),
                 uniforms: {
                     color: {
                         name: "uColor",
                         type: "4f",
-                        value: (0, _parseColorDefault.default)(window.getComputedStyle(el1).backgroundColor).rgba.map((x, i)=>i < 3 ? x / 255 : x)
+                        value: (0, _parseColorDefault.default)(window.getComputedStyle(el).backgroundColor).rgba.map((x, i)=>i < 3 ? x / 255 : x)
                     }
                 }
             });
             plane.setRenderTarget(this.textTarget);
-            el1.style.opacity = 0;
+            el.style.opacity = 0;
         });
     }
     initCards() {
@@ -1334,13 +1334,13 @@ const onReady = async ()=>{
         var outer = document.querySelector("#scrolling-bar");
         var content = outer.querySelector("#content");
         repeatContent(content, outer.offsetWidth);
-        var el1 = outer.querySelector("#loop");
-        el1.innerHTML = el1.innerHTML + el1.innerHTML;
-        function repeatContent(el1, untill) {
-            var html = el1.innerHTML;
+        var el = outer.querySelector("#loop");
+        el.innerHTML = el.innerHTML + el.innerHTML;
+        function repeatContent(el, untill) {
+            var html = el.innerHTML;
             var counter = 0; // prevents infinite loop
-            while(el1.offsetWidth < untill && counter < 100){
-                el1.innerHTML += html;
+            while(el.offsetWidth < untill && counter < 100){
+                el.innerHTML += html;
                 counter += 1;
             }
         }
@@ -66017,6 +66017,8 @@ const getCoord = (el)=>{
     let rect = el.getBoundingClientRect();
     let keyframe = rect.top + rect.height / 2 + scrollDom.scrollTop - window.innerHeight / 2;
     keyframe = keyframe < 0 ? 0 : keyframe;
+    let yoffset = el.getAttribute("yoffset") === "bottom";
+    keyframe = !yoffset ? keyframe : rect.top + rect.height / 2 + scrollDom.scrollTop;
     let scale = el.getAttribute("scale") ? el.getAttribute("scale") : 1;
     let colora = el.getAttribute("colora") ? (0, _parseColorDefault.default)(el.getAttribute("colora")).hex : false;
     let colorb = el.getAttribute("colorb") ? (0, _parseColorDefault.default)(el.getAttribute("colorb")).hex : false;
@@ -66026,6 +66028,8 @@ const getCoord = (el)=>{
     let rotation = el.getAttribute("rotation") ? parseInt(el.getAttribute("rotation")) : 0;
     let stick = el.getAttribute("stick");
     let rotRange = el.getAttribute("rotrange") ? el.getAttribute("rotrange") : 1;
+    let easing = el.getAttribute("easing") ? el.getAttribute("easing") : "easeInOutQuart";
+    easing = yoffset ? "easeInQuart" : easing;
     rotRange = isNaN(rotRange) ? 1 : rotRange;
     let range = isNaN(stick) ? 1 : 1 - stick;
     let hcolora = el.getAttribute("hcolora") ? (0, _parseColorDefault.default)(el.getAttribute("hcolora")).hex : false;
@@ -66043,6 +66047,7 @@ const getCoord = (el)=>{
         keyframe: keyframe,
         range: range,
         rotRange: rotRange,
+        easing: easing,
         colors: {
             ...colora && {
                 a: colora

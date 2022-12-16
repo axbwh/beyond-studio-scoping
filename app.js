@@ -196,6 +196,7 @@ class App {
 
 
         frames.length > 0 && frames.forEach((frame, index)=>{
+
             let previousTime = index > 0 ? frames[index - 1].coord.keyframe : 0
             let duration = index > 0 ? frame.coord.keyframe - frames[index - 1].coord.keyframe : 0.00001
             timeline.add({
@@ -206,7 +207,7 @@ class App {
                 rotation: frame.coord.rotation,
                 rotRange: frame.coord.rotRange,
                 duration: duration,
-                easing: 'easeInOutSine'
+                easing: frame.coord.easing
             }, previousTime)
         })
 
@@ -246,7 +247,7 @@ class App {
         if(!this.tier.isMobile){
             textEls.forEach(textEl => {    
                 
-                console.log(el.style.fontSize)
+                //console.log(textEl.style.fontSize)
                 const plane = new Plane(this.curtains, textEl, {
                     vertexShader: textShader.vs,
                     fragmentShader: textShader.fs

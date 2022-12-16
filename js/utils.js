@@ -28,7 +28,11 @@ const getCoord = (el) => {
     let scrollDom = document.querySelector('.scrolldom')
     let rect = el.getBoundingClientRect()
     let keyframe = rect.top + rect.height / 2 + scrollDom.scrollTop - window.innerHeight / 2
-    keyframe = keyframe < 0 ? 0 : keyframe;
+    keyframe = keyframe < 0 ? 0 : keyframe
+    let yoffset = el.getAttribute('yoffset') === 'bottom'
+    keyframe =  !yoffset ? keyframe : rect.top + rect.height / 2 + scrollDom.scrollTop
+
+
     let scale = el.getAttribute('scale') ? el.getAttribute('scale') : 1
     let colora = el.getAttribute('colora') ? parseColor(el.getAttribute('colora')).hex : false
     let colorb = el.getAttribute('colorb') ? parseColor(el.getAttribute('colorb')).hex : false
@@ -38,6 +42,8 @@ const getCoord = (el) => {
     let rotation = el.getAttribute('rotation') ? parseInt(el.getAttribute('rotation') ): 0
     let stick = el.getAttribute('stick')
     let rotRange = el.getAttribute('rotrange') ? el.getAttribute('rotrange') : 1
+    let easing = el.getAttribute('easing') ? el.getAttribute('easing') : 'easeInOutQuart'
+    easing = yoffset ? 'easeInQuart' : easing
     rotRange = isNaN(rotRange) ? 1 : rotRange
     let range = isNaN(stick) ? 1 : 1 - stick
 
@@ -58,6 +64,7 @@ const getCoord = (el) => {
         keyframe: keyframe,
         range: range,
         rotRange: rotRange,
+        easing: easing,
         colors: {
           ...(colora && {a: colora}),
           ...(colorb && {b: colorb}),
