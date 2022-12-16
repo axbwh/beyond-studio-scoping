@@ -1062,7 +1062,7 @@ class App {
                 this.onResize();
             });
         });
-        document.querySelectorAll('a:not([href^="#"])').forEach((e)=>{
+        document.querySelectorAll('a:not([href^="#"], [target="_blank"])').forEach((e)=>{
             e.addEventListener("click", (event)=>{
                 event.preventDefault();
                 this.onPageChange(e.href);
@@ -1298,7 +1298,6 @@ class App {
         this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta * 1.5);
         // this.pass.uniforms.morph.value = this.pass.uniforms.morph.value > 0.01 ? this.pass.uniforms.morph.value : 0
         this.pass.uniforms.opacity.value = this.curtains.lerp(this.pass.uniforms.opacity.value, this.impulses.opacity, delta * 4);
-        console.log(this.pass.uniforms.morph.value);
         if (this.fadeIn && this.fadeOut) {
             this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4);
             this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4);
@@ -1325,9 +1324,6 @@ const onReady = async ()=>{
             e.setAttribute("rotation", rotation >= 180 ? 0 : 180);
             rotation = e.getAttribute("rotation");
         }
-    });
-    document.querySelectorAll("#hover-slider-trigger a").forEach((e)=>{
-        e.removeAttribute("href");
     });
     if (document.querySelector("#scrolling-bar")) {
         //logo loop 
