@@ -3,10 +3,10 @@
 <!-- <script src="https://psychoactive-studios.github.io/beyond-studio-scoping/dist/app.js"></script> -->
 
 <script>
-	if(typeof parceled !== 'undefined') {
+	if(typeof parceled === 'undefined') {
 		let script = document.createElement('script')
 		script.type = 'text/javascript'
-		script.src = 'https://psychoactive-studios.github.io/beyond-studio-scoping/dist/app.js';
+		script.src = 'https://psychoactive-studios.github.io/beyond-studio-scoping/dist/app.js?v=2';
 		document.head.appendChild(script)
 	}
 	//checks if the parceled variable from app.js is undefined- meaning local host isn't up and running
@@ -16,10 +16,66 @@
 <style>
 	.img-wrapper:not(:first-child) {
 		position: absolute;
-	}
+	}	
+#preloader{
+	display: flex;
+	scrollbar-gutter: stable;
+}
 
-	::selection {
+.bg-img {
+	pointer-events:none; 
+}
+
+.footer-logo-wrapper{
+ fill: #f5f5f5;
+}
+
+.hero-text-wrapper{
+	fill:#040707;
+}
+</style>
+
+<style>
+body{
+direction:ltr;
+}
+::-webkit-scrollbar {
+width: 0.5vw; /* Controls the overall width of the scrollbar */
+padding: 10px; /* Controls the padding of the Scrollbar */
+  }
+  
+::-webkit-scrollbar:horizontal
+{
+	height: 4px;
+}
+::-webkit-scrollbar-thumb:horizontal:hover
+{
+	background: #040707;
+}
+/* Track - This is the part that contains the bit you click and drag */
+::-webkit-scrollbar-track {
+     background: #040707; /* Sets the background to transparent, change to a Hex or RGB value if you would like */
+}
+/* Handle - This is the bit you actually click and drag */
+::-webkit-scrollbar-thumb {
+      background: #ffffff; /* Change the Hex value to change the scroll handle */
+      border-radius: 0px;
+  }
+::selection {
 		color: #0F1212 !important;
 		background: #61FCC4 !important;
 	}
+::-moz-selection {
+  background: #0F1212; /* Gecko Browsers */
+}
+
+/*custom scroll bar for div*/
+
+</style>
+
+<style>
+  html { font-size: calc(0.625rem + 0.41666666666666663vw); }
+  @media screen and (max-width:1920px) { html { font-size: calc(0.625rem + 0.41666666666666674vw); } }
+  @media screen and (max-width:1440px) { html { font-size: calc(0.8126951092611863rem + 0.20811654526534862vw); } }
+  @media screen and (max-width:479px) { html { font-size: calc(0.7497384937238494rem + 0.41841004184100417vw); } }
 </style>
