@@ -8,7 +8,6 @@ class SvgPlane {
     constructor(curtains, el, target, color){
     this.svg = el
     this.color = color ? color : window.getComputedStyle(el).fill
-    console.log(el, this.color)
     this.bgColor = [...parseColor(this.color).rgba]
     this.bgColor = `rgba(${this.bgColor[0]}, ${this.bgColor[1]}, ${this.bgColor[2]}, 0%)`
     this.canvas = document.createElement("canvas")
