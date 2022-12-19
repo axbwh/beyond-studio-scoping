@@ -99,12 +99,15 @@ class FallbackSlider {
 
       anime({
         targets: this.doms[this.state.activeIndex].querySelectorAll('.casestudy-img-wrapper'),
-        opacity: { value: 0, duration: 800, easing: 'easeInSine'},
+        scaleX: { value: ['100%', '0%'], duration: 800, easing: 'easeInQuart'},
+        opacity: { value: 0, duration: 800, easing: 'easeInQuart'},
       })
 
       anime({
         targets: this.doms[this.state.nextIndex].querySelectorAll('.casestudy-img-wrapper'),
-        opacity: { value: 1, duration: 800, easing: 'easeOutSine'},
+        scaleX: { value: ['0%', '100%'],duration: 800, easing: 'easeOutQuart'},
+        opacity: { value: 1, duration: 800, easing: 'easeOutQuart'},
+        delay: 800,
       })
 
       anime({
