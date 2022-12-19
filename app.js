@@ -13,19 +13,25 @@ import _, { delay } from 'lodash';
 import Stats from 'stats.js';
 import * as THREE from 'three'
 import Fade from './js/fadeIn';
-import LoopSlider from './js/LoopSlider';
+import LoopSlider from './js/loopSlider';
 import parseColor from 'parse-color';
 import Card from './js/card';
 import scrollToId from './js/scrollToId';
 import { getGPUTier, getGPUTier } from 'detect-gpu';
 import SvgPlane from './js/svg';
 import fallback from './js/fallback';
+import Preloader from './js/preloader';
+
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true
 
+
+
+
 class App {
-    constructor(tier){
+    constructor(tier, preloader){
+        this.preloader = preloader
         this.tier = tier
         this.mouse = { x : 0.5, y: 0.5}
         this.mse = {x: 0, y: 0}
@@ -553,7 +559,7 @@ class App {
             } )
         })
 
-        this.preloader()
+        this.preload()
 
         this.activeFilters = []
 
@@ -612,7 +618,10 @@ class App {
        
     }
 
-    preloader(){
+    preload(){
+        this.preloader.stop(2).then( () => {
+            console.log('finished')
+        })
         anime({
             targets: '#preloader',
             opacity: 0,
@@ -695,6 +704,7 @@ class App {
     
     onPageChange(href){
         this.trans()
+        this.preloader.start()
         anime({
             targets: '.burger-menu',
             opacity: 0,
@@ -712,7 +722,7 @@ class App {
             duration: 2000,
             delay: 1500,
             easing: 'easeInOutExpo',
-        }).finished.then(() => window.location.href = href)
+        }).finished.then(() => this.preloader.stop).then(() => window.location.href = href)
     }
 
     menuOpen(){
@@ -905,6 +915,9 @@ class App {
 }
 
 const onReady = async () => {
+
+    let preloader = new Preloader()
+
     let rotation = 0
     document.querySelectorAll('[rotation]').forEach( (e) => {
         rotation = !isNaN(e.getAttribute('rotation')) ? e.getAttribute('rotation') : rotation
@@ -942,7 +955,7 @@ const onReady = async () => {
 
     if(GPUTier.tier > 0){
     // create curtains instance
-    const app = new App(GPUTier)
+    const app = new App(GPUTier, preloader)
     app.init()
     }else{
        fallback()
