@@ -574,6 +574,8 @@ var _fallback = require("./js/fallback");
 var _fallbackDefault = parcelHelpers.interopDefault(_fallback);
 var _preloader = require("./js/preloader");
 var _preloaderDefault = parcelHelpers.interopDefault(_preloader);
+var _logo = require("./js/logo");
+var _logoDefault = parcelHelpers.interopDefault(_logo);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -1038,7 +1040,7 @@ class App {
                 this.impulses.morph = 1;
             });
         });
-        this.preload();
+        // this.preload()
         this.activeFilters = [];
         this.filters.forEach((e)=>{
             e.addEventListener("click", (event)=>{
@@ -1325,6 +1327,7 @@ class App {
 }
 const onReady = async ()=>{
     let preloader = new (0, _preloaderDefault.default)();
+    let logo = new (0, _logoDefault.default)();
     let rotation = 0;
     document.querySelectorAll("[rotation]").forEach((e)=>{
         rotation = !isNaN(e.getAttribute("rotation")) ? e.getAttribute("rotation") : rotation;
@@ -1361,7 +1364,7 @@ const onReady = async ()=>{
 if (document.readyState !== "loading") onReady();
 else document.addEventListener("DOMContentLoaded", onReady);
 
-},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/scrollToId":"gsXiN","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/scrollToId":"gsXiN","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn","./js/logo":"h816w"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -70041,13 +70044,12 @@ class Preloader {
             loop: true,
             name: "clocked",
             // animationData: data
-            path: "https://uploads-ssl.webflow.com/5f287eb0037f68c8a08d3520/5fc454a806388fa94227b1ee_White-V01.json"
+            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a11a6423a6b712a7880753_Beyond_Preloader_Bug_Test_v01.json"
         });
         this.anim.addEventListener("data_ready", ()=>{
-            console.log(this.anim);
             this.anim.play();
             this.wrap.querySelector("svg").style.opacity = "1";
-            this.wrap.querySelector("svg").style.position = "absolute";
+            // this.wrap.querySelector('svg').style.position = 'absolute'
             this.wrap.querySelector("img").style.opacity = "0";
         });
     }
@@ -84787,6 +84789,56 @@ typeof navigator !== "undefined" && function(global, factory) {
     return lottie;
 });
 
-},{}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{}],"h816w":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _lottieWeb = require("lottie-web");
+var _lottieWebDefault = parcelHelpers.interopDefault(_lottieWeb);
+class Logo {
+    constructor(){
+        this.wrap = document.querySelector(".logo-wrapper");
+        this.anim = (0, _lottieWebDefault.default).loadAnimation({
+            container: this.wrap,
+            renderer: "svg",
+            autoplay: false,
+            loop: true,
+            name: "clocked",
+            // animationData: data,
+            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a11a6423a6b712a7880753_Beyond_Preloader_Bug_Test_v01.json"
+        });
+        this.anim.addEventListener("data_ready", ()=>{
+            this.wrap.querySelector("svg").style.opacity = "1";
+            this.wrap.querySelector("svg").style.position = "absolute";
+            this.wrap.querySelector("img").style.opacity = "0";
+        });
+        this.wrap.addEventListener("mouseenter", ()=>this.start());
+        this.wrap.addEventListener("mouseleave", ()=>this.stop());
+        this.isPlaying = false;
+    }
+    start() {
+        if (!this.isPlaying) {
+            this.anim.loop = true;
+            this.anim.play();
+            this.isPlaying = true;
+        }
+    }
+    stop() {
+        let anim = this.anim;
+        this.isPlaying = false;
+        return new Promise((resolve, reject)=>{
+            anim.addEventListener("loopComplete", (function loopListener() {
+                anim.removeEventListener("loopComplete", loopListener);
+                if (!this.isPlaying) {
+                    anim.loop = false;
+                    anim.stop();
+                }
+                resolve();
+            }).bind(this));
+        });
+    }
+}
+exports.default = Logo;
+
+},{"lottie-web":"7GKqM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map

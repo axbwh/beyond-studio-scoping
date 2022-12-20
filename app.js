@@ -21,6 +21,7 @@ import { getGPUTier, getGPUTier } from 'detect-gpu';
 import SvgPlane from './js/svg';
 import fallback from './js/fallback';
 import Preloader from './js/preloader';
+import Logo from './js/logo';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -559,7 +560,7 @@ class App {
             } )
         })
 
-        this.preload()
+        // this.preload()
 
         this.activeFilters = []
 
@@ -917,6 +918,7 @@ class App {
 const onReady = async () => {
 
     let preloader = new Preloader()
+    let logo = new Logo()
 
     let rotation = 0
     document.querySelectorAll('[rotation]').forEach( (e) => {
