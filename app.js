@@ -358,7 +358,7 @@ class App {
 
     onScroll(){
             this.y = this.container.scrollTop
-            this.curtains.updateScrollValues(0, this.y)
+            // this.curtains.updateScrollValues(0, this.y)
             let y = this.y/ (this.container.scrollHeight - this.height)
             this.timeline.seek(this.timeline.duration * y)
     }
@@ -836,7 +836,7 @@ class App {
 
     onRender(){
         this.stats.begin()
-
+        this.curtains.updateScrollValues(0, this.y)
         let delta = this.getDelta()
 
         this.scroll.lastValue = this.scroll.value;
