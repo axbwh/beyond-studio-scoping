@@ -1013,8 +1013,9 @@ class App {
             "trailing": true,
             "leading": true
         });
-        this.container.addEventListener("scroll", _scroll.bind(this));
-        document.addEventListener("mousemove", _mouse.bind(this), false);
+        //    this.container.addEventListener("scroll", _scroll.bind(this));
+        //    document.addEventListener('mousemove', _mouse.bind(this), false);
+        document.addEventListener("scroll", ()=>this.onScroll);
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e)=>{
@@ -1040,7 +1041,7 @@ class App {
                 this.impulses.morph = 1;
             });
         });
-        this.preload();
+        //this.preload()
         this.activeFilters = [];
         this.filters.forEach((e)=>{
             e.addEventListener("click", (event)=>{
@@ -70044,14 +70045,14 @@ class Preloader {
             loop: true,
             name: "clocked",
             // animationData: data
-            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a1294318ceba74cedb40a7_Beyond_Preloader_v04.json"
+            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a12b3665bf7bbf53940f01_Beyond_Preloader_v05.json"
         });
         this.anim.addEventListener("data_ready", ()=>{
             console.log("loaded");
             this.anim.play();
             this.wrap.querySelector("svg").style.opacity = "1";
-            // this.wrap.querySelector('svg').style.position = 'absolute'
-            this.wrap.querySelector("img").style.opacity = "0";
+        // this.wrap.querySelector('svg').style.position = 'absolute'
+        //this.wrap.querySelector('img').style.opacity = '0'
         });
     }
     start() {
