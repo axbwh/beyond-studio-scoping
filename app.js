@@ -855,12 +855,12 @@ class App {
 
         // clamp delta
         //this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
-        this.scroll.delta = this.scroll.lastValue - this.scroll.value;
-        this.scroll.delta *= 1 /  this.curtains.canvas.height;
+        // this.scroll.delta = this.scroll.lastValue - this.scroll.value;
+        // this.scroll.delta *= 1 /  this.curtains.canvas.height;
         //this.scroll.delta = 0
 
         // this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta * 2);
-        this.pass.uniforms.scrollEffect.value = this.scroll.effect;
+        //this.pass.uniforms.scrollEffect.value = this.scroll.effect;
 
 
         // anime.set(this.container, {
