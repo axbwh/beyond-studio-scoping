@@ -1014,15 +1014,17 @@ class App {
             "trailing": true,
             "leading": true
         });
-        //    this.container.addEventListener("scroll", _scroll.bind(this));
+        this.container.addEventListener("scroll", _scroll.bind(this));
         document.addEventListener("mousemove", _mouse.bind(this), false);
-        this.container.addEventListener("scroll", ()=>{
-            if (!this.ticking) window.requestAnimationFrame(()=>{
-                this.onScroll();
-                this.ticking = false;
-            });
-            ticking = true;
-        });
+        //    this.container.addEventListener("scroll", () =>{
+        //         if(!this.ticking){
+        //             window.requestAnimationFrame(()=>{
+        //                 this.onScroll()
+        //                 this.ticking = false
+        //             })
+        //         }
+        //         ticking = true
+        //    })
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e)=>{
