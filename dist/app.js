@@ -1040,7 +1040,7 @@ class App {
                 this.impulses.morph = 1;
             });
         });
-        // this.preload()
+        this.preload();
         this.activeFilters = [];
         this.filters.forEach((e)=>{
             e.addEventListener("click", (event)=>{

@@ -560,7 +560,7 @@ class App {
             } )
         })
 
-        // this.preload()
+        this.preload()
 
         this.activeFilters = []
 
