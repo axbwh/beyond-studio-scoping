@@ -1003,7 +1003,7 @@ class App {
         this.fadeOut = document.querySelector('[fade="out"]') ? new (0, _fadeInDefault.default)(this.curtains, document.querySelector('[fade="out"]'), this.puckTarget) : null;
         this.slider && this.slider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         this.hoverSlider && this.hoverSlider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
-        this.loopSlider = document.querySelector("#scrolling-bar") ? new (0, _loopSliderDefault.default)(this.curtains, document.querySelector("#scrolling-bar"), this.imgTarget) : null;
+        if (!this.tier.isMobile) this.loopSlider = document.querySelector("#scrolling-bar") ? new (0, _loopSliderDefault.default)(this.curtains, document.querySelector("#scrolling-bar"), this.imgTarget) : null;
         this.pass.onRender(this.onRender.bind(this));
         let _mouse = (0, _lodashDefault.default).throttle(this.mouseEvent.bind(this), 16, {
             "trailing": true,
@@ -1269,7 +1269,7 @@ class App {
         this.scroll.delta = this.scroll.lastValue - this.scroll.value;
         this.scroll.delta *= 1 / this.curtains.canvas.height;
         //this.scroll.delta = 0
-        this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta * 2);
+        // this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta * 2);
         this.pass.uniforms.scrollEffect.value = this.scroll.effect;
         // anime.set(this.container, {
         //     translateY: `${-this.scroll.effect}vh`
