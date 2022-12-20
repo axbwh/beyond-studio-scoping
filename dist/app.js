@@ -856,7 +856,7 @@ class App {
     }
     onScroll() {
         this.y = this.container.scrollTop;
-        this.curtains.updateScrollValues(0, this.y);
+        // this.curtains.updateScrollValues(0, this.y)
         let y = this.y / (this.container.scrollHeight - this.height);
         this.timeline.seek(this.timeline.duration * y);
     }
@@ -1264,6 +1264,7 @@ class App {
         let delta = this.getDelta();
         this.scroll.lastValue = this.scroll.value;
         this.scroll.value = this.y;
+        if (this.scroll.lastValue != this.y) this.curtains.updateScrollValues(0, this.y);
         // clamp delta
         //this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
         this.scroll.delta = this.scroll.lastValue - this.scroll.value;

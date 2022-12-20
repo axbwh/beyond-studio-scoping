@@ -836,11 +836,14 @@ class App {
 
     onRender(){
         this.stats.begin()
-        this.curtains.updateScrollValues(0, this.y)
+        
         let delta = this.getDelta()
 
         this.scroll.lastValue = this.scroll.value;
         this.scroll.value = this.y;
+        if(this.scroll.lastValue != this.y){
+            this.curtains.updateScrollValues(0, this.y)
+        }
         
 
         // clamp delta
