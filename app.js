@@ -524,9 +524,8 @@ class App {
         let _scroll = _.throttle(this.onScroll.bind(this), 16, {'trailing' : true, 'leading': true})
 
 
-    //    this.container.addEventListener("scroll", _scroll.bind(this));
-    //    document.addEventListener('mousemove', _mouse.bind(this), false);
-       document.addEventListener("scroll",()=> this.onScroll)
+       this.container.addEventListener("scroll", _scroll.bind(this));
+       document.addEventListener('mousemove', _mouse.bind(this), false);
 
 
        this.curtains.onAfterResize(this.onResize.bind(this))
@@ -561,7 +560,7 @@ class App {
             } )
         })
 
-        //this.preload()
+        this.preload()
 
         this.activeFilters = []
 
