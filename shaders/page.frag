@@ -45,14 +45,14 @@ void main() {
     vec4 threeDCol = texture2D(threeDTexture, uv);
 
     // branching on an uniform is ok
-    // if(uScrollEffect >= 0.0) {
-    //     uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
-    //     horizontalStretch = sin(uv.y);
-    // }
-    // else if(uScrollEffect < 0.0) {
-    //     uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
-    //     horizontalStretch = sin(-1.0 * (1.0 - uv.y));
-    // }
+    if(uScrollEffect >= 0.0) {
+        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
+        horizontalStretch = sin(uv.y);
+    }
+    else if(uScrollEffect < 0.0) {
+        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
+        horizontalStretch = sin(-1.0 * (1.0 - uv.y));
+    }
     horizontalStretch = 0.0;
 
     uv.x = uv.x * 2.0 - 1.0;
