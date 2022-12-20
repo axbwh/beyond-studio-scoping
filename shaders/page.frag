@@ -45,20 +45,28 @@ void main() {
     vec4 threeDCol = texture2D(threeDTexture, uv);
 
     // branching on an uniform is ok
+    // if(uScrollEffect >= 0.0) {
+    //     uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
+    //     horizontalStretch = sin(uv.y);
+    // }
+    // else if(uScrollEffect < 0.0) {
+    //     uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
+    //     horizontalStretch = sin(-1.0 * (1.0 - uv.y));
+    // }
+    // horizontalStretch = 0.0;
+
+    // uv.x = uv.x * 2.0 - 1.0;
+    // uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;
+    // uv.x = (uv.x + 1.0) * 0.5;
+    // moving the content underneath the square
+
+    // smoothscroll no stretch
     if(uScrollEffect >= 0.0) {
-        uv.y *= 1.0 + -uScrollEffect * 0.00625 * uScrollStrength;
-        horizontalStretch = sin(uv.y);
+        uv.y += uScrollEffect;
     }
     else if(uScrollEffect < 0.0) {
-        uv.y += (uv.y - 1.0) * uScrollEffect * 0.00625 * uScrollStrength;
-        horizontalStretch = sin(-1.0 * (1.0 - uv.y));
+        uv.y +=  uScrollEffect;
     }
-    horizontalStretch = 0.0;
-
-    uv.x = uv.x * 2.0 - 1.0;
-    uv.x *= 1.0 + uScrollEffect * 0.0035 * horizontalStretch * uScrollStrength;
-    uv.x = (uv.x + 1.0) * 0.5;
-    // moving the content underneath the square
 
     float baseMorph = threeDCol.r * 0.5 + ((sin(threeDCol.b) + 2.0) / 2.0) * threeDCol.r * 0.5;
     //baseMorph = clamp(threeDCol.r, 0.0001, 0.999);
