@@ -70044,7 +70044,7 @@ class Preloader {
             loop: true,
             name: "clocked",
             // animationData: data
-            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a1275362ffe9e28c73cfb2_Beyond_Preloader_v03.json"
+            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a1294318ceba74cedb40a7_Beyond_Preloader_v04.json"
         });
         this.anim.addEventListener("data_ready", ()=>{
             console.log("loaded");
