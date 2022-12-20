@@ -106,6 +106,7 @@ class App {
 
         this.threeD = new ThreeD(this.pixelRatio, this.tier.tier)
         this.textTextures = []
+        this.ticking = false
 
     }
 
@@ -358,7 +359,7 @@ class App {
 
     onScroll(){
             this.y = this.container.scrollTop
-            // this.curtains.updateScrollValues(0, this.y)
+            this.curtains.updateScrollValues(0, this.y)
             let y = this.y/ (this.container.scrollHeight - this.height)
             this.timeline.seek(this.timeline.duration * y)
     }
@@ -524,9 +525,18 @@ class App {
         let _scroll = _.throttle(this.onScroll.bind(this), 16, {'trailing' : true, 'leading': true})
 
 
-       this.container.addEventListener("scroll", _scroll.bind(this));
+    //    this.container.addEventListener("scroll", _scroll.bind(this));
        document.addEventListener('mousemove', _mouse.bind(this), false);
-
+       
+       this.container.addEventListener("scroll", () =>{
+            if(!this.ticking){
+                window.requestAnimationFrame(()=>{
+                    this.onScroll()
+                    this.ticking = false
+                })
+            }
+            ticking = true
+       })
 
        this.curtains.onAfterResize(this.onResize.bind(this))
        this.threeD.setPos(this.origin)
@@ -841,9 +851,6 @@ class App {
 
         this.scroll.lastValue = this.scroll.value;
         this.scroll.value = this.y;
-        if(this.scroll.lastValue != this.y){
-            this.curtains.updateScrollValues(0, this.y)
-        }
         
 
         // clamp delta

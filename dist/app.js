@@ -651,6 +651,7 @@ class App {
         this.pixelRatio = Math.min(this.tier.tier > 1 ? 1 + this.tier.tier / 2 : 1, window.devicePixelRatio);
         this.threeD = new (0, _3DDefault.default)(this.pixelRatio, this.tier.tier);
         this.textTextures = [];
+        this.ticking = false;
     }
     init() {
         // create curtains instance
@@ -856,7 +857,7 @@ class App {
     }
     onScroll() {
         this.y = this.container.scrollTop;
-        // this.curtains.updateScrollValues(0, this.y)
+        this.curtains.updateScrollValues(0, this.y);
         let y = this.y / (this.container.scrollHeight - this.height);
         this.timeline.seek(this.timeline.duration * y);
     }
@@ -1013,8 +1014,15 @@ class App {
             "trailing": true,
             "leading": true
         });
-        this.container.addEventListener("scroll", _scroll.bind(this));
+        //    this.container.addEventListener("scroll", _scroll.bind(this));
         document.addEventListener("mousemove", _mouse.bind(this), false);
+        this.container.addEventListener("scroll", ()=>{
+            if (!this.ticking) window.requestAnimationFrame(()=>{
+                this.onScroll();
+                this.ticking = false;
+            });
+            ticking = true;
+        });
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e)=>{
@@ -1264,7 +1272,6 @@ class App {
         let delta = this.getDelta();
         this.scroll.lastValue = this.scroll.value;
         this.scroll.value = this.y;
-        if (this.scroll.lastValue != this.y) this.curtains.updateScrollValues(0, this.y);
         // clamp delta
         //this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
         this.scroll.delta = this.scroll.lastValue - this.scroll.value;
