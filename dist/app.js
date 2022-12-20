@@ -775,7 +775,7 @@ class App {
     }
     initText(target, pass = true) {
         const textEls = document.querySelectorAll("[text]");
-        if (!this.tier.isMobile) textEls.forEach((textEl)=>{
+        if (!this.tier.isMobile && this.tier.tier > 1) textEls.forEach((textEl)=>{
             //console.log(textEl.style.fontSize)
             const plane = new (0, _curtainsjs.Plane)(this.curtains, textEl, {
                 vertexShader: (0, _textShaderDefault.default).vs,
@@ -849,7 +849,7 @@ class App {
     }
     initCards() {
         this.cards = [];
-        if (this.tier.tier > 1 && !this.tier.isMobile) document.querySelectorAll("[card]").forEach((e, i)=>{
+        if (this.tier.tier > 2 && !this.tier.isMobile) document.querySelectorAll("[card]").forEach((e, i)=>{
             this.cards[i] = new (0, _cardDefault.default)(this.curtains, e, this.imgTarget);
         });
         else this.loadImg("[card] img", this.imgTarget, "uImg", false);
@@ -1327,7 +1327,7 @@ class App {
 }
 const onReady = async ()=>{
     let preloader = new (0, _preloaderDefault.default)();
-    let logo = new (0, _logoDefault.default)();
+    // let logo = new Logo()
     let rotation = 0;
     document.querySelectorAll("[rotation]").forEach((e)=>{
         rotation = !isNaN(e.getAttribute("rotation")) ? e.getAttribute("rotation") : rotation;
@@ -70044,9 +70044,10 @@ class Preloader {
             loop: true,
             name: "clocked",
             // animationData: data
-            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a11a6423a6b712a7880753_Beyond_Preloader_Bug_Test_v01.json"
+            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a1275362ffe9e28c73cfb2_Beyond_Preloader_v03.json"
         });
         this.anim.addEventListener("data_ready", ()=>{
+            console.log("loaded");
             this.anim.play();
             this.wrap.querySelector("svg").style.opacity = "1";
             // this.wrap.querySelector('svg').style.position = 'absolute'
@@ -84802,7 +84803,7 @@ class Logo {
             renderer: "svg",
             autoplay: false,
             loop: true,
-            name: "clocked",
+            name: "other",
             // animationData: data,
             path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a11a6423a6b712a7880753_Beyond_Preloader_Bug_Test_v01.json"
         });

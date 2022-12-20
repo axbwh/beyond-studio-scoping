@@ -11,10 +11,11 @@ class Preloader {
             name: 'clocked',
             // animationData: data
             path:
-                'https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a11a6423a6b712a7880753_Beyond_Preloader_Bug_Test_v01.json',
+                'https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a1275362ffe9e28c73cfb2_Beyond_Preloader_v03.json',
         })
 
         this.anim.addEventListener('data_ready', () => {
+            console.log('loaded')
             this.anim.play()
             this.wrap.querySelector('svg').style.opacity = '1'
             // this.wrap.querySelector('svg').style.position = 'absolute'

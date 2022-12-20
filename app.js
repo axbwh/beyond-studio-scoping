@@ -251,7 +251,7 @@ class App {
     initText(target, pass=true){
 
         const textEls = document.querySelectorAll('[text]')
-        if(!this.tier.isMobile){
+        if(!this.tier.isMobile && this.tier.tier > 1){
             textEls.forEach(textEl => {    
                 
                 //console.log(textEl.style.fontSize)
@@ -345,7 +345,7 @@ class App {
 
     initCards(){
         this.cards = []
-        if(this.tier.tier > 1 && !this.tier.isMobile){
+        if(this.tier.tier > 2 && !this.tier.isMobile){
             document.querySelectorAll('[card]').forEach((e, i) => {
                 this.cards[i] = new Card(this.curtains, e, this.imgTarget)
             })
@@ -918,7 +918,7 @@ class App {
 const onReady = async () => {
 
     let preloader = new Preloader()
-    let logo = new Logo()
+    // let logo = new Logo()
 
     let rotation = 0
     document.querySelectorAll('[rotation]').forEach( (e) => {
@@ -963,7 +963,7 @@ const onReady = async () => {
        fallback()
     }
     scrollToId()
-}
+ }
 
 if (document.readyState !== 'loading') {
   onReady()

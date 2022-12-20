@@ -7,7 +7,7 @@ class Logo {
             renderer: 'svg',
             autoplay: false,
             loop: true,
-            name: 'clocked',
+            name: 'other',
             // animationData: data,
              path: 'https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a11a6423a6b712a7880753_Beyond_Preloader_Bug_Test_v01.json',
         })
