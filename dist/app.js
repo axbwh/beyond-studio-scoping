@@ -576,6 +576,8 @@ var _preloader = require("./js/preloader");
 var _preloaderDefault = parcelHelpers.interopDefault(_preloader);
 var _logo = require("./js/logo");
 var _logoDefault = parcelHelpers.interopDefault(_logo);
+var _copyToClipboard = require("./js/copyToClipboard");
+var _copyToClipboardDefault = parcelHelpers.interopDefault(_copyToClipboard);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -1348,6 +1350,7 @@ const onReady = async ()=>{
             rotation = e.getAttribute("rotation");
         }
     });
+    (0, _copyToClipboardDefault.default)();
     if (document.querySelector("#scrolling-bar")) {
         //logo loop 
         var outer = document.querySelector("#scrolling-bar");
@@ -1376,7 +1379,7 @@ const onReady = async ()=>{
 if (document.readyState !== "loading") onReady();
 else document.addEventListener("DOMContentLoaded", onReady);
 
-},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/scrollToId":"gsXiN","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn","./js/logo":"h816w"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/scrollToId":"gsXiN","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn","./js/logo":"h816w","./js/copyToClipboard":"2A7UE"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -84852,6 +84855,149 @@ class Logo {
 }
 exports.default = Logo;
 
-},{"lottie-web":"7GKqM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"lottie-web":"7GKqM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"2A7UE":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _animejs = require("animejs");
+var _animejsDefault = parcelHelpers.interopDefault(_animejs);
+const copyToClipboard = ()=>{
+    let tag = document.querySelector(".mail-tag");
+    let hover = tag.childNodes[2];
+    let base = tag.childNodes[1];
+    let copied = tag.childNodes[0];
+    let timeout = false;
+    let clicked = false;
+    let hovered = false;
+    (0, _animejsDefault.default).set([
+        hover,
+        copied
+    ], {
+        opacity: 0,
+        translateY: "-100%"
+    });
+    const copyHello = document.querySelectorAll(".copy-hello");
+    let onLeave = ()=>{
+        hovered = false;
+        if (!timeout) {
+            (0, _animejsDefault.default)({
+                targets: base,
+                opacity: [
+                    0,
+                    1
+                ],
+                translateY: [
+                    "-100%",
+                    "0%"
+                ],
+                duration: 400,
+                easing: "easeOutQuart"
+            });
+            if (clicked) {
+                (0, _animejsDefault.default)({
+                    targets: copied,
+                    opacity: [
+                        1,
+                        0
+                    ],
+                    translateY: [
+                        "0%",
+                        "100%"
+                    ],
+                    duration: 400,
+                    easing: "easeOutQuart"
+                });
+                clicked = false;
+            } else (0, _animejsDefault.default)({
+                targets: hover,
+                opacity: [
+                    1,
+                    0
+                ],
+                translateY: [
+                    "0%",
+                    "100%"
+                ],
+                duration: 400,
+                easing: "easeOutQuart"
+            });
+        }
+    };
+    copyHello.forEach((e)=>{
+        e.addEventListener("mouseenter", ()=>{
+            hovered = true;
+            if (!timeout) {
+                (0, _animejsDefault.default)({
+                    targets: base,
+                    opacity: [
+                        1,
+                        0
+                    ],
+                    translateY: [
+                        "0%",
+                        "100%"
+                    ],
+                    duration: 400,
+                    easing: "easeOutQuart"
+                });
+                (0, _animejsDefault.default)({
+                    targets: hover,
+                    opacity: [
+                        0,
+                        1
+                    ],
+                    translateY: [
+                        "-100%",
+                        "0%"
+                    ],
+                    duration: 400,
+                    easing: "easeOutQuart"
+                });
+            }
+        });
+        e.addEventListener("mouseleave", ()=>{
+            onLeave();
+        });
+        e.addEventListener("click", ()=>{
+            (0, _animejsDefault.default)({
+                targets: hover,
+                opacity: [
+                    1,
+                    0
+                ],
+                translateY: [
+                    "0%",
+                    "100%"
+                ],
+                duration: 400,
+                easing: "easeOutQuart"
+            });
+            (0, _animejsDefault.default)({
+                targets: copied,
+                opacity: [
+                    0,
+                    1
+                ],
+                translateY: [
+                    "-100%",
+                    "0%"
+                ],
+                duration: 400,
+                easing: "easeOutQuart"
+            });
+            clicked = true;
+            timeout = true;
+            setTimeout(()=>{
+                timeout = false;
+                if (!hovered) onLeave();
+            }, 2000);
+            var email = "hello@beyond.fun";
+            navigator.clipboard.writeText(email);
+        });
+    });
+};
+exports.default = copyToClipboard // copy email to clipboard 
+;
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","animejs":"jokr5"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map

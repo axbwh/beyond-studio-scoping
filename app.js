@@ -22,6 +22,7 @@ import SvgPlane from './js/svg';
 import fallback from './js/fallback';
 import Preloader from './js/preloader';
 import Logo from './js/logo';
+import copyToClipboard from './js/copyToClipboard';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -941,6 +942,8 @@ const onReady = async () => {
             rotation = e.getAttribute('rotation')
         }
     })
+
+    copyToClipboard()
 
 
     if( document.querySelector('#scrolling-bar')){
