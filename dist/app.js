@@ -65462,7 +65462,7 @@ class Slider {
     }
     init(target, callback) {
         this.doms.forEach((e, i)=>{
-            if (i != this.state.activeIndex) (0, _animejsDefault.default).set(e.querySelectorAll("p, h3"), {
+            if (i != this.state.activeIndex) (0, _animejsDefault.default).set(e.querySelectorAll("p:not([first]), h3:not([first])"), {
                 opacity: 0,
                 translateY: "4vh"
             });
@@ -65521,7 +65521,7 @@ class Slider {
             } else if (this.state.activeIndex > 0) this.state.nextIndex = this.state.activeIndex - 1;
             else this.state.nextIndex = this.state.maxTextures - 1;
             (0, _animejsDefault.default)({
-                targets: this.doms[this.state.activeIndex].querySelectorAll("p, h3"),
+                targets: this.doms[this.state.activeIndex].querySelectorAll("p:not([first]), h3:not([first])"),
                 opacity: {
                     value: 0,
                     duration: 400,
@@ -65566,7 +65566,7 @@ class Slider {
                 });
             });
             (0, _animejsDefault.default)({
-                targets: this.doms[this.state.nextIndex].querySelectorAll("p, h3"),
+                targets: this.doms[this.state.nextIndex].querySelectorAll("p:not([first]), h3:not([first])"),
                 opacity: {
                     value: 1,
                     duration: 400,
