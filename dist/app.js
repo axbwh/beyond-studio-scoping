@@ -65641,26 +65641,32 @@ var _animejs = require("animejs");
 var _animejsDefault = parcelHelpers.interopDefault(_animejs);
 scrollToId = ()=>{
     let container = document.querySelector(".scrolldom");
-    if (container) document.querySelectorAll("a[href^='#']").forEach((e)=>{
-        let href = e.href.substring(e.href.lastIndexOf("#"));
-        if (href.length === 1) e.addEventListener("click", ()=>{
-            (0, _animejsDefault.default)({
-                targets: container,
-                scrollTop: 0,
-                duration: container.scrollTop / 2,
-                easing: "easeInOutSine"
+    if (container) {
+        if (window.location.hash && document.querySelector(window.location.hash)) {
+            let target = document.querySelector(window.location.hash).offsetTop;
+            container.scrollTop = target;
+        }
+        document.querySelectorAll("a[href^='#']").forEach((e)=>{
+            let href = e.href.substring(e.href.lastIndexOf("#"));
+            if (href.length === 1) e.addEventListener("click", ()=>{
+                (0, _animejsDefault.default)({
+                    targets: container,
+                    scrollTop: 0,
+                    duration: container.scrollTop / 2,
+                    easing: "easeInOutSine"
+                });
+            });
+            else if (document.querySelector(href)) e.addEventListener("click", ()=>{
+                let target = document.querySelector(href).offsetTop;
+                (0, _animejsDefault.default)({
+                    targets: container,
+                    scrollTop: target,
+                    duration: Math.abs(container.scrollTop - target) / 2,
+                    easing: "easeInOutSine"
+                });
             });
         });
-        else if (document.querySelector(href)) e.addEventListener("click", ()=>{
-            let target = document.querySelector(href).offsetTop;
-            (0, _animejsDefault.default)({
-                targets: container,
-                scrollTop: target,
-                duration: Math.abs(container.scrollTop - target) / 2,
-                easing: "easeInOutSine"
-            });
-        });
-    });
+    }
 };
 exports.default = scrollToId;
 

@@ -2,7 +2,17 @@ import anime from "animejs"
 
 scrollToId = () => {
     let container = document.querySelector('.scrolldom')
+
+
+
     if (container) {
+
+        if(window.location.hash && document.querySelector(window.location.hash)){
+            let target = document.querySelector(window.location.hash).offsetTop
+            container.scrollTop = target
+        }
+
+
       document.querySelectorAll("a[href^='\#']").forEach((e) => {
           let href = e.href.substring(e.href.lastIndexOf('#'))
           if(href.length === 1){
