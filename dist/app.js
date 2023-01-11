@@ -84877,37 +84877,8 @@ const copyToClipboard = ()=>{
     });
     const copyHello = document.querySelectorAll(".copy-hello");
     let onLeave = ()=>{
-        hovered = false;
-        if (!timeout) {
+        if (!hovered) {
             (0, _animejsDefault.default)({
-                targets: base,
-                opacity: [
-                    0,
-                    1
-                ],
-                translateY: [
-                    "-100%",
-                    "0%"
-                ],
-                duration: 400,
-                easing: "easeOutQuart"
-            });
-            if (clicked) {
-                (0, _animejsDefault.default)({
-                    targets: copied,
-                    opacity: [
-                        1,
-                        0
-                    ],
-                    translateY: [
-                        "0%",
-                        "100%"
-                    ],
-                    duration: 400,
-                    easing: "easeOutQuart"
-                });
-                clicked = false;
-            } else (0, _animejsDefault.default)({
                 targets: hover,
                 opacity: [
                     1,
@@ -84920,39 +84891,76 @@ const copyToClipboard = ()=>{
                 duration: 400,
                 easing: "easeOutQuart"
             });
+            if (clicked) (0, _animejsDefault.default)({
+                targets: copied,
+                opacity: [
+                    0,
+                    1
+                ],
+                translateY: [
+                    "-100%",
+                    "0%"
+                ],
+                duration: 400,
+                easing: "easeOutQuart"
+            });
+            else (0, _animejsDefault.default)({
+                targets: base,
+                opacity: [
+                    0,
+                    1
+                ],
+                translateY: [
+                    "-100%",
+                    "0%"
+                ],
+                duration: 400,
+                easing: "easeOutQuart"
+            });
         }
+        hovered = false;
     };
     copyHello.forEach((e)=>{
         e.addEventListener("mouseenter", ()=>{
-            hovered = true;
-            if (!timeout) {
-                (0, _animejsDefault.default)({
-                    targets: base,
-                    opacity: [
-                        1,
-                        0
-                    ],
-                    translateY: [
-                        "0%",
-                        "100%"
-                    ],
-                    duration: 400,
-                    easing: "easeOutQuart"
-                });
-                (0, _animejsDefault.default)({
-                    targets: hover,
-                    opacity: [
-                        0,
-                        1
-                    ],
-                    translateY: [
-                        "-100%",
-                        "0%"
-                    ],
-                    duration: 400,
-                    easing: "easeOutQuart"
-                });
-            }
+            (0, _animejsDefault.default)({
+                targets: hover,
+                opacity: [
+                    0,
+                    1
+                ],
+                translateY: [
+                    "-100%",
+                    "0%"
+                ],
+                duration: 400,
+                easing: "easeOutQuart"
+            });
+            if (clicked) (0, _animejsDefault.default)({
+                targets: copied,
+                opacity: [
+                    1,
+                    0
+                ],
+                translateY: [
+                    "0",
+                    "100%"
+                ],
+                duration: 400,
+                easing: "easeOutQuart"
+            });
+            else (0, _animejsDefault.default)({
+                targets: base,
+                opacity: [
+                    1,
+                    0
+                ],
+                translateY: [
+                    "0%",
+                    "100%"
+                ],
+                duration: 400,
+                easing: "easeOutQuart"
+            });
         });
         e.addEventListener("mouseleave", ()=>{
             onLeave();
@@ -84985,17 +84993,13 @@ const copyToClipboard = ()=>{
                 easing: "easeOutQuart"
             });
             clicked = true;
-            timeout = true;
-            setTimeout(()=>{
-                timeout = false;
-                if (!hovered) onLeave();
-            }, 2000);
+            hovered = true;
             var email = "hello@beyond.fun";
             navigator.clipboard.writeText(email);
         });
     });
 };
-exports.default = copyToClipboard // copy email to clipboard 
+exports.default = copyToClipboard // copy email to clipboard
 ;
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","animejs":"jokr5"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
