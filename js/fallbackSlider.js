@@ -31,15 +31,24 @@ class FallbackSlider {
 
     this.doms.forEach((e, i) =>{
       if(i != this.state.activeIndex){
-        anime.set(e.querySelectorAll('p, h3'), {
+        anime.set(e.querySelectorAll('[slide]'), {
           opacity:0,
-          translateY: '4vh'
+          translateY: '4vh',
+          pointerEvents: 'none'
         })
 
         anime.set(e.querySelectorAll('.casestudy-img-wrapper'), {
             opacity:0,
         })
+
+        e.style.pointerEvents = 'none'
+      }else{
+        anime.set(e.querySelectorAll('[slide]'), {
+          pointerEvents: 'all'
+        })
       }
+
+
     }) // hide sliders
 
 
@@ -75,10 +84,15 @@ class FallbackSlider {
         }
       }
 
+      this.doms.forEach( (d, i) =>{
+          d.style.pointerEvents = i === this.activeIndex ? 'all' : 'none'
+
+      })
+
       
 
       anime({
-        targets: this.doms[this.state.activeIndex].querySelectorAll('p, h3'),
+        targets: this.doms[this.state.activeIndex].querySelectorAll('[slide]'),
         opacity: { value: 0, duration: 400, easing: 'easeInSine'},
         translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
         delay: anime.stagger(100)
@@ -111,7 +125,7 @@ class FallbackSlider {
       })
 
       anime({
-        targets: this.doms[this.state.nextIndex].querySelectorAll('p, h3'),
+        targets: this.doms[this.state.nextIndex].querySelectorAll('[slide]'),
         opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
         translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'},
         delay: anime.stagger(100, {start: 400})

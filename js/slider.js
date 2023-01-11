@@ -47,9 +47,16 @@ class Slider {
 
     this.doms.forEach((e, i) =>{
       if(i != this.state.activeIndex){
-        anime.set(e.querySelectorAll('p:not([first]), h3:not([first])'), {
+        anime.set(e.querySelectorAll('[slide]'), {
           opacity:0,
-          translateY: '4vh'
+          translateY: '4vh',
+          pointerEvents: 'none'
+        })
+
+        e.style.pointerEvents = 'none'
+      }else{
+        anime.set(e.querySelectorAll('[slide]'), {
+          pointerEvents: 'all'
         })
       }
     }) // hide sliders
@@ -125,14 +132,24 @@ class Slider {
         }
       }
 
+      this.doms.forEach( (d, i) =>{
+        d.style.pointerEvents = i === this.state.nextIndex ? 'all' : 'none'
+
+        anime.set(d.querySelectorAll('[slide]'), {
+          pointerEvents: i === this.state.nextIndex ? 'all' : 'none'
+        })
+    })
+
       
 
       anime({
-        targets: this.doms[this.state.activeIndex].querySelectorAll('p:not([first]), h3:not([first])'),
+        targets: this.doms[this.state.activeIndex].querySelectorAll('[slide]'),
         opacity: { value: 0, duration: 400, easing: 'easeInSine'},
         translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
         delay: anime.stagger(100)
       })
+
+      
 
       anime({
         targets: this.num[0],
@@ -148,7 +165,7 @@ class Slider {
       })
 
       anime({
-        targets: this.doms[this.state.nextIndex].querySelectorAll('p:not([first]), h3:not([first])'),
+        targets: this.doms[this.state.nextIndex].querySelectorAll('[slide]'),
         opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
         translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'},
         delay: anime.stagger(100, {start: 400})

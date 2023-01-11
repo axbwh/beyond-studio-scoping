@@ -65462,9 +65462,15 @@ class Slider {
     }
     init(target, callback) {
         this.doms.forEach((e, i)=>{
-            if (i != this.state.activeIndex) (0, _animejsDefault.default).set(e.querySelectorAll("p:not([first]), h3:not([first])"), {
-                opacity: 0,
-                translateY: "4vh"
+            if (i != this.state.activeIndex) {
+                (0, _animejsDefault.default).set(e.querySelectorAll("[slide]"), {
+                    opacity: 0,
+                    translateY: "4vh",
+                    pointerEvents: "none"
+                });
+                e.style.pointerEvents = "none";
+            } else (0, _animejsDefault.default).set(e.querySelectorAll("[slide]"), {
+                pointerEvents: "all"
             });
         }) // hide sliders
         ;
@@ -65520,8 +65526,14 @@ class Slider {
                 else this.state.nextIndex = 0;
             } else if (this.state.activeIndex > 0) this.state.nextIndex = this.state.activeIndex - 1;
             else this.state.nextIndex = this.state.maxTextures - 1;
+            this.doms.forEach((d, i)=>{
+                d.style.pointerEvents = i === this.state.nextIndex ? "all" : "none";
+                (0, _animejsDefault.default).set(d.querySelectorAll("[slide]"), {
+                    pointerEvents: i === this.state.nextIndex ? "all" : "none"
+                });
+            });
             (0, _animejsDefault.default)({
-                targets: this.doms[this.state.activeIndex].querySelectorAll("p:not([first]), h3:not([first])"),
+                targets: this.doms[this.state.activeIndex].querySelectorAll("[slide]"),
                 opacity: {
                     value: 0,
                     duration: 400,
@@ -65566,7 +65578,7 @@ class Slider {
                 });
             });
             (0, _animejsDefault.default)({
-                targets: this.doms[this.state.nextIndex].querySelectorAll("p:not([first]), h3:not([first])"),
+                targets: this.doms[this.state.nextIndex].querySelectorAll("[slide]"),
                 opacity: {
                     value: 1,
                     duration: 400,
@@ -69867,14 +69879,18 @@ class FallbackSlider {
     init(target, callback) {
         this.doms.forEach((e, i)=>{
             if (i != this.state.activeIndex) {
-                (0, _animejsDefault.default).set(e.querySelectorAll("p, h3"), {
+                (0, _animejsDefault.default).set(e.querySelectorAll("[slide]"), {
                     opacity: 0,
-                    translateY: "4vh"
+                    translateY: "4vh",
+                    pointerEvents: "none"
                 });
                 (0, _animejsDefault.default).set(e.querySelectorAll(".casestudy-img-wrapper"), {
                     opacity: 0
                 });
-            }
+                e.style.pointerEvents = "none";
+            } else (0, _animejsDefault.default).set(e.querySelectorAll("[slide]"), {
+                pointerEvents: "all"
+            });
         }) // hide sliders
         ;
         this.num[2].innerText = this.state.maxTextures;
@@ -69895,8 +69911,11 @@ class FallbackSlider {
                 else this.state.nextIndex = 0;
             } else if (this.state.activeIndex > 0) this.state.nextIndex = this.state.activeIndex - 1;
             else this.state.nextIndex = this.state.maxTextures - 1;
+            this.doms.forEach((d, i)=>{
+                d.style.pointerEvents = i === this.activeIndex ? "all" : "none";
+            });
             (0, _animejsDefault.default)({
-                targets: this.doms[this.state.activeIndex].querySelectorAll("p, h3"),
+                targets: this.doms[this.state.activeIndex].querySelectorAll("[slide]"),
                 opacity: {
                     value: 0,
                     duration: 400,
@@ -69974,7 +69993,7 @@ class FallbackSlider {
                 delay: 800
             });
             (0, _animejsDefault.default)({
-                targets: this.doms[this.state.nextIndex].querySelectorAll("p, h3"),
+                targets: this.doms[this.state.nextIndex].querySelectorAll("[slide]"),
                 opacity: {
                     value: 1,
                     duration: 400,
