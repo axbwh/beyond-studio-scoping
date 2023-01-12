@@ -534,19 +534,8 @@ class App {
     //    });
        document.addEventListener('mousemove', _mouse.bind(this), false);
 
-       this.container.addEventListener("touchmove", (e) =>{
-        //e.preventDefault()
-            if(!this.ticking){
-                window.requestAnimationFrame(()=>{
-                    this.onScroll()
-                    this.ticking = false
-                })
-            }
-            ticking = true
-       })
-       
-    //    this.container.addEventListener("scroll", (e) =>{
-    //     e.preventDefault()
+    //    this.container.addEventListener("touchmove", (e) =>{
+    //     //e.preventDefault()
     //         if(!this.ticking){
     //             window.requestAnimationFrame(()=>{
     //                 this.onScroll()
@@ -555,6 +544,17 @@ class App {
     //         }
     //         ticking = true
     //    })
+       
+       this.container.addEventListener("scroll", (e) =>{
+        e.preventDefault()
+            if(!this.ticking){
+                window.requestAnimationFrame(()=>{
+                    this.onScroll()
+                    this.ticking = false
+                })
+            }
+            ticking = true
+       })
 
        this.curtains.onAfterResize(this.onResize.bind(this))
        this.threeD.setPos(this.origin)
