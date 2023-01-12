@@ -578,6 +578,8 @@ var _logo = require("./js/logo");
 var _logoDefault = parcelHelpers.interopDefault(_logo);
 var _copyToClipboard = require("./js/copyToClipboard");
 var _copyToClipboardDefault = parcelHelpers.interopDefault(_copyToClipboard);
+var _virtualScroll = require("virtual-scroll");
+var _virtualScrollDefault = parcelHelpers.interopDefault(_virtualScroll);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -1020,6 +1022,12 @@ class App {
         //         _scroll()
         //    });
         document.addEventListener("mousemove", _mouse.bind(this), false);
+        this.scroller = new (0, _virtualScrollDefault.default)({
+            preventTouch: true
+        });
+        this.scroller.on((event)=>{
+            this.onScroll(event);
+        });
         //    this.container.addEventListener("touchmove", (e) =>{
         //     //e.preventDefault()
         //         if(!this.ticking){
@@ -1030,14 +1038,20 @@ class App {
         //         }
         //         ticking = true
         //    })
-        this.container.addEventListener("scroll", (e)=>{
-            e.preventDefault();
-            if (!this.ticking) window.requestAnimationFrame(()=>{
-                this.onScroll();
-                this.ticking = false;
-            });
-            this.ticking = true;
-        });
+        // document.body.style.height = '100%'
+        // document.body.style.overflow = 'hidden'
+        this.container.style.height = "100%";
+        this.container.style.overflow = "hidden";
+        //    this.container.addEventListener("scroll", (e) =>{
+        //     e.preventDefault()
+        //         // if(!this.ticking){
+        //         //     window.requestAnimationFrame(()=>{
+        //         //         this.onScroll()
+        //         //         this.ticking = false
+        //         //     })
+        //         // }
+        //         // this.ticking = true
+        //    })
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e)=>{
@@ -1282,17 +1296,23 @@ class App {
         this.monitorPerformance(delta);
         return delta;
     }
-    onScroll() {
-        this.y = this.container.scrollTop;
-        this.curtains.updateScrollValues(0, this.y);
-        let y = this.y / (this.contHeight - this.height);
-        this.timeline.seek(this.timeline.duration * y);
+    onScroll(e) {
+        this.y = e ? this.y - e.deltaY : this.y;
+        console.log(this.y);
+        this.y = (0, _lodash.clamp)(this.y, 0, this.contHeight - this.height);
+    //this.y = this.container.scrollTop
+    //this.curtains.updateScrollValues(0, this.y)
     //this.scroll.delta = easeOutExpo(this.scroll.delta)
     }
     onRender() {
         this.stats.begin();
         let delta = this.getDelta();
-        this.curtains.updateScrollValues(0, this.y);
+        //this.scroll.lastValue = this.scroll.value
+        this.scroll.value = this.curtains.lerp(this.scroll.value, this.y, delta * 5);
+        this.curtains.updateScrollValues(0, this.scroll.value);
+        this.container.scrollTop = this.scroll.value;
+        let y = this.scroll.value / (this.contHeight - this.height);
+        this.timeline.seek(this.timeline.duration * y);
         let mouseVal = this.pass.uniforms.mouse.value;
         //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
         /// axes mixed with origin
@@ -1386,7 +1406,7 @@ const onReady = async ()=>{
 if (document.readyState !== "loading") onReady();
 else document.addEventListener("DOMContentLoaded", onReady);
 
-},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/scrollToId":"gsXiN","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn","./js/logo":"h816w","./js/copyToClipboard":"2A7UE"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/scrollToId":"gsXiN","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn","./js/logo":"h816w","./js/copyToClipboard":"2A7UE","virtual-scroll":"36ZkR"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -85046,6 +85066,159 @@ const copyToClipboard = ()=>{
 exports.default = copyToClipboard // copy email to clipboard
 ;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","animejs":"jokr5"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","animejs":"jokr5"}],"36ZkR":[function(require,module,exports) {
+!function(e, t) {
+    module.exports = t();
+}(this, function() {
+    var e = 0;
+    function t(t) {
+        return "__private_" + e++ + "_" + t;
+    }
+    function i(e, t) {
+        if (!Object.prototype.hasOwnProperty.call(e, t)) throw new TypeError("attempted to use private field on non-instance");
+        return e;
+    }
+    function n() {}
+    n.prototype = {
+        on: function(e, t, i) {
+            var n = this.e || (this.e = {});
+            return (n[e] || (n[e] = [])).push({
+                fn: t,
+                ctx: i
+            }), this;
+        },
+        once: function(e, t, i) {
+            var n = this;
+            function o() {
+                n.off(e, o), t.apply(i, arguments);
+            }
+            return o._ = t, this.on(e, o, i);
+        },
+        emit: function(e) {
+            for(var t = [].slice.call(arguments, 1), i = ((this.e || (this.e = {}))[e] || []).slice(), n = 0, o = i.length; n < o; n++)i[n].fn.apply(i[n].ctx, t);
+            return this;
+        },
+        off: function(e, t) {
+            var i = this.e || (this.e = {}), n = i[e], o = [];
+            if (n && t) for(var s = 0, h = n.length; s < h; s++)n[s].fn !== t && n[s].fn._ !== t && o.push(n[s]);
+            return o.length ? i[e] = o : delete i[e], this;
+        }
+    };
+    var o = n;
+    o.TinyEmitter = n;
+    var s, h = "virtualscroll", r = t("options"), a = t("el"), l = t("emitter"), u = t("event"), c = t("touchStart"), d = t("bodyTouchAction");
+    return function() {
+        function e(e) {
+            var t = this;
+            Object.defineProperty(this, r, {
+                writable: !0,
+                value: void 0
+            }), Object.defineProperty(this, a, {
+                writable: !0,
+                value: void 0
+            }), Object.defineProperty(this, l, {
+                writable: !0,
+                value: void 0
+            }), Object.defineProperty(this, u, {
+                writable: !0,
+                value: void 0
+            }), Object.defineProperty(this, c, {
+                writable: !0,
+                value: void 0
+            }), Object.defineProperty(this, d, {
+                writable: !0,
+                value: void 0
+            }), this._onWheel = function(e) {
+                var n = i(t, r)[r], o = i(t, u)[u];
+                o.deltaX = e.wheelDeltaX || -1 * e.deltaX, o.deltaY = e.wheelDeltaY || -1 * e.deltaY, s.isFirefox && 1 === e.deltaMode && (o.deltaX *= n.firefoxMultiplier, o.deltaY *= n.firefoxMultiplier), o.deltaX *= n.mouseMultiplier, o.deltaY *= n.mouseMultiplier, t._notify(e);
+            }, this._onMouseWheel = function(e) {
+                var n = i(t, u)[u];
+                n.deltaX = e.wheelDeltaX ? e.wheelDeltaX : 0, n.deltaY = e.wheelDeltaY ? e.wheelDeltaY : e.wheelDelta, t._notify(e);
+            }, this._onTouchStart = function(e) {
+                var n = e.targetTouches ? e.targetTouches[0] : e;
+                i(t, c)[c].x = n.pageX, i(t, c)[c].y = n.pageY;
+            }, this._onTouchMove = function(e) {
+                var n = i(t, r)[r];
+                n.preventTouch && !e.target.classList.contains(n.unpreventTouchClass) && e.preventDefault();
+                var o = i(t, u)[u], s = e.targetTouches ? e.targetTouches[0] : e;
+                o.deltaX = (s.pageX - i(t, c)[c].x) * n.touchMultiplier, o.deltaY = (s.pageY - i(t, c)[c].y) * n.touchMultiplier, i(t, c)[c].x = s.pageX, i(t, c)[c].y = s.pageY, t._notify(e);
+            }, this._onKeyDown = function(e) {
+                var n = i(t, u)[u];
+                n.deltaX = n.deltaY = 0;
+                var o = window.innerHeight - 40;
+                switch(e.keyCode){
+                    case 37:
+                    case 38:
+                        n.deltaY = i(t, r)[r].keyStep;
+                        break;
+                    case 39:
+                    case 40:
+                        n.deltaY = -i(t, r)[r].keyStep;
+                        break;
+                    case 32:
+                        n.deltaY = o * (e.shiftKey ? 1 : -1);
+                        break;
+                    default:
+                        return;
+                }
+                t._notify(e);
+            }, i(this, a)[a] = window, e && e.el && (i(this, a)[a] = e.el, delete e.el), s || (s = {
+                hasWheelEvent: "onwheel" in document,
+                hasMouseWheelEvent: "onmousewheel" in document,
+                hasTouch: "ontouchstart" in document,
+                hasTouchWin: navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 1,
+                hasPointer: !!window.navigator.msPointerEnabled,
+                hasKeyDown: "onkeydown" in document,
+                isFirefox: navigator.userAgent.indexOf("Firefox") > -1
+            }), i(this, r)[r] = Object.assign({
+                mouseMultiplier: 1,
+                touchMultiplier: 2,
+                firefoxMultiplier: 15,
+                keyStep: 120,
+                preventTouch: !1,
+                unpreventTouchClass: "vs-touchmove-allowed",
+                useKeyboard: !0,
+                useTouch: !0
+            }, e), i(this, l)[l] = new o, i(this, u)[u] = {
+                y: 0,
+                x: 0,
+                deltaX: 0,
+                deltaY: 0
+            }, i(this, c)[c] = {
+                x: null,
+                y: null
+            }, i(this, d)[d] = null, void 0 !== i(this, r)[r].passive && (this.listenerOptions = {
+                passive: i(this, r)[r].passive
+            });
+        }
+        var t = e.prototype;
+        return t._notify = function(e) {
+            var t = i(this, u)[u];
+            t.x += t.deltaX, t.y += t.deltaY, i(this, l)[l].emit(h, {
+                x: t.x,
+                y: t.y,
+                deltaX: t.deltaX,
+                deltaY: t.deltaY,
+                originalEvent: e
+            });
+        }, t._bind = function() {
+            s.hasWheelEvent && i(this, a)[a].addEventListener("wheel", this._onWheel, this.listenerOptions), s.hasMouseWheelEvent && i(this, a)[a].addEventListener("mousewheel", this._onMouseWheel, this.listenerOptions), s.hasTouch && i(this, r)[r].useTouch && (i(this, a)[a].addEventListener("touchstart", this._onTouchStart, this.listenerOptions), i(this, a)[a].addEventListener("touchmove", this._onTouchMove, this.listenerOptions)), s.hasPointer && s.hasTouchWin && (i(this, d)[d] = document.body.style.msTouchAction, document.body.style.msTouchAction = "none", i(this, a)[a].addEventListener("MSPointerDown", this._onTouchStart, !0), i(this, a)[a].addEventListener("MSPointerMove", this._onTouchMove, !0)), s.hasKeyDown && i(this, r)[r].useKeyboard && document.addEventListener("keydown", this._onKeyDown);
+        }, t._unbind = function() {
+            s.hasWheelEvent && i(this, a)[a].removeEventListener("wheel", this._onWheel), s.hasMouseWheelEvent && i(this, a)[a].removeEventListener("mousewheel", this._onMouseWheel), s.hasTouch && (i(this, a)[a].removeEventListener("touchstart", this._onTouchStart), i(this, a)[a].removeEventListener("touchmove", this._onTouchMove)), s.hasPointer && s.hasTouchWin && (document.body.style.msTouchAction = i(this, d)[d], i(this, a)[a].removeEventListener("MSPointerDown", this._onTouchStart, !0), i(this, a)[a].removeEventListener("MSPointerMove", this._onTouchMove, !0)), s.hasKeyDown && i(this, r)[r].useKeyboard && document.removeEventListener("keydown", this._onKeyDown);
+        }, t.on = function(e, t) {
+            i(this, l)[l].on(h, e, t);
+            var n = i(this, l)[l].e;
+            n && n[h] && 1 === n[h].length && this._bind();
+        }, t.off = function(e, t) {
+            i(this, l)[l].off(h, e, t);
+            var n = i(this, l)[l].e;
+            (!n[h] || n[h].length <= 0) && this._unbind();
+        }, t.destroy = function() {
+            i(this, l)[l].off(), this._unbind();
+        }, e;
+    }();
+});
+
+},{}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map

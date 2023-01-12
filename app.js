@@ -23,6 +23,7 @@ import fallback from './js/fallback';
 import Preloader from './js/preloader';
 import Logo from './js/logo';
 import copyToClipboard from './js/copyToClipboard';
+import VirtualScroll from 'virtual-scroll';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -532,6 +533,12 @@ class App {
     //    });
        document.addEventListener('mousemove', _mouse.bind(this), false);
 
+       this.scroller = new VirtualScroll( {preventTouch: true})
+
+       this.scroller.on( event => {
+        this.onScroll(event)
+       })
+
     //    this.container.addEventListener("touchmove", (e) =>{
     //     //e.preventDefault()
     //         if(!this.ticking){
@@ -542,17 +549,24 @@ class App {
     //         }
     //         ticking = true
     //    })
+
+        // document.body.style.height = '100%'
+        // document.body.style.overflow = 'hidden'
+
+        this.container.style.height = '100%'
+        this.container.style.overflow = 'hidden'
+        
        
-       this.container.addEventListener("scroll", (e) =>{
-        e.preventDefault()
-            if(!this.ticking){
-                window.requestAnimationFrame(()=>{
-                    this.onScroll()
-                    this.ticking = false
-                })
-            }
-            this.ticking = true
-       })
+    //    this.container.addEventListener("scroll", (e) =>{
+    //     e.preventDefault()
+    //         // if(!this.ticking){
+    //         //     window.requestAnimationFrame(()=>{
+    //         //         this.onScroll()
+    //         //         this.ticking = false
+    //         //     })
+    //         // }
+    //         // this.ticking = true
+    //    })
 
        this.curtains.onAfterResize(this.onResize.bind(this))
        this.threeD.setPos(this.origin)
@@ -860,11 +874,16 @@ class App {
         return delta
     }
 
-    onScroll(){
-        this.y = this.container.scrollTop
-        this.curtains.updateScrollValues(0, this.y)
-        let y = this.y/ (this.contHeight - this.height)
-        this.timeline.seek(this.timeline.duration * y)
+    onScroll(e){
+        this.y = e? this.y - e.deltaY : this.y
+        console.log(this.y)
+        this.y = clamp(this.y, 0, this.contHeight - this.height)
+
+        
+        //this.y = this.container.scrollTop
+        //this.curtains.updateScrollValues(0, this.y)
+        
+        
         //this.scroll.delta = easeOutExpo(this.scroll.delta)
         
 }
@@ -873,8 +892,16 @@ class App {
         this.stats.begin()
         
         let delta = this.getDelta()
+        //this.scroll.lastValue = this.scroll.value
 
-        this.curtains.updateScrollValues(0, this.y)
+        this.scroll.value = this.curtains.lerp(this.scroll.value, this.y, delta * 5)
+
+        this.curtains.updateScrollValues(0, this.scroll.value)
+        this.container.scrollTop = this.scroll.value
+
+        let y = this.scroll.value / (this.contHeight - this.height)
+        this.timeline.seek(this.timeline.duration * y)
+
 
         let mouseVal = this.pass.uniforms.mouse.value;
 
