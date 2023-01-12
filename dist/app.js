@@ -670,6 +670,7 @@ class App {
         this.textureOptions = {
         };
         this.container = document.querySelector(".scrolldom");
+        this.contHeight = this.container.scrollHeight;
         this.filters = document.querySelectorAll("label.filters");
         this.curtains.onSuccess(this.onSuccess.bind(this));
         this.curtains.onError(this.onError.bind(this));
@@ -757,7 +758,7 @@ class App {
         });
         timeline.add({
             duration: 0.00001
-        }, this.container.scrollHeight - this.height - 0.00001);
+        }, this.contHeight - this.height - 0.00001);
         (0, _animejsDefault.default).set(this.colors, {
             ...this.colors
         }) // to convert #hex to rgba when no colrs are defined
@@ -858,12 +859,6 @@ class App {
         });
         else this.loadImg("[card] img", this.imgTarget, "uImg", false);
     }
-    onScroll() {
-        this.y = this.container.scrollTop;
-        this.curtains.updateScrollValues(0, this.y);
-        let y = this.y / (this.container.scrollHeight - this.height);
-        this.timeline.seek(this.timeline.duration * y);
-    }
     onResize() {
         this.inMenu && this.menuClose();
         (0, _animejsDefault.default).set({
@@ -873,6 +868,7 @@ class App {
         this.initTimeline();
         this.loopSlider && this.loopSlider.resize();
         this.height = window.innerHeight;
+        this.contHeight = this.container.scrollHeight;
         this.width = window.innerWidth;
         this.cards.forEach((c)=>{
             c.resize();
@@ -1284,6 +1280,12 @@ class App {
         this.lastFrame = performance.now();
         this.monitorPerformance(delta);
         return delta;
+    }
+    onScroll() {
+        this.y = this.container.scrollTop;
+        this.curtains.updateScrollValues(0, this.y);
+        let y = this.y / (this.contHeight - this.height);
+        this.timeline.seek(this.timeline.duration * y);
     }
     onRender() {
         this.stats.begin();
