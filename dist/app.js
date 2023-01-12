@@ -1023,14 +1023,24 @@ class App {
         //         _scroll()
         //    });
         document.addEventListener("mousemove", _mouse.bind(this), false);
-        this.container.addEventListener("scroll", (e)=>{
-            e.preventDefault();
+        this.container.addEventListener("touchmove", (e)=>{
+            //e.preventDefault()
             if (!this.ticking) window.requestAnimationFrame(()=>{
                 this.onScroll();
                 this.ticking = false;
             });
             ticking = true;
         });
+        //    this.container.addEventListener("scroll", (e) =>{
+        //     e.preventDefault()
+        //         if(!this.ticking){
+        //             window.requestAnimationFrame(()=>{
+        //                 this.onScroll()
+        //                 this.ticking = false
+        //             })
+        //         }
+        //         ticking = true
+        //    })
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e)=>{
