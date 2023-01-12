@@ -528,7 +528,10 @@ class App {
         let _scroll = _.throttle(this.onScroll.bind(this), 16, {'trailing' : true, 'leading': true})
 
 
-       this.container.addEventListener("scroll", _scroll.bind(this));
+       this.container.addEventListener("scroll", (e) => {
+            e.preventDefault()
+            _scroll()
+       });
        document.addEventListener('mousemove', _mouse.bind(this), false);
        
     //    this.container.addEventListener("scroll", () =>{
