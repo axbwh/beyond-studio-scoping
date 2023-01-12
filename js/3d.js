@@ -16,12 +16,14 @@ const clamp = (num, min, max) => Math.min(Math.max(num, min), max)
 
 class ThreeD {
     constructor(pixelRatio, tier){ //lets set up our three.js scene
+        this.height = window.innerHeight
+        this.width = window.innerWidth
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        this.camera = new THREE.PerspectiveCamera( 50, this.width / this.height, 0.1, 1000 );
         this.bbox = new THREE.Vector3()
     
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: tier > 2 ? true : false });
-        this.renderer.setSize( window.innerWidth, window.innerHeight );
+        this.renderer.setSize( this.width, this.height );
         this.renderer.setPixelRatio(pixelRatio)
         this.canvas = this.renderer.domElement
         this.velocity = new THREE.Vector3()
@@ -150,9 +152,9 @@ class ThreeD {
         let dist = this.camera.position.distanceTo(this.mesh.position)
         let vFOV = this.camera.fov * Math.PI / 180;        // convert vertical fov to radians
         let vHeight = 2 * Math.tan( vFOV / 2 ) * dist; // visible height
-        this.mesh.scale.x = vHeight * (size/ window.innerHeight);
-        this.mesh.scale.y = vHeight * (size/ window.innerHeight);
-        this.mesh.scale.z = vHeight * (size/ window.innerHeight);
+        this.mesh.scale.x = vHeight * (size/ this.height);
+        this.mesh.scale.y = vHeight * (size/ this.height);
+        this.mesh.scale.z = vHeight * (size/ this.height);
     }
 
     setPos(axes){
@@ -209,9 +211,11 @@ class ThreeD {
     }
 
     onWindowResize(){
-        this.camera.aspect = window.innerWidth / window.innerHeight
+        this.height = window.innerHeight
+        this.width = window.innerWidth
+        this.camera.aspect = this.width / this.height
         this.camera.updateProjectionMatrix()
-        this.renderer.setSize( window.innerWidth, window.innerHeight)
+        this.renderer.setSize( this.width, this.height)
     }
 
     

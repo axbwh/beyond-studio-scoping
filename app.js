@@ -39,6 +39,7 @@ class App {
         this.mse = {x: 0, y: 0}
         this.y = 0
         this.height = window.innerHeight
+        this.width = window.innerWidth
         this.transition = false
         this.inMenu = false
         // track scroll values
@@ -375,6 +376,7 @@ class App {
         this.initTimeline()
         this.loopSlider && this.loopSlider.resize()
         this.height = window.innerHeight
+        this.width = window.innerWidth
         this.cards.forEach(c => {
             c.resize()
         })
@@ -708,7 +710,7 @@ class App {
             duration: 1500,
             x: 0,
             y: 0,
-            size: window.innerWidth > window.innerHeight ? window.innerHeight * 2.2: window.innerWidth * (2.2 /1.29),
+            size: this.width > this.height ? this.height * 2.2: this.width * (2.2 /1.29),
             easing: 'easeInOutExpo',
         })
     }
@@ -769,9 +771,9 @@ class App {
 
         anime({
             targets: this.origin,
-            x: window.innerWidth > window.innerHeight ? 1 : 0,
-            y: window.innerWidth > window.innerHeight ? 0 : -1,
-            size: window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth / 1.29,
+            x: this.width > this.height ? 1 : 0,
+            y: this.width > this.height ? 0 : -1,
+            size: this.width > this.height ? this.height : this.width / 1.29,
             range: 0.3,
             duration: 1500,
             delay: 0,
@@ -922,7 +924,7 @@ class App {
 
     mouseEvent(event){
         //event.preventDefault();
-	    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+	    this.mouse.x = (event.clientX / this.width) * 2 - 1;
 	    this.mouse.y = - (event.clientY / this.height) * 2 + 1;
         this.mse.x = event.clientX
         this.mse.y = event.clientY

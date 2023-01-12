@@ -594,6 +594,7 @@ class App {
         };
         this.y = 0;
         this.height = window.innerHeight;
+        this.width = window.innerWidth;
         this.transition = false;
         this.inMenu = false;
         // track scroll values
@@ -872,6 +873,7 @@ class App {
         this.initTimeline();
         this.loopSlider && this.loopSlider.resize();
         this.height = window.innerHeight;
+        this.width = window.innerWidth;
         this.cards.forEach((c)=>{
             c.resize();
         });
@@ -1155,7 +1157,7 @@ class App {
             duration: 1500,
             x: 0,
             y: 0,
-            size: window.innerWidth > window.innerHeight ? window.innerHeight * 2.2 : window.innerWidth * (2.2 / 1.29),
+            size: this.width > this.height ? this.height * 2.2 : this.width * (2.2 / 1.29),
             easing: "easeInOutExpo"
         });
     }
@@ -1207,9 +1209,9 @@ class App {
         });
         (0, _animejsDefault.default)({
             targets: this.origin,
-            x: window.innerWidth > window.innerHeight ? 1 : 0,
-            y: window.innerWidth > window.innerHeight ? 0 : -1,
-            size: window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth / 1.29,
+            x: this.width > this.height ? 1 : 0,
+            y: this.width > this.height ? 0 : -1,
+            size: this.width > this.height ? this.height : this.width / 1.29,
             range: 0.3,
             duration: 1500,
             delay: 0,
@@ -1333,7 +1335,7 @@ class App {
     }
     mouseEvent(event) {
         //event.preventDefault();
-        this.mouse.x = event.clientX / window.innerWidth * 2 - 1;
+        this.mouse.x = event.clientX / this.width * 2 - 1;
         this.mouse.y = -(event.clientY / this.height) * 2 + 1;
         this.mse.x = event.clientX;
         this.mse.y = event.clientY;
@@ -54883,14 +54885,16 @@ var _lodash = require("lodash");
 const clamp = (num, min, max)=>Math.min(Math.max(num, min), max);
 class ThreeD {
     constructor(pixelRatio, tier){
+        this.height = window.innerHeight;
+        this.width = window.innerWidth;
         this.scene = new _three.Scene();
-        this.camera = new _three.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera = new _three.PerspectiveCamera(50, this.width / this.height, 0.1, 1000);
         this.bbox = new _three.Vector3();
         this.renderer = new _three.WebGLRenderer({
             alpha: true,
             antialias: tier > 2 ? true : false
         });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(this.width, this.height);
         this.renderer.setPixelRatio(pixelRatio);
         this.canvas = this.renderer.domElement;
         this.velocity = new _three.Vector3();
@@ -54994,9 +54998,9 @@ class ThreeD {
         let dist = this.camera.position.distanceTo(this.mesh.position);
         let vFOV = this.camera.fov * Math.PI / 180; // convert vertical fov to radians
         let vHeight = 2 * Math.tan(vFOV / 2) * dist; // visible height
-        this.mesh.scale.x = vHeight * (size / window.innerHeight);
-        this.mesh.scale.y = vHeight * (size / window.innerHeight);
-        this.mesh.scale.z = vHeight * (size / window.innerHeight);
+        this.mesh.scale.x = vHeight * (size / this.height);
+        this.mesh.scale.y = vHeight * (size / this.height);
+        this.mesh.scale.z = vHeight * (size / this.height);
     }
     setPos(axes) {
         this.setScale(axes.size);
@@ -55036,9 +55040,11 @@ class ThreeD {
         this.renderer.render(this.scene, this.camera);
     }
     onWindowResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.height = window.innerHeight;
+        this.width = window.innerWidth;
+        this.camera.aspect = this.width / this.height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(this.width, this.height);
     }
 }
 exports.default = ThreeD;
