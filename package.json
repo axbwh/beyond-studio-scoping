@@ -32,7 +32,8 @@
     "parse-color": "^1.0.0",
     "stats.js": "^0.17.0",
     "three": "^0.144.0",
-    "three-subdivide": "^1.1.0"
+    "three-subdivide": "^1.1.0",
+    "virtual-scroll": "^2.2.1"
   },
   "devDependencies": {
     "assert": "^2.0.0",

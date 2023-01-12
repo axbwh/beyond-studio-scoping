@@ -601,7 +601,8 @@ class App {
         this.scroll = {
             value: 0,
             lastValue: 0,
-            effect: 0
+            effect: 0,
+            delta: 0
         };
         this.axes = {
             range: 0,
@@ -1283,30 +1284,15 @@ class App {
     }
     onScroll() {
         this.y = this.container.scrollTop;
-        //this.curtains.updateScrollValues(0, this.y)
+        this.curtains.updateScrollValues(0, this.y);
         let y = this.y / (this.contHeight - this.height);
         this.timeline.seek(this.timeline.duration * y);
+    //this.scroll.delta = easeOutExpo(this.scroll.delta)
     }
     onRender() {
         this.stats.begin();
         let delta = this.getDelta();
-        this.scroll.lastValue = this.scroll.value;
-        this.scroll.value = this.y;
-        this.scroll.delta = (0, _lodash.clamp)(Math.abs(this.scroll.lastValue - this.scroll.value), 0.2, 49.8) / 50;
-        console.log(this.scroll.delta);
-        let lerpVal = this.curtains.lerp(this.scroll.lastValue, this.scroll.value, delta * (1 / delta) * this.scroll.delta);
-        console.log("lerpval", this.scroll.value, delta * (1 / delta) * this.scroll.delta);
-        this.curtains.updateScrollValues(0, lerpVal);
-        // clamp delta
-        //this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
-        // this.scroll.delta = this.scroll.lastValue - this.scroll.value;
-        // this.scroll.delta *= 1 /  this.curtains.canvas.height;
-        //this.scroll.delta = 0
-        // this.scroll.effect = this.curtains.lerp(this.scroll.effect, this.scroll.delta, delta * 2);
-        //this.pass.uniforms.scrollEffect.value = this.scroll.effect;
-        // anime.set(this.container, {
-        //     translateY: `${-this.scroll.effect}vh`
-        // }) //smoothscroll
+        this.curtains.updateScrollValues(0, this.y);
         let mouseVal = this.pass.uniforms.mouse.value;
         //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
         /// axes mixed with origin
@@ -66016,6 +66002,8 @@ parcelHelpers.export(exports, "normX", ()=>normX);
 parcelHelpers.export(exports, "normY", ()=>normY);
 parcelHelpers.export(exports, "getCoord", ()=>getCoord);
 parcelHelpers.export(exports, "mapClamp", ()=>mapClamp);
+parcelHelpers.export(exports, "easeInExpo", ()=>easeInExpo);
+parcelHelpers.export(exports, "easeOutExpo", ()=>easeOutExpo);
 var _parseColor = require("parse-color");
 var _parseColorDefault = parcelHelpers.interopDefault(_parseColor);
 const hexToRgb = (hex)=>hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b)=>"#" + r + r + g + g + b + b).substring(1).match(/.{2}/g).map((x)=>parseInt(x, 16) / 255);
@@ -66023,6 +66011,12 @@ const rgbaToArray = (string)=>string.replace(/[^\d,]/g, "").split(",").map((x, i
 const normX = (x)=>{
     return x / window.innerWidth * 2 - 1;
 };
+function easeInExpo(x) {
+    return x === 0 ? 0 : Math.pow(2, 10 * x - 10);
+}
+function easeOutExpo(x) {
+    return x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
+}
 const lerpRgba = (col1, col2, factor = 0.5)=>col1.map((x, i)=>x + factor * (col2[i] - x));
 const normY = (y)=>{
     return -(y / window.innerHeight) * 2 + 1;
