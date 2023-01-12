@@ -594,6 +594,8 @@ class App {
             x: 0,
             y: 0
         };
+        this.container = document.querySelector(".scrolldom");
+        this.contHeight = this.container.scrollHeight;
         this.y = 0;
         this.height = window.innerHeight;
         this.width = window.innerWidth;
@@ -672,8 +674,6 @@ class App {
         this.curtains.gl.pixelStorei(this.curtains.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
         this.textureOptions = {
         };
-        this.container = document.querySelector(".scrolldom");
-        this.contHeight = this.container.scrollHeight;
         this.filters = document.querySelectorAll("label.filters");
         this.curtains.onSuccess(this.onSuccess.bind(this));
         this.curtains.onError(this.onError.bind(this));
@@ -1298,11 +1298,7 @@ class App {
     }
     onScroll(e) {
         this.y = e ? this.y - e.deltaY : this.y;
-        console.log(this.y);
         this.y = (0, _lodash.clamp)(this.y, 0, this.contHeight - this.height);
-    //this.y = this.container.scrollTop
-    //this.curtains.updateScrollValues(0, this.y)
-    //this.scroll.delta = easeOutExpo(this.scroll.delta)
     }
     onRender() {
         this.stats.begin();
@@ -1400,13 +1396,16 @@ const onReady = async ()=>{
         // create curtains instance
         const app = new App(GPUTier, preloader);
         app.init();
-    } else (0, _fallbackDefault.default)();
-    (0, _scrollToIdDefault.default)();
+        (0, _scrollToIdDefault.default)(app);
+    } else {
+        (0, _fallbackDefault.default)();
+        (0, _scrollToIdDefault.default)();
+    }
 };
 if (document.readyState !== "loading") onReady();
 else document.addEventListener("DOMContentLoaded", onReady);
 
-},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/scrollToId":"gsXiN","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn","./js/logo":"h816w","./js/copyToClipboard":"2A7UE","virtual-scroll":"36ZkR"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn","./js/logo":"h816w","./js/copyToClipboard":"2A7UE","virtual-scroll":"36ZkR","./js/scrollToId":"gsXiN"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -65665,43 +65664,7 @@ class Slider {
 }
 exports.default = Slider;
 
-},{"animejs":"jokr5","curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/shaders/slider.frag":"7aA3N","/shaders/slider.vert":"3Tkxq"}],"gsXiN":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _animejs = require("animejs");
-var _animejsDefault = parcelHelpers.interopDefault(_animejs);
-scrollToId = ()=>{
-    let container = document.querySelector(".scrolldom");
-    if (container) {
-        if (window.location.hash && document.querySelector(window.location.hash)) {
-            let target = document.querySelector(window.location.hash).offsetTop;
-            container.scrollTop = target;
-        }
-        document.querySelectorAll("a[href^='#']").forEach((e)=>{
-            let href = e.href.substring(e.href.lastIndexOf("#"));
-            if (href.length === 1) e.addEventListener("click", ()=>{
-                (0, _animejsDefault.default)({
-                    targets: container,
-                    scrollTop: 0,
-                    duration: container.scrollTop / 2,
-                    easing: "easeInOutSine"
-                });
-            });
-            else if (document.querySelector(href)) e.addEventListener("click", ()=>{
-                let target = document.querySelector(href).offsetTop;
-                (0, _animejsDefault.default)({
-                    targets: container,
-                    scrollTop: target,
-                    duration: Math.abs(container.scrollTop - target) / 2,
-                    easing: "easeInOutSine"
-                });
-            });
-        });
-    }
-};
-exports.default = scrollToId;
-
-},{"animejs":"jokr5","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"cmqb9":[function(require,module,exports) {
+},{"animejs":"jokr5","curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/shaders/slider.frag":"7aA3N","/shaders/slider.vert":"3Tkxq"}],"cmqb9":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "TextTexture", ()=>TextTexture);
@@ -85219,6 +85182,45 @@ exports.default = copyToClipboard // copy email to clipboard
     }();
 });
 
-},{}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{}],"gsXiN":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _animejs = require("animejs");
+var _animejsDefault = parcelHelpers.interopDefault(_animejs);
+scrollToId = (app)=>{
+    let container = document.querySelector(".scrolldom");
+    if (container) {
+        if (window.location.hash && document.querySelector(window.location.hash)) {
+            let target = document.querySelector(window.location.hash).offsetTop;
+            container.scrollTop = target;
+            if (app) app.y = target;
+        }
+        document.querySelectorAll("a[href^='#']").forEach((e)=>{
+            let href = e.href.substring(e.href.lastIndexOf("#"));
+            if (href.length === 1) e.addEventListener("click", ()=>{
+                if (app) app.y = 0;
+                else (0, _animejsDefault.default)({
+                    targets: container,
+                    scrollTop: 0,
+                    duration: container.scrollTop / 2,
+                    easing: "easeInOutSine"
+                });
+            });
+            else if (document.querySelector(href)) e.addEventListener("click", ()=>{
+                let target = document.querySelector(href).offsetTop;
+                if (app) app.y = target;
+                else (0, _animejsDefault.default)({
+                    targets: container,
+                    scrollTop: target,
+                    duration: Math.abs(container.scrollTop - target) / 2,
+                    easing: "easeInOutSine"
+                });
+            });
+        });
+    }
+};
+exports.default = scrollToId;
+
+},{"animejs":"jokr5","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map

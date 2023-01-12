@@ -38,6 +38,8 @@ class App {
         this.tier = tier
         this.mouse = { x : 0.5, y: 0.5}
         this.mse = {x: 0, y: 0}
+        this.container = document.querySelector('.scrolldom')
+        this.contHeight = this.container.scrollHeight
         this.y = 0
         this.height = window.innerHeight
         this.width = window.innerWidth
@@ -135,8 +137,6 @@ class App {
             // anisotropy: 16,
         }
 
-        this.container = document.querySelector('.scrolldom')
-        this.contHeight = this.container.scrollHeight
         this.filters = document.querySelectorAll('label.filters')
 
         this.curtains.onSuccess(this.onSuccess.bind(this))
@@ -876,17 +876,8 @@ class App {
 
     onScroll(e){
         this.y = e? this.y - e.deltaY : this.y
-        console.log(this.y)
-        this.y = clamp(this.y, 0, this.contHeight - this.height)
-
-        
-        //this.y = this.container.scrollTop
-        //this.curtains.updateScrollValues(0, this.y)
-        
-        
-        //this.scroll.delta = easeOutExpo(this.scroll.delta)
-        
-}
+        this.y = clamp(this.y, 0, this.contHeight - this.height)    
+    }
 
     onRender(){
         this.stats.begin()
@@ -1009,10 +1000,12 @@ const onReady = async () => {
     // create curtains instance
     const app = new App(GPUTier, preloader)
     app.init()
+    scrollToId(app)
     }else{
        fallback()
+       scrollToId()
     }
-    scrollToId()
+    
  }
 
 if (document.readyState !== 'loading') {

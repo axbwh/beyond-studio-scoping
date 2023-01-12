@@ -1,6 +1,6 @@
 import anime from "animejs"
 
-scrollToId = () => {
+scrollToId = (app) => {
     let container = document.querySelector('.scrolldom')
 
 
@@ -10,6 +10,9 @@ scrollToId = () => {
         if(window.location.hash && document.querySelector(window.location.hash)){
             let target = document.querySelector(window.location.hash).offsetTop
             container.scrollTop = target
+            if(app){
+                app.y = target
+            }
         }
 
 
@@ -17,22 +20,31 @@ scrollToId = () => {
           let href = e.href.substring(e.href.lastIndexOf('#'))
           if(href.length === 1){
               e.addEventListener('click', () => {
-                  anime({
-                      targets: container,
-                      scrollTop: 0,
-                      duration: container.scrollTop / 2,
-                      easing: 'easeInOutSine'
-                  })
+                if(app){
+                    app.y = 0
+                }else{
+                    anime({
+                        targets: container,
+                        scrollTop: 0,
+                        duration: container.scrollTop / 2,
+                        easing: 'easeInOutSine'
+                    })
+                }
               }) 
           }else if(document.querySelector(href)){
               e.addEventListener('click', () => {
                   let target = document.querySelector(href).offsetTop
+                  if(app){
+                    app.y = target
+                    }else{
+
                   anime({
                       targets: container,
                       scrollTop: target,
                       duration: Math.abs(container.scrollTop -  target) / 2,
                       easing: 'easeInOutSine'
                   })
+                }
               })
           }
       })
