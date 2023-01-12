@@ -1035,7 +1035,7 @@ class App {
                 this.onScroll();
                 this.ticking = false;
             });
-            ticking = true;
+            this.ticking = true;
         });
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
@@ -1283,7 +1283,7 @@ class App {
     }
     onScroll() {
         this.y = this.container.scrollTop;
-        this.curtains.updateScrollValues(0, this.y);
+        //this.curtains.updateScrollValues(0, this.y)
         let y = this.y / (this.contHeight - this.height);
         this.timeline.seek(this.timeline.duration * y);
     }
@@ -1292,6 +1292,11 @@ class App {
         let delta = this.getDelta();
         this.scroll.lastValue = this.scroll.value;
         this.scroll.value = this.y;
+        this.scroll.delta = (0, _lodash.clamp)(Math.abs(this.scroll.lastValue - this.scroll.value), 0.2, 49.8) / 50;
+        console.log(this.scroll.delta);
+        let lerpVal = this.curtains.lerp(this.scroll.lastValue, this.scroll.value, delta * (1 / delta) * this.scroll.delta);
+        console.log("lerpval", this.scroll.value, delta * (1 / delta) * this.scroll.delta);
+        this.curtains.updateScrollValues(0, lerpVal);
         // clamp delta
         //this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
         // this.scroll.delta = this.scroll.lastValue - this.scroll.value;

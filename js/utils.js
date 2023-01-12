@@ -12,6 +12,10 @@ const normX = (x) =>{
     return (x / window.innerWidth) * 2 - 1
 }
 
+function easeInExpo(x: number): number {
+    return x === 0 ? 0 : Math.pow(2, 10 * x - 10);
+    }
+
 const lerpRgba =  (col1, col2, factor = 0.5) => col1.map( (x, i) => x + factor*(col2[i]-x) )
 
 const normY = (y) =>{
@@ -93,4 +97,4 @@ const mapClamp = (value, low1, high1, low2, high2) =>  clamp(map_range(value, lo
 
 
 
-export {hexToRgb, lerpRgba, rgbaToArray, normCoord,normX, normY, getCoord, mapClamp}
+export {hexToRgb, lerpRgba, rgbaToArray, normCoord,normX, normY, getCoord, mapClamp, easeInExpo}

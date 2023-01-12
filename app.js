@@ -7,9 +7,9 @@ import pageFrag from './shaders/page.frag';
 import ThreeD from './js/3d';
 import Slider from './js/slider';
 import HoverSlider from './js/hoverSlider';
-import {hexToRgb, getCoord, rgbaToArray, lerpRgba }from './js/utils'
+import {hexToRgb, getCoord, rgbaToArray, lerpRgba, easeInExpo }from './js/utils'
 import anime from 'animejs';
-import _, { delay } from 'lodash';
+import _, { clamp, delay } from 'lodash';
 import Stats from 'stats.js';
 import * as THREE from 'three'
 import Fade from './js/fadeIn';
@@ -550,7 +550,7 @@ class App {
                     this.ticking = false
                 })
             }
-            ticking = true
+            this.ticking = true
        })
 
        this.curtains.onAfterResize(this.onResize.bind(this))
@@ -861,7 +861,7 @@ class App {
 
     onScroll(){
         this.y = this.container.scrollTop
-        this.curtains.updateScrollValues(0, this.y)
+        //this.curtains.updateScrollValues(0, this.y)
         let y = this.y/ (this.contHeight - this.height)
         this.timeline.seek(this.timeline.duration * y)
 }
@@ -874,9 +874,17 @@ class App {
         this.scroll.lastValue = this.scroll.value;
         this.scroll.value = this.y;
         
+        this.scroll.delta =  clamp( Math.abs(this.scroll.lastValue - this.scroll.value), 0.2, 100) / 100
+        this.scroll.delta = easeInExpo(this.scroll.delta)
+        console.log(this.scroll.delta)
 
+        this.scroll.value = this.curtains.lerp(this.scroll.lastValue, this.scroll.value, delta * ( 1 / delta) * this.scroll.delta)
+        //console.log("lerpval", this.scroll.value, delta * ( 1 / delta) * this.scroll.delta)
+        this.curtains.updateScrollValues(0, this.scroll.value)
         // clamp delta
         //this.scroll.delta = Math.max(-12, Math.min(12, this.scroll.lastValue - this.scroll.value));
+
+
         // this.scroll.delta = this.scroll.lastValue - this.scroll.value;
         // this.scroll.delta *= 1 /  this.curtains.canvas.height;
         //this.scroll.delta = 0
