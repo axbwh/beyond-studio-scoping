@@ -110,7 +110,7 @@ class App {
         this.frames = []
         this.pixelRatio = Math.min(this.tier.tier > 1 ? 1 + this.tier.tier / 2 : 1, window.devicePixelRatio)
 
-        this.threeD = new ThreeD(this.pixelRatio, this.tier.tier)
+        this.threeD = new ThreeD(this.pixelRatio, this.tier)
         this.textTextures = []
         this.ticking = false
 

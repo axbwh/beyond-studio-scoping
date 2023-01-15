@@ -657,7 +657,7 @@ class App {
         this.lastFrame = 0;
         this.frames = [];
         this.pixelRatio = Math.min(this.tier.tier > 1 ? 1 + this.tier.tier / 2 : 1, window.devicePixelRatio);
-        this.threeD = new (0, _3DDefault.default)(this.pixelRatio, this.tier.tier);
+        this.threeD = new (0, _3DDefault.default)(this.pixelRatio, this.tier);
         this.textTextures = [];
         this.ticking = false;
     }
@@ -54915,15 +54915,17 @@ class ThreeD {
         this.scene = new _three.Scene();
         this.camera = new _three.PerspectiveCamera(50, this.width / this.height, 0.1, 1000);
         this.bbox = new _three.Vector3();
+        this.isMobile = tier.isMobile;
         this.renderer = new _three.WebGLRenderer({
             alpha: true,
-            antialias: tier > 2 ? true : false
+            antialias: tier.tier > 2 ? true : false
         });
         this.renderer.setSize(this.width, this.height);
         this.renderer.setPixelRatio(pixelRatio);
         this.canvas = this.renderer.domElement;
         this.velocity = new _three.Vector3();
         this.vectorUtil = new _three.Vector3();
+        this.vHeight = 0;
         this.canvas.setAttribute("data-sampler", "threeDTexture") // this data attribute will automatically load our canvas 
         ;
         // as a uniform sampler2D called threeDTexture when we call ShaderPass.loadCanvas(theeD.canvas)
@@ -54960,6 +54962,7 @@ class ThreeD {
             x: 0.5,
             y: 0.5
         };
+        this.time = 0;
         window.addEventListener("resize", this.onWindowResize.bind(this));
         // this.domEl = document.body.appendChild( this.renderer.domElement )
         //  this.domEl.style.zIndex = 10000
@@ -55022,10 +55025,10 @@ class ThreeD {
     setScale(size) {
         let dist = this.camera.position.distanceTo(this.mesh.position);
         let vFOV = this.camera.fov * Math.PI / 180; // convert vertical fov to radians
-        let vHeight = 2 * Math.tan(vFOV / 2) * dist; // visible height
-        this.mesh.scale.x = vHeight * (size / this.height);
-        this.mesh.scale.y = vHeight * (size / this.height);
-        this.mesh.scale.z = vHeight * (size / this.height);
+        this.vHeight = 2 * Math.tan(vFOV / 2) * dist; // visible height
+        this.mesh.scale.x = this.vHeight * (size / this.height);
+        this.mesh.scale.y = this.vHeight * (size / this.height);
+        this.mesh.scale.z = this.vHeight * (size / this.height);
     }
     setPos(axes) {
         this.setScale(axes.size);
@@ -55033,8 +55036,13 @@ class ThreeD {
         let pos = this.screenToPos(axes.x, axes.y);
         this.mesh.position.copy(pos);
     }
+    mobileMove(axes) {
+        let xMult = 1 - axes.size * 1.29 / this.width;
+        let yMult = 1 - axes.size / this.height;
+        return this.screenToPos(Math.sin(this.time) * xMult, Math.sin(this.time / 2.5) * 0.35);
+    }
     move(axes, mouse, rotation = 0, delta = 1) {
-        let mpos = this.screenToPos(mouse.x, mouse.y);
+        let mpos = this.isMobile ? this.mobileMove(axes) : this.screenToPos(mouse.x, mouse.y);
         let pos = this.screenToPos(axes.x, axes.y);
         this.setScale(axes.size);
         pos.lerp(mpos, axes.range);
@@ -55057,9 +55065,10 @@ class ThreeD {
         this.rotTdeg.z = _three.MathUtils.degToRad(axes.rotation + rotation * axes.rotRange);
         this.rotationTarget.setFromEuler(this.rotTdeg);
         this.mesh.quaternion.slerp(this.rotationTarget, delta * 2 * (1.0 - axes.range));
-    // this.lightTop.lookAt(this.mesh.position)
-    // this.lightBottom.lookAt(this.mesh.position)
-    //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
+        // this.lightTop.lookAt(this.mesh.position)
+        // this.lightBottom.lookAt(this.mesh.position)
+        //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
+        this.time += delta / 2;
     }
     render() {
         this.renderer.render(this.scene, this.camera);

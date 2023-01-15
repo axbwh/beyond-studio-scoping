@@ -21,13 +21,15 @@ class ThreeD {
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera( 50, this.width / this.height, 0.1, 1000 );
         this.bbox = new THREE.Vector3()
+        this.isMobile = tier.isMobile
     
-        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: tier > 2 ? true : false });
+        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: tier.tier > 2 ? true : false });
         this.renderer.setSize( this.width, this.height );
         this.renderer.setPixelRatio(pixelRatio)
         this.canvas = this.renderer.domElement
         this.velocity = new THREE.Vector3()
         this.vectorUtil = new THREE.Vector3()
+        this.vHeight = 0
 
         this.canvas.setAttribute('data-sampler', 'threeDTexture') // this data attribute will automatically load our canvas 
         // as a uniform sampler2D called threeDTexture when we call ShaderPass.loadCanvas(theeD.canvas)
@@ -84,6 +86,7 @@ class ThreeD {
         this.scale = 5
         this.camera.position.z = 10
         this.mouse = { x : 0.5, y: 0.5}
+        this.time = 0
 
         window.addEventListener( 'resize', this.onWindowResize.bind(this) )
         // this.domEl = document.body.appendChild( this.renderer.domElement )
@@ -151,10 +154,10 @@ class ThreeD {
     setScale(size){
         let dist = this.camera.position.distanceTo(this.mesh.position)
         let vFOV = this.camera.fov * Math.PI / 180;        // convert vertical fov to radians
-        let vHeight = 2 * Math.tan( vFOV / 2 ) * dist; // visible height
-        this.mesh.scale.x = vHeight * (size/ this.height);
-        this.mesh.scale.y = vHeight * (size/ this.height);
-        this.mesh.scale.z = vHeight * (size/ this.height);
+        this.vHeight = 2 * Math.tan( vFOV / 2 ) * dist; // visible height
+        this.mesh.scale.x = this.vHeight * (size/ this.height);
+        this.mesh.scale.y = this.vHeight * (size/ this.height);
+        this.mesh.scale.z = this.vHeight * (size/ this.height);
     }
 
     setPos(axes){
@@ -164,9 +167,14 @@ class ThreeD {
         this.mesh.position.copy(pos)
     }
 
+    mobileMove(axes){
+        let xMult = 1 - (axes.size * 1.29 / this.width)
+        let yMult = (1 - (axes.size / this.height))
+        return this.screenToPos( Math.sin(this.time) * xMult , Math.sin(this.time / 2.5) *  0.35)
+    }
+
     move(axes, mouse, rotation = 0, delta=1){
-        
-        let mpos = this.screenToPos(mouse.x, mouse.y)
+        let mpos = this.isMobile ?  this.mobileMove(axes): this.screenToPos(mouse.x, mouse.y)
         let pos = this.screenToPos(axes.x, axes.y)
 
         this.setScale(axes.size)
@@ -202,6 +210,7 @@ class ThreeD {
         // this.lightTop.lookAt(this.mesh.position)
         // this.lightBottom.lookAt(this.mesh.position)
         //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
+        this.time += delta / 2
     }
 
 
