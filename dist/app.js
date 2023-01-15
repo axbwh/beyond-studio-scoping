@@ -1024,7 +1024,7 @@ class App {
         document.addEventListener("mousemove", _mouse.bind(this), false);
         this.scroller = new (0, _virtualScrollDefault.default)({
             preventTouch: false,
-            touchMultiplier: 4
+            touchMultiplier: 3
         });
         this.scroller.on((event)=>{
             this.onScroll(event);
