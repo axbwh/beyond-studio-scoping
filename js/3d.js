@@ -170,7 +170,7 @@ class ThreeD {
     mobileMove(axes){
         let xMult = 1 - (axes.size * 1.29 / this.width)
         let yMult = (1 - (axes.size / this.height))
-        return this.screenToPos( Math.sin(this.time) * xMult , Math.sin(this.time / 2.5) *  0.35)
+        return this.screenToPos( Math.sin(this.time) * xMult , Math.sin(this.time / 2.5) * yMult * 0.4)
     }
 
     move(axes, mouse, rotation = 0, delta=1){
