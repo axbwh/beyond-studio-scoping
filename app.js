@@ -533,7 +533,7 @@ class App {
     //    });
        document.addEventListener('mousemove', _mouse.bind(this), false);
 
-       this.scroller = new VirtualScroll( {preventTouch: true})
+       this.scroller = new VirtualScroll( {preventTouch: false, touchMultiplier : 3})
 
        this.scroller.on( event => {
         this.onScroll(event)
@@ -885,7 +885,7 @@ class App {
         let delta = this.getDelta()
         //this.scroll.lastValue = this.scroll.value
 
-        this.scroll.value = this.curtains.lerp(this.scroll.value, this.y, delta * 5)
+        this.scroll.value = this.curtains.lerp(this.scroll.value, this.y, delta * 2.5)
 
         this.curtains.updateScrollValues(0, this.scroll.value)
         this.container.scrollTop = this.scroll.value
