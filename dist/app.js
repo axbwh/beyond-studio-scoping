@@ -580,6 +580,8 @@ var _copyToClipboard = require("./js/copyToClipboard");
 var _copyToClipboardDefault = parcelHelpers.interopDefault(_copyToClipboard);
 var _virtualScroll = require("virtual-scroll");
 var _virtualScrollDefault = parcelHelpers.interopDefault(_virtualScroll);
+var _scrollbar = require("./js/scrollbar");
+var _scrollbarDefault = parcelHelpers.interopDefault(_scrollbar);
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
 const parceled = true;
 class App {
@@ -597,6 +599,7 @@ class App {
         this.container = document.querySelector(".scrolldom");
         this.contHeight = this.container.scrollHeight;
         this.y = 0;
+        this.canScroll = true;
         this.height = window.innerHeight;
         this.width = window.innerWidth;
         this.transition = false;
@@ -870,6 +873,7 @@ class App {
         });
         this.initTimeline();
         this.loopSlider && this.loopSlider.resize();
+        this.scrollbar && this.scrollbar.onResize();
         this.height = window.innerHeight;
         this.contHeight = this.container.scrollHeight;
         this.width = window.innerWidth;
@@ -1030,6 +1034,7 @@ class App {
         this.scroller.on((event)=>{
             this.onScroll(event);
         });
+        this.scrollbar = this.tier.isMobile ? false : new (0, _scrollbarDefault.default)(this.container, this);
         //    this.container.addEventListener("touchmove", (e) =>{
         //     //e.preventDefault()
         //         if(!this.ticking){
@@ -1044,6 +1049,9 @@ class App {
         // document.body.style.overflow = 'hidden'
         this.container.style.height = "100%";
         this.container.style.overflow = "hidden";
+        // this.container.addEventListener("scroll", (e) =>{
+        //     this.container.scrollTop = this.scroll.value
+        // })
         //    this.container.addEventListener("scroll", (e) =>{
         //     e.preventDefault()
         //         // if(!this.ticking){
@@ -1299,8 +1307,13 @@ class App {
         return delta;
     }
     onScroll(e) {
-        this.y = e ? this.y - e.deltaY : this.y;
-        this.y = (0, _lodash.clamp)(this.y, 0, this.contHeight - this.height);
+        if (this.canScroll) {
+            this.y = e ? this.y - e.deltaY : this.y;
+            this.y = (0, _lodash.clamp)(this.y, 0, this.contHeight - this.height);
+        }
+    }
+    onBar(y) {
+        this.y = y * (this.contHeight - this.height);
     }
     onRender() {
         this.stats.begin();
@@ -1310,6 +1323,7 @@ class App {
         this.curtains.updateScrollValues(0, this.scroll.value);
         this.container.scrollTop = this.scroll.value;
         let y = this.scroll.value / (this.contHeight - this.height);
+        this.scrollbar && this.scrollbar.set(y);
         this.timeline.seek(this.timeline.duration * y);
         let mouseVal = this.pass.uniforms.mouse.value;
         //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
@@ -1407,7 +1421,7 @@ const onReady = async ()=>{
 if (document.readyState !== "loading") onReady();
 else document.addEventListener("DOMContentLoaded", onReady);
 
-},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn","./js/logo":"h816w","./js/copyToClipboard":"2A7UE","virtual-scroll":"36ZkR","./js/scrollToId":"gsXiN"}],"9AjRS":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/page.frag":"i90JS","./shaders/img.frag":"7dXWc","animejs":"jokr5","lodash":"3qBDj","three":"ktPTu","stats.js":"9lwC6","./shaders/line.frag":"h9zl2","parse-color":"1o9cL","detect-gpu":"dAC0i","./js/3d":"iwtb9","./js/fadeIn":"imNcP","./js/hoverSlider":"aglOA","./js/slider":"23FV9","./js/TextTexture":"cmqb9","./js/utils":"eYK4L","./js/card":"jRZDn","/shaders/textShader":"1VzNt","./js/svg":"ghtJt","./js/fallback":"aSat7","./js/loopSlider":"cXfAL","./js/preloader":"fr1Gn","./js/logo":"h816w","./js/copyToClipboard":"2A7UE","virtual-scroll":"36ZkR","./js/scrollToId":"gsXiN","./js/scrollbar":"6cGvi"}],"9AjRS":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // core
@@ -85232,6 +85246,87 @@ scrollToId = (app)=>{
 };
 exports.default = scrollToId;
 
-},{"animejs":"jokr5","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
+},{"animejs":"jokr5","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"6cGvi":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _animejs = require("animejs");
+var _animejsDefault = parcelHelpers.interopDefault(_animejs);
+var _lodash = require("lodash");
+class ScrollBar {
+    constructor(container, app){
+        this.track = document.body.appendChild(document.createElement("div"));
+        this.tab = this.track.appendChild(document.createElement("div"));
+        this.app = app;
+        this.track.style.position = "fixed";
+        this.track.style.top = 0;
+        this.track.style.right = 0;
+        this.track.style.height = "100vh";
+        this.track.style.width = "0.5vw";
+        this.track.style.background = "#040707";
+        this.container = container;
+        this.tabHeight = window.innerHeight / (this.container.scrollHeight - window.innerHeight) * window.innerHeight;
+        this.tab.style.height = `${this.tabHeight}px`;
+        this.tab.style.transformOrigin = "0 0";
+        // anime.set(this.tab, {
+        //     scaleY : `${this.tabHeight * 100}%`
+        // })
+        this.tab.style.background = "#ffffff";
+        this.tab.style.width = "100%";
+        this.y = 0;
+        this.yTarget = 0;
+        this.initialY = 0;
+        this.newY = 0;
+        this.move = false;
+        this.maxY = window.innerHeight - this.tabHeight;
+        window.addEventListener("resize", ()=>this.onResize());
+        this.tab.addEventListener("mousedown", (e)=>{
+            e.preventDefault();
+            this.initialY = e.clientY;
+            this.move = true;
+            this.app.canScroll = false;
+        });
+        this.ticking = false;
+        window.addEventListener("mousemove", (e)=>{
+            if (!this.ticking) window.requestAnimationFrame(()=>{
+                this.onMove(e);
+                this.ticking = false;
+            });
+            this.ticking = true;
+        });
+        this.track.addEventListener("click", (e)=>{
+            e.preventDefault();
+            this.move = true;
+            this.onMove(e);
+            this.move = false;
+        });
+        window.addEventListener("mouseup", (e)=>{
+            e.preventDefault();
+            this.move = false;
+            this.app.canScroll = true;
+        });
+    }
+    onResize() {
+        this.tabHeight = window.innerHeight / (this.container.scrollHeight - window.innerHeight) * window.innerHeight;
+        this.tab.style.height = `${this.tabHeight}px`;
+        this.maxY = window.innerHeight - this.tabHeight;
+    }
+    set(y) {
+        this.y = y * this.maxY;
+        this.tab.style.transform = `translateY(${this.y}px)`;
+    }
+    onMove(e) {
+        if (this.move) {
+            e.preventDefault();
+            this.newY = e.clientY;
+            this.yTarget = this.yTarget - (this.initialY - this.newY);
+            this.yTarget = (0, _lodash.clamp)(this.yTarget, 0, this.maxY);
+            this.initialY = this.newY;
+            this.app.onBar(this.yTarget / this.maxY);
+        }
+    }
+}
+exports.default = ScrollBar;
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","animejs":"jokr5","lodash":"3qBDj"}]},["4MuEU","igcvL"], "igcvL", "parcelRequire2216")
 
 //# sourceMappingURL=app.js.map

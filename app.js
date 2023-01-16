@@ -24,6 +24,7 @@ import Preloader from './js/preloader';
 import Logo from './js/logo';
 import copyToClipboard from './js/copyToClipboard';
 import VirtualScroll from 'virtual-scroll';
+import ScrollBar from './js/scrollbar';
 
 
 //https://github.com/martinlaxenaire/curtainsjs/blob/master/examples/multiple-textures/js/multiple.textures.setup.js
@@ -41,6 +42,7 @@ class App {
         this.container = document.querySelector('.scrolldom')
         this.contHeight = this.container.scrollHeight
         this.y = 0
+        this.canScroll = true
         this.height = window.innerHeight
         this.width = window.innerWidth
         this.transition = false
@@ -373,6 +375,7 @@ class App {
         })
         this.initTimeline()
         this.loopSlider && this.loopSlider.resize()
+        this.scrollbar && this.scrollbar.onResize()
         this.height = window.innerHeight
         this.contHeight = this.container.scrollHeight
         this.width = window.innerWidth
@@ -539,6 +542,9 @@ class App {
         this.onScroll(event)
        })
 
+       
+       this.scrollbar = this.tier.isMobile ? false : new ScrollBar(this.container, this)
+
     //    this.container.addEventListener("touchmove", (e) =>{
     //     //e.preventDefault()
     //         if(!this.ticking){
@@ -555,7 +561,10 @@ class App {
 
         this.container.style.height = '100%'
         this.container.style.overflow = 'hidden'
-        
+
+    // this.container.addEventListener("scroll", (e) =>{
+    //     this.container.scrollTop = this.scroll.value
+    // })
        
     //    this.container.addEventListener("scroll", (e) =>{
     //     e.preventDefault()
@@ -610,6 +619,8 @@ class App {
                 let tag = e.querySelector('span').innerHTML.toLowerCase()
 
                 
+
+                
                 if(tag === 'reset'){
                     this.activeFilters = []
                     this.filters.forEach(e =>{
@@ -634,7 +645,6 @@ class App {
                 })
                 this.curtains.resize()
                 this.onResize()
-                
             })
         })
 
@@ -875,8 +885,14 @@ class App {
     }
 
     onScroll(e){
-        this.y = e? this.y - e.deltaY : this.y
-        this.y = clamp(this.y, 0, this.contHeight - this.height)    
+        if(this.canScroll){
+            this.y = e? this.y - e.deltaY : this.y
+            this.y = clamp(this.y, 0, this.contHeight - this.height)    
+        }
+    }
+
+    onBar(y){
+        this.y = y * (this.contHeight - this.height)
     }
 
     onRender(){
@@ -891,6 +907,8 @@ class App {
         this.container.scrollTop = this.scroll.value
 
         let y = this.scroll.value / (this.contHeight - this.height)
+
+        this.scrollbar && this.scrollbar.set(y)
         this.timeline.seek(this.timeline.duration * y)
 
 
