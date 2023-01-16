@@ -794,7 +794,7 @@ class App {
         // })
 
         anime({
-            targets: this.container,
+            targets: [this.container, this.scrollbar.track],
             opacity: 0,
         })
         
@@ -842,7 +842,7 @@ class App {
         })
 
         anime({
-            targets: this.container,
+            targets: [this.container, this.scrollbar.track],
             opacity: 1,
         })
 

@@ -1230,7 +1230,10 @@ class App {
         //     easing: "easeInOutSine"
         // })
         (0, _animejsDefault.default)({
-            targets: this.container,
+            targets: [
+                this.container,
+                this.scrollbar.track
+            ],
             opacity: 0
         });
         (0, _animejsDefault.default)({
@@ -1270,7 +1273,10 @@ class App {
             easing: "easeInOutSine"
         });
         (0, _animejsDefault.default)({
-            targets: this.container,
+            targets: [
+                this.container,
+                this.scrollbar.track
+            ],
             opacity: 1
         });
         (0, _animejsDefault.default)({
@@ -85265,6 +85271,8 @@ class ScrollBar {
         this.track.style.height = "100vh";
         this.track.style.width = "0.5vw";
         this.track.style.background = "#040707";
+        this.track.style.zIndex = "997";
+        this.track.classList.add("scroll-track");
         this.container = container;
         this.tabHeight = window.innerHeight / (this.container.scrollHeight - window.innerHeight) * window.innerHeight;
         this.tab.style.height = `${this.tabHeight}px`;

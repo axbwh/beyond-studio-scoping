@@ -13,6 +13,10 @@ class ScrollBar {
         this.track.style.height = '100vh'
         this.track.style.width = '0.5vw'
         this.track.style.background = '#040707'
+        this.track.style.zIndex = '997'
+
+        this.track.classList.add('scroll-track')
+    
 
         this.container = container
 
