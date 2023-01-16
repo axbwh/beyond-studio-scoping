@@ -1215,6 +1215,7 @@ class App {
         }).finished.then(()=>this.preloader.stop).then(()=>window.location.href = href);
     }
     menuOpen() {
+        this.canScroll = false;
         this.inMenu = true;
         this.transition = true;
         this.impulses.opacity = 0;
@@ -1257,6 +1258,7 @@ class App {
         });
     }
     menuClose() {
+        this.canScroll = true;
         this.transition = true;
         this.inMenu = false;
         this.impulses.opacity = 1;
