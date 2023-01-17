@@ -1,5 +1,6 @@
 import anime from 'animejs';
 import {Plane, RenderTarget, ShaderPass} from 'curtainsjs';
+import { delay } from 'lodash';
 import sliderFrag from '/shaders/slider.frag'
 import sliderVert from '/shaders/slider.vert'
 
@@ -43,7 +44,9 @@ class Slider {
     }
   }
 
-  init(target, callback) {
+  init(target, threeD) {
+
+    this.threeD = threeD
 
     this.doms.forEach((e, i) =>{
       if(i != this.state.activeIndex){
@@ -63,13 +66,9 @@ class Slider {
 
 
     this.num[2].innerText = this.state.maxTextures
-
-    this.callback = callback
-    //this.target = new RenderTarget(this.curtains) //create a render target for our slider
     this.target = target
     this.plane = new Plane(this.curtains, this.element, this.params) // create a plane for our slider
     this.plane.setRenderTarget(target)
-    //this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
 
     this.plane.onLoading((texture) => {
         // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
@@ -78,6 +77,8 @@ class Slider {
       .onReady(this.onReady.bind(this))
       .onRender(this.onRender.bind(this))
       this.element.style.opacity = 0
+
+      this.time = 0
   }
 
   onReady() {
@@ -108,28 +109,67 @@ class Slider {
         this.onClick(i)
       })
     })
+
+    this.timeline = anime.timeline({ autoplay: false, loop: true, easing: 'linear'})
+
+    this.doms.forEach((d, i) =>{
+      this.timeline.add({
+        targets: d.querySelectorAll('[slide]'),
+        opacity: { value: [0, 1], duration: 400},
+        translateY: { value: ['4vh', '0vh'], duration: 400},
+        delay: anime.stagger(100)
+      }).add({
+        targets: d.querySelectorAll('[slide]'),
+        opacity: { value: [1, 0], duration: 400},
+        translateY: { value: ['0vh', '-4vh'], duration: 400},
+        delay: anime.stagger(100)
+      })
+    })
+    
+    this.timeTarget = this.timeline.duration / (this.doms.length * 2)
+    this.time = this.timeTarget
+    this.timeline.seek(this.time)
+
+    console.log(this.time, this.timeline.duration, this.doms.length)
+
   }
 
   onClick(i) {
-    if (!this.state.isChanging) {
+      // if (!this.state.isChanging) {
       // enable drawing for now
       //curtains.enableDrawing();
 
+      // reset timer
+      this.state.transitionTimer = 0
       this.state.isChanging = true
 
+      let frameLength = this.timeline.duration / (this.doms.length *2)
+
       if(i < 1){
+          
+        this.threeD.rotationTarget += 180
+
+        this.timeTarget += frameLength * 2
+
           // check what will be next image
           if (this.state.activeIndex < this.state.maxTextures - 1) {
             this.state.nextIndex = this.state.activeIndex + 1
           } else {
             this.state.nextIndex = 0
           }
+
+
       }else{
+        this.timeTarget -= frameLength * 2
+        this.threeD.rotationTarget -= 180
+
         if (this.state.activeIndex > 0) {
           this.state.nextIndex = this.state.activeIndex - 1
         } else {
           this.state.nextIndex = this.state.maxTextures - 1
         }
+
+
       }
 
       this.doms.forEach( (d, i) =>{
@@ -141,57 +181,49 @@ class Slider {
     })
 
       
+    // this.doms.forEach((dom, i) => {
+    //   if(i != this.state.nextIndex){
+    //     anime({
+    //       targets: dom.querySelectorAll('[slide]'),
+    //       opacity: { value: 0, duration: 400, easing: 'easeInSine'},
+    //       translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
+    //       delay: anime.stagger(100)
+    //     })
+    //   }
+    // })
 
-      anime({
-        targets: this.doms[this.state.activeIndex].querySelectorAll('[slide]'),
-        opacity: { value: 0, duration: 400, easing: 'easeInSine'},
-        translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
-        delay: anime.stagger(100)
-      })
 
       
 
-      anime({
-        targets: this.num[0],
-        opacity: { value: 0, duration: 400, easing: 'easeInSine'},
-        translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
-      }).finished.then(()=> {
-        this.num[0].innerText = this.state.nextIndex + 1
-        anime({
-          targets: this.num[0],
-          opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
-          translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'}
-        })
-      })
+      // anime({
+      //   targets: this.num[0],
+      //   opacity: { value: 0, duration: 400, easing: 'easeInSine'},
+      //   translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
+      // })
+      
+      this.num[0].innerText = this.state.nextIndex + 1
+      // anime({
+      //   targets: this.num[0],
+      //   opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
+      //   translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'},
+      //   delay: 800
+      // })
 
-      anime({
-        targets: this.doms[this.state.nextIndex].querySelectorAll('[slide]'),
-        opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
-        translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'},
-        delay: anime.stagger(100, {start: 400})
-      })
+      // anime({
+      //   targets: this.doms[this.state.nextIndex].querySelectorAll('[slide]'),
+      //   opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
+      //   translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'},
+      //   delay: anime.stagger(100, {start: 400})
+      // })
   
 
       // apply it to our next texture
       this.next.setSource(this.images[this.state.nextIndex])
       this.displacement.setSource(this.images[this.state.activeIndex])
+      this.state.activeIndex = this.state.nextIndex
+      // our next texture becomes our active texture
+      this.active.setSource(this.images[this.state.activeIndex])
 
-      setTimeout(() => {
-        // disable drawing now that the transition is over
-        //curtains.disableDrawing();
-
-        this.state.isChanging = false
-
-        this.state.activeIndex = this.state.nextIndex
-        // our next texture becomes our active texture
-        this.active.setSource(this.images[this.state.activeIndex])
-
-        // reset timer
-        this.state.transitionTimer = 0
-      }, 1700) // add a bit of margin to the timer
-
-      this.callback()
-    }
   }
 
   getDelta(){
@@ -202,16 +234,39 @@ class Slider {
 }
 
   onRender() {
-
     let delta = this.getDelta()
+
+
     // increase or decrease our timer based on the active texture value
     if (this.state.isChanging) {
+
+      if(this.timeline){
+
+
+        this.time = this.curtains.lerp(this.time, this.timeTarget, delta * 5)
+        
+        if(this.time >= this.timeline.duration){
+          this.time -= this.timeline.duration
+          this.timeTarget = this.timeTarget % this.timeline.duration
+        }
+  
+        if(this.time <= 0){
+          this.time += this.timeline.duration
+          this.timeTarget = this.timeline.duration - (Math.abs(this.timeTarget) % this.timeline.duration)
+        }
+  
+        this.timeline.seek(this.time)
+    
+      }
+
       // use damping to smoothen transition
-      this.state.transitionTimer += (90 - this.state.transitionTimer) * delta * 2.5
+      this.state.transitionTimer += (90 - this.state.transitionTimer) * delta * 3
 
       // force end of animation as damping is slower the closer we get from the end value
       if ( this.state.transitionTimer >= 90 - (delta*2.5)  && this.state.transitionTimer !== 90) {
+        this.state.isChanging = false
         this.state.transitionTimer = 90
+        this.time = this.timeTarget
       }
     }
 

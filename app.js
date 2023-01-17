@@ -112,7 +112,7 @@ class App {
         this.frames = []
         this.pixelRatio = Math.min(this.tier.tier > 1 ? 1 + this.tier.tier / 2 : 1, window.devicePixelRatio)
 
-        this.threeD = new ThreeD(this.pixelRatio, this.tier)
+        this.threeD = new ThreeD(this.pixelRatio, this.tier, this)
         this.textTextures = []
         this.ticking = false
 
@@ -517,7 +517,7 @@ class App {
 
 
 
-        this.slider && this.slider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
+        this.slider && this.slider.init(this.puckTarget, this.threeD )
 
         this.hoverSlider && this.hoverSlider.init(this.puckTarget, () =>  this.onFlip(this.impulses) )
         if(!this.tier.isMobile){
@@ -710,6 +710,7 @@ class App {
             anime({
                 targets: this.origin,
                 range: 1,
+                rotRange: 1,
                 duration: 2000,
                 easing: 'easeOutBounce',
                 delay: delay,
@@ -813,6 +814,7 @@ class App {
             y: this.width > this.height ? 0 : -1,
             size: this.width > this.height ? this.height : this.width / 1.29,
             range: 0.3,
+            rotRange: 1,
             duration: 1500,
             delay: 0,
             easing:"easeInOutExpo"
@@ -854,10 +856,6 @@ class App {
         }).finished.then( () =>{
             this.transition = false
         })
-    }
-
-    onFlip(impulses){
-        impulses.rotation += 180;
     }
 
     monitorPerformance(delta){
@@ -924,10 +922,10 @@ class App {
             y: this.curtains.lerp(this.origin.y, this.axes.y, this.origin.range),
             size: this.curtains.lerp(this.origin.size, this.axes.size, this.origin.range),
             range: this.curtains.lerp(this.origin.range, this.axes.range, this.origin.range),
-            rotRange: this.curtains.lerp(this.origin.rotRange, this.axes.rotRange, this.origin.range)
+            rotRange: this.curtains.lerp(this.origin.rotRange, this.axes.rotRange, this.origin.rotRange)
         }
         ///
-        this.threeD.move(ax, this.mouse, this.impulses.rotation, delta)
+        this.threeD.move(ax, this.mouse, delta)
         this.threeD.render()
 
         let mouseLerp = [this.curtains.lerp( mouseVal[0] ,this.mouse.x, delta * 3.125), this.curtains.lerp( mouseVal[1] ,this.mouse.y, delta * 3.125) ] 

@@ -660,7 +660,7 @@ class App {
         this.lastFrame = 0;
         this.frames = [];
         this.pixelRatio = Math.min(this.tier.tier > 1 ? 1 + this.tier.tier / 2 : 1, window.devicePixelRatio);
-        this.threeD = new (0, _3DDefault.default)(this.pixelRatio, this.tier);
+        this.threeD = new (0, _3DDefault.default)(this.pixelRatio, this.tier, this);
         this.textTextures = [];
         this.ticking = false;
     }
@@ -1009,7 +1009,7 @@ class App {
         this.initCards();
         this.fadeIn = document.querySelector('[fade="in"]') ? new (0, _fadeInDefault.default)(this.curtains, document.querySelector('[fade="in"]'), this.puckTarget) : null;
         this.fadeOut = document.querySelector('[fade="out"]') ? new (0, _fadeInDefault.default)(this.curtains, document.querySelector('[fade="out"]'), this.puckTarget) : null;
-        this.slider && this.slider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
+        this.slider && this.slider.init(this.puckTarget, this.threeD);
         this.hoverSlider && this.hoverSlider.init(this.puckTarget, ()=>this.onFlip(this.impulses));
         if (!this.tier.isMobile) this.loopSlider = document.querySelector("#scrolling-bar") ? new (0, _loopSliderDefault.default)(this.curtains, document.querySelector("#scrolling-bar"), this.imgTarget) : null;
         this.pass.onRender(this.onRender.bind(this));
@@ -1159,6 +1159,7 @@ class App {
             (0, _animejsDefault.default)({
                 targets: this.origin,
                 range: 1,
+                rotRange: 1,
                 duration: 2000,
                 easing: "easeOutBounce",
                 delay: delay
@@ -1250,6 +1251,7 @@ class App {
             y: this.width > this.height ? 0 : -1,
             size: this.width > this.height ? this.height : this.width / 1.29,
             range: 0.3,
+            rotRange: 1,
             duration: 1500,
             delay: 0,
             easing: "easeInOutExpo"
@@ -1287,9 +1289,6 @@ class App {
         }).finished.then(()=>{
             this.transition = false;
         });
-    }
-    onFlip(impulses) {
-        impulses.rotation += 180;
     }
     monitorPerformance(delta) {
         this.frames[this.frames.length] = delta;
@@ -1342,10 +1341,10 @@ class App {
             y: this.curtains.lerp(this.origin.y, this.axes.y, this.origin.range),
             size: this.curtains.lerp(this.origin.size, this.axes.size, this.origin.range),
             range: this.curtains.lerp(this.origin.range, this.axes.range, this.origin.range),
-            rotRange: this.curtains.lerp(this.origin.rotRange, this.axes.rotRange, this.origin.range)
+            rotRange: this.curtains.lerp(this.origin.rotRange, this.axes.rotRange, this.origin.rotRange)
         };
         ///
-        this.threeD.move(ax, this.mouse, this.impulses.rotation, delta);
+        this.threeD.move(ax, this.mouse, delta);
         this.threeD.render();
         let mouseLerp = [
             this.curtains.lerp(mouseVal[0], this.mouse.x, delta * 3.125),
@@ -54932,7 +54931,8 @@ var _bodyVertDefault = parcelHelpers.interopDefault(_bodyVert);
 var _lodash = require("lodash");
 const clamp = (num, min, max)=>Math.min(Math.max(num, min), max);
 class ThreeD {
-    constructor(pixelRatio, tier){
+    constructor(pixelRatio, tier, app){
+        this.app = app;
         this.height = window.innerHeight;
         this.width = window.innerWidth;
         this.scene = new _three.Scene();
@@ -54997,8 +54997,12 @@ class ThreeD {
         this.scene.add(this.lightBottom);
         this.lightTop.position.set(-5, 40, 3);
         this.lightBottom.position.set(10, -40, 50);
-        this.rotationTarget = new _three.Quaternion();
+        this.rotationQuart = new _three.Quaternion();
+        this.rotationTarget = 0;
+        this.groupRot = 0;
         this.rotTdeg = new _three.Euler();
+        this.group = new _three.Group();
+        this.scene.add(this.group);
     }
     setPixelRatio(pixelRatio) {
         this.renderer.setPixelRatio(pixelRatio);
@@ -55016,7 +55020,8 @@ class ThreeD {
             // this.geometry = smoothGeo
             this.geometry = geo;
             this.mesh = new _three.Mesh(this.geometry, this.material);
-            this.scene.add(this.mesh);
+            //this.scene.add( this.mesh );
+            this.group.add(this.mesh);
             this.mesh.geometry.computeBoundingBox();
             this.mesh.rotation.x = Math.PI / 2;
             // this.mesh.rotation.y = THREE.MathUtils.degToRad(180)
@@ -55046,7 +55051,7 @@ class ThreeD {
         this.render();
     }
     setScale(size) {
-        let dist = this.camera.position.distanceTo(this.mesh.position);
+        let dist = this.camera.position.distanceTo(this.group.position);
         let vFOV = this.camera.fov * Math.PI / 180; // convert vertical fov to radians
         this.vHeight = 2 * Math.tan(vFOV / 2) * dist; // visible height
         this.mesh.scale.x = this.vHeight * (size / this.height);
@@ -55057,20 +55062,20 @@ class ThreeD {
         this.setScale(axes.size);
         this.mesh.rotation.z = axes.rotation;
         let pos = this.screenToPos(axes.x, axes.y);
-        this.mesh.position.copy(pos);
+        this.group.position.copy(pos);
     }
     mobileMove(axes) {
         let xMult = 1 - axes.size * 1.29 / this.width;
         let yMult = 1 - axes.size / this.height;
         return this.screenToPos(Math.sin(this.time) * xMult, Math.sin(this.time / 2.5) * yMult * 0.4);
     }
-    move(axes, mouse, rotation = 0, delta = 1) {
+    move(axes, mouse, delta = 1) {
         let mpos = this.isMobile ? this.mobileMove(axes) : this.screenToPos(mouse.x, mouse.y);
         let pos = this.screenToPos(axes.x, axes.y);
         this.setScale(axes.size);
         pos.lerp(mpos, axes.range);
-        this.mesh.rotation.z += this.mesh.position.distanceTo(pos) * delta * 0.4 * axes.range;
-        this.mesh.position.lerp(pos, delta * 1.5);
+        this.mesh.rotation.z += this.group.position.distanceTo(pos) * delta * 0.4 * axes.range;
+        this.group.position.lerp(pos, delta * 1.5);
         if (this.material.userData.shader) {
             this.vectorUtil.copy(this.attractor.position);
             this.attractor.position.lerp(mpos, delta * 2);
@@ -55085,12 +55090,18 @@ class ThreeD {
         // this.mesh.scale.y = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
         this.rotTdeg.copy(this.mesh.rotation);
-        this.rotTdeg.z = _three.MathUtils.degToRad(axes.rotation + rotation * axes.rotRange);
-        this.rotationTarget.setFromEuler(this.rotTdeg);
-        this.mesh.quaternion.slerp(this.rotationTarget, delta * 2 * (1.0 - axes.range));
-        // this.lightTop.lookAt(this.mesh.position)
-        // this.lightBottom.lookAt(this.mesh.position)
-        //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
+        this.rotTdeg.z = _three.MathUtils.degToRad(axes.rotation);
+        this.rotationQuart.setFromEuler(this.rotTdeg);
+        this.mesh.quaternion.slerp(this.rotationQuart, delta * 2 * (1.0 - axes.range));
+        this.groupRot = this.app.curtains.lerp(this.groupRot, _three.MathUtils.degToRad(this.rotationTarget), delta * 2);
+        if (this.groupRot >= Math.PI * 2) {
+            this.groupRot = 0;
+            this.rotationTarget = this.rotationTarget - 360;
+        } else if (this.groupRot <= 0) {
+            this.groupRot = Math.PI * 2;
+            this.rotationTarget = this.rotationTarget + 360;
+        }
+        this.group.rotation.y = this.groupRot * axes.rotRange;
         this.time += delta / 2;
     }
     render() {
@@ -65480,6 +65491,7 @@ parcelHelpers.defineInteropFlag(exports);
 var _animejs = require("animejs");
 var _animejsDefault = parcelHelpers.interopDefault(_animejs);
 var _curtainsjs = require("curtainsjs");
+var _lodash = require("lodash");
 var _sliderFrag = require("/shaders/slider.frag");
 var _sliderFragDefault = parcelHelpers.interopDefault(_sliderFrag);
 var _sliderVert = require("/shaders/slider.vert");
@@ -65523,7 +65535,8 @@ class Slider {
             transitionTimer: 0
         };
     }
-    init(target, callback) {
+    init(target, threeD) {
+        this.threeD = threeD;
         this.doms.forEach((e, i)=>{
             if (i != this.state.activeIndex) {
                 (0, _animejsDefault.default).set(e.querySelectorAll("[slide]"), {
@@ -65538,18 +65551,16 @@ class Slider {
         }) // hide sliders
         ;
         this.num[2].innerText = this.state.maxTextures;
-        this.callback = callback;
-        //this.target = new RenderTarget(this.curtains) //create a render target for our slider
         this.target = target;
         this.plane = new (0, _curtainsjs.Plane)(this.curtains, this.element, this.params) // create a plane for our slider
         ;
         this.plane.setRenderTarget(target);
-        //this.pass = new ShaderPass(this.curtains, { renderTarget: this.target }) // create a shaderPass from our slider rendertarget, so that our sliderPass can stack on top
         this.plane.onLoading((texture)=>{
             // improve texture rendering on small screens with LINEAR_MIPMAP_NEAREST minFilter
             texture.setMinFilter(this.curtains.gl.NEAREST);
         }).onReady(this.onReady.bind(this)).onRender(this.onRender.bind(this));
         this.element.style.opacity = 0;
+        this.time = 0;
     }
     onReady() {
         // the idea here is to create two additionnal textures
@@ -65577,104 +65588,113 @@ class Slider {
                 this.onClick(i);
             });
         });
-    }
-    onClick(i) {
-        if (!this.state.isChanging) {
-            // enable drawing for now
-            //curtains.enableDrawing();
-            this.state.isChanging = true;
-            if (i < 1) {
-                // check what will be next image
-                if (this.state.activeIndex < this.state.maxTextures - 1) this.state.nextIndex = this.state.activeIndex + 1;
-                else this.state.nextIndex = 0;
-            } else if (this.state.activeIndex > 0) this.state.nextIndex = this.state.activeIndex - 1;
-            else this.state.nextIndex = this.state.maxTextures - 1;
-            this.doms.forEach((d, i)=>{
-                d.style.pointerEvents = i === this.state.nextIndex ? "all" : "none";
-                (0, _animejsDefault.default).set(d.querySelectorAll("[slide]"), {
-                    pointerEvents: i === this.state.nextIndex ? "all" : "none"
-                });
-            });
-            (0, _animejsDefault.default)({
-                targets: this.doms[this.state.activeIndex].querySelectorAll("[slide]"),
+        this.timeline = (0, _animejsDefault.default).timeline({
+            autoplay: false,
+            loop: true,
+            easing: "linear"
+        });
+        this.doms.forEach((d, i)=>{
+            this.timeline.add({
+                targets: d.querySelectorAll("[slide]"),
                 opacity: {
-                    value: 0,
-                    duration: 400,
-                    easing: "easeInSine"
-                },
-                translateY: {
-                    value: "-4vh",
-                    duration: 400,
-                    easing: "easeInSine"
-                },
-                delay: (0, _animejsDefault.default).stagger(100)
-            });
-            (0, _animejsDefault.default)({
-                targets: this.num[0],
-                opacity: {
-                    value: 0,
-                    duration: 400,
-                    easing: "easeInSine"
-                },
-                translateY: {
-                    value: "-4vh",
-                    duration: 400,
-                    easing: "easeInSine"
-                }
-            }).finished.then(()=>{
-                this.num[0].innerText = this.state.nextIndex + 1;
-                (0, _animejsDefault.default)({
-                    targets: this.num[0],
-                    opacity: {
-                        value: 1,
-                        duration: 400,
-                        easing: "easeOutSine"
-                    },
-                    translateY: {
-                        value: [
-                            "4vh",
-                            "0vh"
-                        ],
-                        duration: 400,
-                        easing: "easeOutSine"
-                    }
-                });
-            });
-            (0, _animejsDefault.default)({
-                targets: this.doms[this.state.nextIndex].querySelectorAll("[slide]"),
-                opacity: {
-                    value: 1,
-                    duration: 400,
-                    easing: "easeOutSine"
+                    value: [
+                        0,
+                        1
+                    ],
+                    duration: 400
                 },
                 translateY: {
                     value: [
                         "4vh",
                         "0vh"
                     ],
-                    duration: 400,
-                    easing: "easeOutSine"
+                    duration: 400
                 },
-                delay: (0, _animejsDefault.default).stagger(100, {
-                    start: 400
-                })
+                delay: (0, _animejsDefault.default).stagger(100)
+            }).add({
+                targets: d.querySelectorAll("[slide]"),
+                opacity: {
+                    value: [
+                        1,
+                        0
+                    ],
+                    duration: 400
+                },
+                translateY: {
+                    value: [
+                        "0vh",
+                        "-4vh"
+                    ],
+                    duration: 400
+                },
+                delay: (0, _animejsDefault.default).stagger(100)
             });
-            // apply it to our next texture
-            this.next.setSource(this.images[this.state.nextIndex]);
-            this.displacement.setSource(this.images[this.state.activeIndex]);
-            setTimeout(()=>{
-                // disable drawing now that the transition is over
-                //curtains.disableDrawing();
-                this.state.isChanging = false;
-                this.state.activeIndex = this.state.nextIndex;
-                // our next texture becomes our active texture
-                this.active.setSource(this.images[this.state.activeIndex]);
-                // reset timer
-                this.state.transitionTimer = 0;
-            }, 1700) // add a bit of margin to the timer
-            ;
-            this.callback();
+        });
+        this.timeTarget = this.timeline.duration / (this.doms.length * 2);
+        this.time = this.timeTarget;
+        this.timeline.seek(this.time);
+        console.log(this.time, this.timeline.duration, this.doms.length);
+    }
+    onClick(i) {
+        // if (!this.state.isChanging) {
+        // enable drawing for now
+        //curtains.enableDrawing();
+        // reset timer
+        this.state.transitionTimer = 0;
+        this.state.isChanging = true;
+        let frameLength = this.timeline.duration / (this.doms.length * 2);
+        if (i < 1) {
+            this.threeD.rotationTarget += 180;
+            this.timeTarget += frameLength * 2;
+            // check what will be next image
+            if (this.state.activeIndex < this.state.maxTextures - 1) this.state.nextIndex = this.state.activeIndex + 1;
+            else this.state.nextIndex = 0;
+        } else {
+            this.timeTarget -= frameLength * 2;
+            this.threeD.rotationTarget -= 180;
+            if (this.state.activeIndex > 0) this.state.nextIndex = this.state.activeIndex - 1;
+            else this.state.nextIndex = this.state.maxTextures - 1;
         }
+        this.doms.forEach((d, i)=>{
+            d.style.pointerEvents = i === this.state.nextIndex ? "all" : "none";
+            (0, _animejsDefault.default).set(d.querySelectorAll("[slide]"), {
+                pointerEvents: i === this.state.nextIndex ? "all" : "none"
+            });
+        });
+        // this.doms.forEach((dom, i) => {
+        //   if(i != this.state.nextIndex){
+        //     anime({
+        //       targets: dom.querySelectorAll('[slide]'),
+        //       opacity: { value: 0, duration: 400, easing: 'easeInSine'},
+        //       translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
+        //       delay: anime.stagger(100)
+        //     })
+        //   }
+        // })
+        // anime({
+        //   targets: this.num[0],
+        //   opacity: { value: 0, duration: 400, easing: 'easeInSine'},
+        //   translateY: { value: '-4vh', duration: 400, easing: 'easeInSine'},
+        // })
+        this.num[0].innerText = this.state.nextIndex + 1;
+        // anime({
+        //   targets: this.num[0],
+        //   opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
+        //   translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'},
+        //   delay: 800
+        // })
+        // anime({
+        //   targets: this.doms[this.state.nextIndex].querySelectorAll('[slide]'),
+        //   opacity: { value: 1, duration: 400, easing: 'easeOutSine'},
+        //   translateY: { value: ['4vh', '0vh'], duration: 400, easing: 'easeOutSine'},
+        //   delay: anime.stagger(100, {start: 400})
+        // })
+        // apply it to our next texture
+        this.next.setSource(this.images[this.state.nextIndex]);
+        this.displacement.setSource(this.images[this.state.activeIndex]);
+        this.state.activeIndex = this.state.nextIndex;
+        // our next texture becomes our active texture
+        this.active.setSource(this.images[this.state.activeIndex]);
     }
     getDelta() {
         let delta = (performance.now() - this.lastFrame) / 1000;
@@ -65686,10 +65706,26 @@ class Slider {
         let delta = this.getDelta();
         // increase or decrease our timer based on the active texture value
         if (this.state.isChanging) {
+            if (this.timeline) {
+                this.time = this.curtains.lerp(this.time, this.timeTarget, delta * 5);
+                if (this.time >= this.timeline.duration) {
+                    this.time -= this.timeline.duration;
+                    this.timeTarget = this.timeTarget % this.timeline.duration;
+                }
+                if (this.time <= 0) {
+                    this.time += this.timeline.duration;
+                    this.timeTarget = this.timeline.duration - Math.abs(this.timeTarget) % this.timeline.duration;
+                }
+                this.timeline.seek(this.time);
+            }
             // use damping to smoothen transition
-            this.state.transitionTimer += (90 - this.state.transitionTimer) * delta * 2.5;
+            this.state.transitionTimer += (90 - this.state.transitionTimer) * delta * 3;
             // force end of animation as damping is slower the closer we get from the end value
-            if (this.state.transitionTimer >= 90 - delta * 2.5 && this.state.transitionTimer !== 90) this.state.transitionTimer = 90;
+            if (this.state.transitionTimer >= 90 - delta * 2.5 && this.state.transitionTimer !== 90) {
+                this.state.isChanging = false;
+                this.state.transitionTimer = 90;
+                this.time = this.timeTarget;
+            }
         }
         // update our transition timer uniform
         this.plane.uniforms.transitionTimer.value = this.state.transitionTimer;
@@ -65697,7 +65733,7 @@ class Slider {
 }
 exports.default = Slider;
 
-},{"animejs":"jokr5","curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/shaders/slider.frag":"7aA3N","/shaders/slider.vert":"3Tkxq"}],"cmqb9":[function(require,module,exports) {
+},{"animejs":"jokr5","curtainsjs":"9AjRS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/shaders/slider.frag":"7aA3N","/shaders/slider.vert":"3Tkxq","lodash":"3qBDj"}],"cmqb9":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "TextTexture", ()=>TextTexture);

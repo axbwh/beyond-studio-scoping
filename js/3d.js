@@ -15,7 +15,8 @@ import { times } from 'lodash';
 const clamp = (num, min, max) => Math.min(Math.max(num, min), max)
 
 class ThreeD {
-    constructor(pixelRatio, tier){ //lets set up our three.js scene
+    constructor(pixelRatio, tier, app){ //lets set up our three.js scene
+        this.app = app
         this.height = window.innerHeight
         this.width = window.innerWidth
         this.scene = new THREE.Scene();
@@ -31,6 +32,7 @@ class ThreeD {
         this.vectorUtil = new THREE.Vector3()
         this.vHeight = 0
 
+       
         this.canvas.setAttribute('data-sampler', 'threeDTexture') // this data attribute will automatically load our canvas 
         // as a uniform sampler2D called threeDTexture when we call ShaderPass.loadCanvas(theeD.canvas)
 
@@ -101,8 +103,13 @@ class ThreeD {
         this.lightTop.position.set(-5, 40, 3)
         this.lightBottom.position.set(10, -40, 50)
 
-        this.rotationTarget = new THREE.Quaternion()
+        this.rotationQuart = new THREE.Quaternion()
+        this.rotationTarget = 0
+        this.groupRot = 0
+
         this.rotTdeg = new THREE.Euler()
+        this.group = new THREE.Group()
+        this.scene.add(this.group)
 
     }
 
@@ -126,9 +133,11 @@ class ThreeD {
             // this.geometry = smoothGeo
             this.geometry = geo
             this.mesh = new THREE.Mesh(this.geometry, this.material)
-            this.scene.add( this.mesh );
+            //this.scene.add( this.mesh );
+            this.group.add(this.mesh)
             this.mesh.geometry.computeBoundingBox()
             this.mesh.rotation.x = Math.PI / 2 ;
+            
             // this.mesh.rotation.y = THREE.MathUtils.degToRad(180)
             this.ready()
         })
@@ -152,7 +161,7 @@ class ThreeD {
     }
 
     setScale(size){
-        let dist = this.camera.position.distanceTo(this.mesh.position)
+        let dist = this.camera.position.distanceTo(this.group.position)
         let vFOV = this.camera.fov * Math.PI / 180;        // convert vertical fov to radians
         this.vHeight = 2 * Math.tan( vFOV / 2 ) * dist; // visible height
         this.mesh.scale.x = this.vHeight * (size/ this.height);
@@ -164,7 +173,7 @@ class ThreeD {
         this.setScale(axes.size)
         this.mesh.rotation.z = axes.rotation
         let pos = this.screenToPos(axes.x, axes.y)
-        this.mesh.position.copy(pos)
+        this.group.position.copy(pos)
     }
 
     mobileMove(axes){
@@ -173,7 +182,7 @@ class ThreeD {
         return this.screenToPos( Math.sin(this.time) * xMult , Math.sin(this.time / 2.5) * yMult * 0.4)
     }
 
-    move(axes, mouse, rotation = 0, delta=1){
+    move(axes, mouse, delta=1){
         let mpos = this.isMobile ?  this.mobileMove(axes): this.screenToPos(mouse.x, mouse.y)
         let pos = this.screenToPos(axes.x, axes.y)
 
@@ -181,8 +190,8 @@ class ThreeD {
 
         pos.lerp(mpos, axes.range)
 
-        this.mesh.rotation.z += (this.mesh.position.distanceTo(pos) * delta * 0.4)* axes.range
-        this.mesh.position.lerp(pos, delta * 1.5)
+        this.mesh.rotation.z += (this.group.position.distanceTo(pos) * delta * 0.4)* axes.range
+        this.group.position.lerp(pos, delta * 1.5)
 
         if(this.material.userData.shader){
             this.vectorUtil.copy(this.attractor.position)
@@ -202,14 +211,25 @@ class ThreeD {
         // this.mesh.scale.z = this.scale + Math.sin(this.mesh.rotation.y) * 0.1
   
         this.rotTdeg.copy(this.mesh.rotation)
-        this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation + rotation * axes.rotRange)
+        this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation)
 
-        this.rotationTarget.setFromEuler(this.rotTdeg)
-        this.mesh.quaternion.slerp(this.rotationTarget, delta* 2 * (1.0 -axes.range))
+        this.rotationQuart.setFromEuler(this.rotTdeg)
+        this.mesh.quaternion.slerp(this.rotationQuart, delta * 2 * (1.0 -axes.range))
+
+        this.groupRot = this.app.curtains.lerp(this.groupRot, THREE.MathUtils.degToRad(this.rotationTarget), delta * 2)
         
-        // this.lightTop.lookAt(this.mesh.position)
-        // this.lightBottom.lookAt(this.mesh.position)
-        //this.mesh.rotation.x += 0.005 + 0.01 * this.mesh.position.distanceTo(pos)
+        if(this.groupRot >= Math.PI * 2){
+            this.groupRot = 0
+            this.rotationTarget = this.rotationTarget - 360
+        }else if(this.groupRot <= 0){
+            this.groupRot = Math.PI * 2
+            this.rotationTarget = this.rotationTarget + 360
+        }
+
+        this.group.rotation.y = this.groupRot * axes.rotRange
+        
+        
+
         this.time += delta / 2
     }
 
