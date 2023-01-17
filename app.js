@@ -303,7 +303,8 @@ class App {
                   plane.loadImage(el, { sampler: 'uTexture' })
                   plane.setRenderTarget(target)
                   el.style.opacity = 0
-            }else{  
+            }else{ 
+                console.log(el) 
                 if(!this.tier.isMobile){
                     const plane = new SvgPlane(this.curtains, el, target)
                 }else if(el.parentElement.parentElement === document.querySelector('.footer-logo-wrapper')){
@@ -987,6 +988,10 @@ const onReady = async () => {
     })
 
     copyToClipboard()
+
+    // document.querySelectorAll('[svg-data]').forEach(e => {
+    //     e.parentElement.innerHTML = e.getAttribute('svg-data')
+    // })
 
 
     if( document.querySelector('#scrolling-bar')){

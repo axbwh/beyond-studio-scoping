@@ -823,6 +823,7 @@ class App {
                 plane.setRenderTarget(target);
                 el.style.opacity = 0;
             } else {
+                console.log(el);
                 if (!this.tier.isMobile) {
                     const plane1 = new (0, _svgDefault.default)(this.curtains, el, target);
                 } else if (el.parentElement.parentElement === document.querySelector(".footer-logo-wrapper")) {
@@ -1397,6 +1398,9 @@ const onReady = async ()=>{
         }
     });
     (0, _copyToClipboardDefault.default)();
+    // document.querySelectorAll('[svg-data]').forEach(e => {
+    //     e.parentElement.innerHTML = e.getAttribute('svg-data')
+    // })
     if (document.querySelector("#scrolling-bar")) {
         //logo loop 
         var outer = document.querySelector("#scrolling-bar");
