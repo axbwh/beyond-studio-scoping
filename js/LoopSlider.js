@@ -1,4 +1,5 @@
 import { Plane } from 'curtainsjs'
+import SvgPlane from './svg'
 import frag from '/shaders/img.frag'
 import textShader from '/shaders/textShader'
 
@@ -9,13 +10,9 @@ class LoopSlider {
     this.contentWrapper.style.animation='none'
     this.width = this.contentWrapper.offsetWidth
     this.offset = 0
-    el.querySelectorAll('img').forEach((e, i) => {
-      this.planes[i] = new Plane(curtains, e, {
-        vertexShader: textShader.vs,
-        fragmentShader: frag,
-      })
-      this.planes[i].loadImage(e, { sampler: 'uTexture' })
-      this.planes[i].setRenderTarget(target)
+
+    el.querySelectorAll('svg').forEach((e, i) => {
+      this.planes[i] = new SvgPlane(curtains, e, target)
       e.parentElement.parentElement.style.opacity = 0
     })
   }
@@ -28,7 +25,8 @@ class LoopSlider {
   update(delta){
     this.offset = this.offset > -this.width / 2 ? this.offset - delta * 120 : 0
     this.planes.forEach((p, i) =>{
-        p.relativeTranslation.x = this.offset
+        //p.updateTranslation(this.offset)
+        p.plane.relativeTranslation.x = this.offset
     })
   }
 }

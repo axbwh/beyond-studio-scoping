@@ -98,7 +98,9 @@ const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
 const mapClamp = (value, low1, high1, low2, high2) =>  clamp(map_range(value, low1, high1, low2, high2), low2, high2)
 
+const decodeHtml = str => 
+  str.replace(/(&#(\d+);)/g, (match, capture, charCode) => 
+    String.fromCharCode(charCode));
 
 
-
-export {hexToRgb, lerpRgba, rgbaToArray, normCoord,normX, normY, getCoord, mapClamp, easeInExpo, easeOutExpo}
+export {hexToRgb, lerpRgba, rgbaToArray, normCoord,normX, normY, getCoord, mapClamp, easeInExpo, easeOutExpo, decodeHtml}

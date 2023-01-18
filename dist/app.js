@@ -823,7 +823,6 @@ class App {
                 plane.setRenderTarget(target);
                 el.style.opacity = 0;
             } else {
-                console.log(el);
                 if (!this.tier.isMobile) {
                     const plane1 = new (0, _svgDefault.default)(this.curtains, el, target);
                 } else if (el.parentElement.parentElement === document.querySelector(".footer-logo-wrapper")) {
@@ -1398,9 +1397,17 @@ const onReady = async ()=>{
         }
     });
     (0, _copyToClipboardDefault.default)();
-    // document.querySelectorAll('[svg-data]').forEach(e => {
-    //     e.parentElement.innerHTML = e.getAttribute('svg-data')
-    // })
+    let parser = new DOMParser();
+    document.querySelectorAll("[svg-embed]").forEach((e)=>{
+        // let svg = parser.parseFromString(e.innerHTML, "image/svg+xml")
+        let parent = e.parentElement;
+        parent.innerHTML = e.textContent;
+        let svg = parent.querySelector("svg");
+        //svg.setAttribute('gl', '')
+        svg.style.fill = "#fff";
+        svg.style.width = "100%";
+        svg.style.height = "100%";
+    });
     if (document.querySelector("#scrolling-bar")) {
         //logo loop 
         var outer = document.querySelector("#scrolling-bar");
@@ -58726,10 +58733,6 @@ class SvgPlane {
         this.bgColor = `rgba(${this.bgColor[0]}, ${this.bgColor[1]}, ${this.bgColor[2]}, 0%)`;
         this.canvas = document.createElement("canvas");
         this.context = this.canvas.getContext("2d");
-        this.paths = [
-            ...this.svg.querySelectorAll("path")
-        ].map((p)=>p.getAttribute("d"));
-        //let pathString = this.svg.querySelector('path').getAttribute('d')
         this.plane = new (0, _curtainsjs.Plane)(curtains, this.svg, {
             vertexShader: (0, _textShaderDefault.default).vs,
             fragmentShader: (0, _fadeFragDefault.default),
@@ -58739,11 +58742,9 @@ class SvgPlane {
                     type: "1f",
                     value: 1
                 }
-            },
-            onAfterResize: ()=>{
-                this.sizeSvg();
             }
         });
+        //.onAfterResize(() => this.sizeSvg())
         this.sizeSvg();
         this.plane.loadCanvas(this.canvas, {
             sampler: "uTexture"
@@ -58753,6 +58754,7 @@ class SvgPlane {
     }
     sizeSvg() {
         let rect = this.plane.getBoundingRect();
+        console.log(this.plane);
         this.canvas.width = rect.width;
         this.canvas.height = rect.height;
         this.context.width = rect.width;
@@ -58766,16 +58768,11 @@ class SvgPlane {
         });
     //console.log(v)
     //v.render()
-    // this.paths.forEach(path => {
-    //     let p = new Path2D(path)
-    //     this.context.fillStyle = this.color
-    //     this.context.fill(p)
-    // })
     }
 }
 exports.default = SvgPlane;
 
-},{"/shaders/textShader":"1VzNt","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","curtainsjs":"9AjRS","canvg":"euZMW","/shaders/fade.frag":"fca4O","parse-color":"1o9cL"}],"euZMW":[function(require,module,exports) {
+},{"/shaders/textShader":"1VzNt","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","curtainsjs":"9AjRS","canvg":"euZMW","parse-color":"1o9cL","/shaders/fade.frag":"fca4O"}],"euZMW":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "AElement", ()=>AElement);
@@ -66060,6 +66057,7 @@ parcelHelpers.export(exports, "getCoord", ()=>getCoord);
 parcelHelpers.export(exports, "mapClamp", ()=>mapClamp);
 parcelHelpers.export(exports, "easeInExpo", ()=>easeInExpo);
 parcelHelpers.export(exports, "easeOutExpo", ()=>easeOutExpo);
+parcelHelpers.export(exports, "decodeHtml", ()=>decodeHtml);
 var _parseColor = require("parse-color");
 var _parseColorDefault = parcelHelpers.interopDefault(_parseColor);
 const hexToRgb = (hex)=>hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b)=>"#" + r + r + g + g + b + b).substring(1).match(/.{2}/g).map((x)=>parseInt(x, 16) / 255);
@@ -66163,6 +66161,7 @@ const map_range = (value, low1, high1, low2, high2)=>{
 };
 const clamp = (num, min, max)=>Math.min(Math.max(num, min), max);
 const mapClamp = (value, low1, high1, low2, high2)=>clamp(map_range(value, low1, high1, low2, high2), low2, high2);
+const decodeHtml = (str)=>str.replace(/(&#(\d+);)/g, (match, capture, charCode)=>String.fromCharCode(charCode));
 
 },{"parse-color":"1o9cL","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"jRZDn":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -70108,6 +70107,8 @@ exports.default = FallbackSlider;
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _curtainsjs = require("curtainsjs");
+var _svg = require("./svg");
+var _svgDefault = parcelHelpers.interopDefault(_svg);
 var _imgFrag = require("/shaders/img.frag");
 var _imgFragDefault = parcelHelpers.interopDefault(_imgFrag);
 var _textShader = require("/shaders/textShader");
@@ -70119,15 +70120,8 @@ class LoopSlider {
         this.contentWrapper.style.animation = "none";
         this.width = this.contentWrapper.offsetWidth;
         this.offset = 0;
-        el.querySelectorAll("img").forEach((e, i)=>{
-            this.planes[i] = new (0, _curtainsjs.Plane)(curtains, e, {
-                vertexShader: (0, _textShaderDefault.default).vs,
-                fragmentShader: (0, _imgFragDefault.default)
-            });
-            this.planes[i].loadImage(e, {
-                sampler: "uTexture"
-            });
-            this.planes[i].setRenderTarget(target);
+        el.querySelectorAll("svg").forEach((e, i)=>{
+            this.planes[i] = new (0, _svgDefault.default)(curtains, e, target);
             e.parentElement.parentElement.style.opacity = 0;
         });
     }
@@ -70138,13 +70132,14 @@ class LoopSlider {
     update(delta) {
         this.offset = this.offset > -this.width / 2 ? this.offset - delta * 120 : 0;
         this.planes.forEach((p, i)=>{
-            p.relativeTranslation.x = this.offset;
+            //p.updateTranslation(this.offset)
+            p.plane.relativeTranslation.x = this.offset;
         });
     }
 }
 exports.default = LoopSlider;
 
-},{"curtainsjs":"9AjRS","/shaders/img.frag":"7dXWc","/shaders/textShader":"1VzNt","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"fr1Gn":[function(require,module,exports) {
+},{"curtainsjs":"9AjRS","/shaders/img.frag":"7dXWc","/shaders/textShader":"1VzNt","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./svg":"ghtJt"}],"fr1Gn":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _lottieWeb = require("lottie-web");

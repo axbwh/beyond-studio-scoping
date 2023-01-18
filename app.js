@@ -7,7 +7,7 @@ import pageFrag from './shaders/page.frag';
 import ThreeD from './js/3d';
 import Slider from './js/slider';
 import HoverSlider from './js/hoverSlider';
-import {hexToRgb, getCoord, rgbaToArray, lerpRgba, easeInExpo, easeOutExpo }from './js/utils'
+import {hexToRgb, getCoord, rgbaToArray, lerpRgba, easeInExpo, easeOutExpo, decodeHtml }from './js/utils'
 import anime from 'animejs';
 import _, { clamp, delay } from 'lodash';
 import Stats from 'stats.js';
@@ -304,7 +304,6 @@ class App {
                   plane.setRenderTarget(target)
                   el.style.opacity = 0
             }else{ 
-                console.log(el) 
                 if(!this.tier.isMobile){
                     const plane = new SvgPlane(this.curtains, el, target)
                 }else if(el.parentElement.parentElement === document.querySelector('.footer-logo-wrapper')){
@@ -988,10 +987,18 @@ const onReady = async () => {
     })
 
     copyToClipboard()
+    let parser = new DOMParser()
+    document.querySelectorAll('[svg-embed]').forEach(e => {
+        // let svg = parser.parseFromString(e.innerHTML, "image/svg+xml")
+        let parent = e.parentElement
+        parent.innerHTML = e.textContent
+        let svg = parent.querySelector('svg')
+        //svg.setAttribute('gl', '')
+        svg.style.fill = "#fff"
+        svg.style.width = '100%'
+        svg.style.height = '100%'
 
-    // document.querySelectorAll('[svg-data]').forEach(e => {
-    //     e.parentElement.innerHTML = e.getAttribute('svg-data')
-    // })
+    })
 
 
     if( document.querySelector('#scrolling-bar')){

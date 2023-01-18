@@ -12,9 +12,6 @@ class SvgPlane {
     this.bgColor = `rgba(${this.bgColor[0]}, ${this.bgColor[1]}, ${this.bgColor[2]}, 0%)`
     this.canvas = document.createElement("canvas")
     this.context = this.canvas.getContext("2d")
-    this.paths = [...this.svg.querySelectorAll('path')].map(p => p.getAttribute('d'))
-    
-    //let pathString = this.svg.querySelector('path').getAttribute('d')
 
     this.plane = new Plane(curtains, this.svg, {
         vertexShader: textShader.vs,
@@ -25,20 +22,20 @@ class SvgPlane {
                 type: '1f',
                 value: 1,
             }
-        },
-        onAfterResize: () => {
-            this.sizeSvg()
-        }
-      })
-
+        }})
+        
+        //.onAfterResize(() => this.sizeSvg())
     this.sizeSvg()
     this.plane.loadCanvas(this.canvas, {sampler: "uTexture"})
     this.plane.setRenderTarget(target)
     this.svg.style.opacity = 0
+
+    
   }
 
   sizeSvg(){
     let rect = this.plane.getBoundingRect()
+    console.log(this.plane)
     this.canvas.width = rect.width
     this.canvas.height = rect.height
     this.context.width = rect.width
@@ -52,12 +49,6 @@ class SvgPlane {
     })
     //console.log(v)
     //v.render()
-
-    // this.paths.forEach(path => {
-    //     let p = new Path2D(path)
-    //     this.context.fillStyle = this.color
-    //     this.context.fill(p)
-    // })
   }
 }
 
