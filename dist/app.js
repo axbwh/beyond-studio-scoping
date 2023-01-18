@@ -70121,7 +70121,7 @@ class LoopSlider {
         this.width = this.contentWrapper.offsetWidth;
         this.offset = 0;
         el.querySelectorAll("svg").forEach((e, i)=>{
-            this.planes[i] = new (0, _svgDefault.default)(curtains, e, target);
+            this.planes[i] = new (0, _svgDefault.default)(curtains, e, target, "#fff");
             e.parentElement.parentElement.style.opacity = 0;
         });
     }

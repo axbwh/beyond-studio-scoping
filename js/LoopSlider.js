@@ -12,7 +12,7 @@ class LoopSlider {
     this.offset = 0
 
     el.querySelectorAll('svg').forEach((e, i) => {
-      this.planes[i] = new SvgPlane(curtains, e, target)
+      this.planes[i] = new SvgPlane(curtains, e, target, "#fff")
       e.parentElement.parentElement.style.opacity = 0
     })
   }
