@@ -95,12 +95,12 @@ void main() {
     float black = snoise3(vec3(uv.y - uMouse.y / 20.0, uv.x - uMouse.x*0.2, t * 1.0));
 
     vec4 gradient = mix(uColA, uColB, noise);
-    gradient = mix(gradient, uBgCol, black);
+    gradient = mix(gradient, uColA, black);
     gradient.r = clamp(gradient.r, 0.0, 0.85);
     gradient.g = clamp(gradient.g, 0.0, 0.85);
     gradient.b = clamp(gradient.b, 0.0, 0.85);
     vec4 puckGradient = mix(uColC, uColD, noise);
-    puckGradient = mix(puckGradient, uBgCol, black);
+    puckGradient = mix(puckGradient, uColC, black);
     puckGradient.r = clamp(puckGradient.r, 0.0, 0.85);
     puckGradient.g = clamp(puckGradient.g, 0.0, 0.85);
     puckGradient.b = clamp(puckGradient.b, 0.0, 0.85);
