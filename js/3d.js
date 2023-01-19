@@ -214,9 +214,9 @@ class ThreeD {
         this.rotTdeg.z = THREE.MathUtils.degToRad(axes.rotation)
 
         this.rotationQuart.setFromEuler(this.rotTdeg)
-        this.mesh.quaternion.slerp(this.rotationQuart, delta * 2 * (1.0 -axes.range))
+        this.mesh.quaternion.slerp(this.rotationQuart, delta * 2 * (1.0 - axes.range))
 
-        this.groupRot = this.app.curtains.lerp(this.groupRot, THREE.MathUtils.degToRad(this.rotationTarget), delta * 2)
+        this.groupRot = this.app.curtains.lerp(this.groupRot, THREE.MathUtils.degToRad(this.rotationTarget)  * axes.rotRange , delta * 2)
         
         if(this.groupRot >= Math.PI * 2){
             this.groupRot = 0
@@ -226,7 +226,7 @@ class ThreeD {
             this.rotationTarget = this.rotationTarget + 360
         }
 
-        this.group.rotation.y = this.groupRot * axes.rotRange
+        this.group.rotation.y = this.groupRot
         
         
 
