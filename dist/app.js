@@ -1093,7 +1093,7 @@ class App {
             e.addEventListener("click", (event)=>{
                 event.preventDefault();
                 let tag = e.querySelector("span").innerHTML.toLowerCase();
-                if (tag === "reset") {
+                if (tag === "reset all") {
                     this.activeFilters = [];
                     this.filters.forEach((e)=>{
                         e.classList.remove("filters-active");

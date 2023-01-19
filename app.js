@@ -621,7 +621,7 @@ class App {
                 
 
                 
-                if(tag === 'reset'){
+                if(tag === 'reset all'){
                     this.activeFilters = []
                     this.filters.forEach(e =>{
                         e.classList.remove('filters-active')
