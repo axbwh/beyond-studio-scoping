@@ -153,7 +153,7 @@ class App {
 
     initTimeline(){
 
-        let origin =  getCoord(document.querySelector('[origin]'))
+        let origin = document.querySelector('[origin]') ? getCoord(document.querySelector('[origin]')) : getCoord(document.querySelector('.puck'))
 
         this.origin = origin ? {
             x: origin.x,
@@ -679,7 +679,7 @@ class App {
             targets: '#preloader',
             opacity: 0,
             duration: 2000,
-            delay: 500,
+            delay: 1000,
             easing: 'easeInSine',
 
         }).finished.then(() => {
@@ -699,7 +699,7 @@ class App {
 
 
         if(this.container.scrollTop > 10 || !this.fadeIn){
-            this.startAnim(1500)
+            this.startAnim(1000)
         }else{
                 document.addEventListener('click', () => this.startAnim())
                 this.container.addEventListener("scroll", () => this.startAnim())
@@ -707,13 +707,13 @@ class App {
         }
     }
 
-    startAnim(delay = 1000){
+    startAnim(delay = 0){
         if(!this.origin.loaded && !this.transition){
             anime({
                 targets: this.origin,
                 range: 1,
                 rotRange: 1,
-                duration: 2000,
+                duration: 2500,
                 easing: 'easeOutBounce',
                 delay: delay,
                })

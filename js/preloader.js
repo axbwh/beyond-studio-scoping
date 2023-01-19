@@ -21,10 +21,12 @@ class Preloader {
         })
 
         this.anim.addEventListener('data_ready', () => {
+            console.log('ready')
             anime({
                 targets: this.wrap,
                 opacity: 1,
-                duration: 500
+                duration: 500,
+                easing: "easeInOutSine"
             })
             this.anim.play()
             this.wrap.querySelector('svg').style.opacity = '1'
@@ -48,7 +50,8 @@ class Preloader {
         anime({
             targets: this.wrap,
             opacity: 0,
-            duration: 500 * loopNum,
+            duration: 1000,
+            easing: "easeInOutSine"
         })
 
         return new Promise( (resolve, reject) => {

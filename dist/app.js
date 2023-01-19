@@ -687,7 +687,7 @@ class App {
         });
     }
     initTimeline() {
-        let origin = (0, _utils.getCoord)(document.querySelector("[origin]"));
+        let origin = document.querySelector("[origin]") ? (0, _utils.getCoord)(document.querySelector("[origin]")) : (0, _utils.getCoord)(document.querySelector(".puck"));
         this.origin = origin ? {
             x: origin.x,
             y: origin.y,
@@ -1132,7 +1132,7 @@ class App {
             targets: "#preloader",
             opacity: 0,
             duration: 2000,
-            delay: 500,
+            delay: 1000,
             easing: "easeInSine"
         }).finished.then(()=>{
             (0, _animejsDefault.default).set("#preloader", {
@@ -1146,19 +1146,19 @@ class App {
             delay: 1500,
             easing: "easeInSine"
         });
-        if (this.container.scrollTop > 10 || !this.fadeIn) this.startAnim(1500);
+        if (this.container.scrollTop > 10 || !this.fadeIn) this.startAnim(1000);
         else {
             document.addEventListener("click", ()=>this.startAnim());
             this.container.addEventListener("scroll", ()=>this.startAnim());
         }
     }
-    startAnim(delay = 1000) {
+    startAnim(delay = 0) {
         if (!this.origin.loaded && !this.transition) {
             (0, _animejsDefault.default)({
                 targets: this.origin,
                 range: 1,
                 rotRange: 1,
-                duration: 2000,
+                duration: 2500,
                 easing: "easeOutBounce",
                 delay: delay
             });
@@ -70159,10 +70159,12 @@ class Preloader {
             opacity: 0
         });
         this.anim.addEventListener("data_ready", ()=>{
+            console.log("ready");
             (0, _animejsDefault.default)({
                 targets: this.wrap,
                 opacity: 1,
-                duration: 500
+                duration: 500,
+                easing: "easeInOutSine"
             });
             this.anim.play();
             this.wrap.querySelector("svg").style.opacity = "1";
@@ -70183,7 +70185,8 @@ class Preloader {
         (0, _animejsDefault.default)({
             targets: this.wrap,
             opacity: 0,
-            duration: 500 * loopNum
+            duration: 1000,
+            easing: "easeInOutSine"
         });
         return new Promise((resolve, reject)=>{
             anim.addEventListener("loopComplete", function loopListener() {
