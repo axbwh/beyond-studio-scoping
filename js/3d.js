@@ -193,7 +193,7 @@ class ThreeD {
         this.mesh.rotation.z += (this.group.position.distanceTo(pos) * delta * 0.4)* axes.range
         this.group.position.lerp(pos, delta * 1.5)
 
-        if(this.material.userData.shader){
+        if(!this.isMobile && this.material.userData.shader){
             this.vectorUtil.copy(this.attractor.position)
             this.attractor.position.lerp(mpos, delta * 2)
             //this.velocity.copy(this.attractor.position).sub(this.vectorUtil).clampLength(-0.8, 0.8)

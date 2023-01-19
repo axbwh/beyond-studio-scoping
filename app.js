@@ -624,15 +624,15 @@ class App {
                 if(tag === 'reset'){
                     this.activeFilters = []
                     this.filters.forEach(e =>{
-                        e.classList.remove('active')
+                        e.classList.remove('filters-active')
                     })
                 }else{
                         if(this.activeFilters.includes(tag)){
                         this.activeFilters = this.activeFilters.filter(f => f !== tag)
-                        e.classList.remove('active')
+                        e.classList.remove('filters-active')
                     }else{
                         this.activeFilters[this.activeFilters.length] = tag
-                        e.classList.add('active')
+                        e.classList.add('filters-active')
                     }
                 }
                 
