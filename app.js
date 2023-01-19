@@ -670,41 +670,38 @@ class App {
     }
 
     preload(){
-        this.preloader.stop(2).then( () => {
-
-        })
-
-
-        anime({
-            targets: '#preloader',
-            opacity: 0,
-            duration: 2000,
-            delay: 1000,
-            easing: 'easeInSine',
-
-        }).finished.then(() => {
-            anime.set('#preloader', {
-                display: 'none'
+        setTimeout(() => {
+            this.preloader.hide()
+            anime({
+                targets: '#preloader',
+                opacity: 0,
+                duration: 2000,
+                delay: 1000,
+                easing: 'easeInSine',
+    
+            }).finished.then(() => {
+                anime.set('#preloader', {
+                    display: 'none'
+                })
+                this.preloader.stop(1)
             })
-        })
+            anime({
+                targets: this.impulses,
+                opacity: 1,
+                duration: 1500,
+                delay: 1500,
+                easing: 'easeInSine',
+            })
+    
+            if(this.container.scrollTop > 10 || !this.fadeIn){
+                this.startAnim(1000)
+            }else{
+                    document.addEventListener('click', () => this.startAnim())
+                    this.container.addEventListener("scroll", () => this.startAnim())
+    
+            }
+        }, 1000)
 
-        anime({
-            targets: this.impulses,
-            opacity: 1,
-            duration: 1500,
-            delay: 1500,
-            easing: 'easeInSine',
-        })
-
-
-
-        if(this.container.scrollTop > 10 || !this.fadeIn){
-            this.startAnim(1000)
-        }else{
-                document.addEventListener('click', () => this.startAnim())
-                this.container.addEventListener("scroll", () => this.startAnim())
-
-        }
     }
 
     startAnim(delay = 0){
@@ -776,7 +773,8 @@ class App {
             duration: 2000,
             delay: 1500,
             easing: 'easeInOutExpo',
-        }).finished.then(() => this.preloader.stop).then(() => window.location.href = href)
+        })
+        .finished.then(() => this.preloader.stop).then(() => window.location.href = href)
     }
 
     menuOpen(){

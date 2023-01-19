@@ -15,6 +15,8 @@ class Preloader {
             path:
                 'https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63c89ef491c3e307e0ef43f9_Beyond_Preloader_Puck_v01.json',
         })
+        
+        this.forceStart = false
 
         anime.set(this.wrap, {
             opacity: 0
@@ -35,32 +37,38 @@ class Preloader {
 
     start(){
         anime({
-            targets: this.wrap,
+            targets: '#preloader .hero-content-wrapper',
             opacity: 1,
             duration: 500
         })
+        this.forceStart = true
         this.anim.loop = true
         this.anim.play()
+
+        
+    }
+
+    hide(delay = 0){
+        anime({
+            targets: '#preloader .hero-content-wrapper',
+            opacity: 0,
+            duration: 1000,
+            delay: delay,
+            easing: "easeInOutSine"
+        })
     }
 
     stop(loopNum = 1){
         let loop = 0
-        let anim = this.anim
-
-        anime({
-            targets: this.wrap,
-            opacity: 0,
-            duration: 1000,
-            easing: "easeInOutSine"
-        })
-
+        let self = this
         return new Promise( (resolve, reject) => {
             anim.addEventListener('loopComplete', function loopListener() {
                 loop = loop + 1
-                if(loop >= loopNum){
-                    anim.loop = false
-                    anim.stop()
-                    anim.removeEventListener('loopComplete', loopListener)
+                if(loop >= loopNum && !self.forceStart){
+                    console.log('wtf')
+                    self.anim.loop = false
+                    self.anim.stop()
+                    self.anim.removeEventListener('loopComplete', loopListener)
                     resolve()
                 }
 
