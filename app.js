@@ -671,8 +671,10 @@ class App {
 
     preload(){
         this.preloader.stop(2).then( () => {
-            console.log('finished')
+
         })
+
+
         anime({
             targets: '#preloader',
             opacity: 0,
@@ -705,7 +707,7 @@ class App {
         }
     }
 
-    startAnim(delay = 0){
+    startAnim(delay = 1000){
         if(!this.origin.loaded && !this.transition){
             anime({
                 targets: this.origin,

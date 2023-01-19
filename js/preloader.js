@@ -1,8 +1,10 @@
+import anime from 'animejs';
 import lottie from 'lottie-web';
 
 class Preloader {
     constructor(){
-        this.wrap = document.querySelector('#preloader .hero-text-wrapper')
+        this.wrap = document.querySelector('#preloader .puck')
+        console.log(this.wrap)
         this.anim = lottie.loadAnimation({
             container: this.wrap,
             renderer: 'svg',
@@ -11,19 +13,30 @@ class Preloader {
             name: 'clocked',
             // animationData: data
             path:
-                'https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a12ce41b0e90f396c5df08_Beyond_Preloader_v06.json',
+                'https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63c89ef491c3e307e0ef43f9_Beyond_Preloader_Puck_v01.json',
+        })
+
+        anime.set(this.wrap, {
+            opacity: 0
         })
 
         this.anim.addEventListener('data_ready', () => {
-            console.log('loaded')
+            anime({
+                targets: this.wrap,
+                opacity: 1,
+                duration: 500
+            })
             this.anim.play()
             this.wrap.querySelector('svg').style.opacity = '1'
-            // this.wrap.querySelector('svg').style.position = 'absolute'
-            this.wrap.querySelector('img').style.opacity = '0'
         })
     }
 
     start(){
+        anime({
+            targets: this.wrap,
+            opacity: 1,
+            duration: 500
+        })
         this.anim.loop = true
         this.anim.play()
     }
@@ -31,6 +44,13 @@ class Preloader {
     stop(loopNum = 1){
         let loop = 0
         let anim = this.anim
+
+        anime({
+            targets: this.wrap,
+            opacity: 0,
+            duration: 500 * loopNum,
+        })
+
         return new Promise( (resolve, reject) => {
             anim.addEventListener('loopComplete', function loopListener() {
                 loop = loop + 1

@@ -1127,9 +1127,7 @@ class App {
         });
     }
     preload() {
-        this.preloader.stop(2).then(()=>{
-            console.log("finished");
-        });
+        this.preloader.stop(2).then(()=>{});
         (0, _animejsDefault.default)({
             targets: "#preloader",
             opacity: 0,
@@ -1154,7 +1152,7 @@ class App {
             this.container.addEventListener("scroll", ()=>this.startAnim());
         }
     }
-    startAnim(delay = 0) {
+    startAnim(delay = 1000) {
         if (!this.origin.loaded && !this.transition) {
             (0, _animejsDefault.default)({
                 targets: this.origin,
@@ -58754,7 +58752,6 @@ class SvgPlane {
     }
     sizeSvg() {
         let rect = this.plane.getBoundingRect();
-        console.log(this.plane);
         this.canvas.width = rect.width;
         this.canvas.height = rect.height;
         this.context.width = rect.width;
@@ -65634,7 +65631,6 @@ class Slider {
         this.timeTarget = this.timeline.duration / (this.doms.length * 2);
         this.time = this.timeTarget;
         this.timeline.seek(this.time);
-        console.log(this.time, this.timeline.duration, this.doms.length);
     }
     onClick(i) {
         // if (!this.state.isChanging) {
@@ -70142,11 +70138,14 @@ exports.default = LoopSlider;
 },{"curtainsjs":"9AjRS","/shaders/img.frag":"7dXWc","/shaders/textShader":"1VzNt","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./svg":"ghtJt"}],"fr1Gn":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
+var _animejs = require("animejs");
+var _animejsDefault = parcelHelpers.interopDefault(_animejs);
 var _lottieWeb = require("lottie-web");
 var _lottieWebDefault = parcelHelpers.interopDefault(_lottieWeb);
 class Preloader {
     constructor(){
-        this.wrap = document.querySelector("#preloader .hero-text-wrapper");
+        this.wrap = document.querySelector("#preloader .puck");
+        console.log(this.wrap);
         this.anim = (0, _lottieWebDefault.default).loadAnimation({
             container: this.wrap,
             renderer: "svg",
@@ -70154,23 +70153,38 @@ class Preloader {
             loop: true,
             name: "clocked",
             // animationData: data
-            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63a12ce41b0e90f396c5df08_Beyond_Preloader_v06.json"
+            path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63c89ef491c3e307e0ef43f9_Beyond_Preloader_Puck_v01.json"
+        });
+        (0, _animejsDefault.default).set(this.wrap, {
+            opacity: 0
         });
         this.anim.addEventListener("data_ready", ()=>{
-            console.log("loaded");
+            (0, _animejsDefault.default)({
+                targets: this.wrap,
+                opacity: 1,
+                duration: 500
+            });
             this.anim.play();
             this.wrap.querySelector("svg").style.opacity = "1";
-            // this.wrap.querySelector('svg').style.position = 'absolute'
-            this.wrap.querySelector("img").style.opacity = "0";
         });
     }
     start() {
+        (0, _animejsDefault.default)({
+            targets: this.wrap,
+            opacity: 1,
+            duration: 500
+        });
         this.anim.loop = true;
         this.anim.play();
     }
     stop(loopNum = 1) {
         let loop = 0;
         let anim = this.anim;
+        (0, _animejsDefault.default)({
+            targets: this.wrap,
+            opacity: 0,
+            duration: 500 * loopNum
+        });
         return new Promise((resolve, reject)=>{
             anim.addEventListener("loopComplete", function loopListener() {
                 loop = loop + 1;
@@ -70186,7 +70200,7 @@ class Preloader {
 }
 exports.default = Preloader;
 
-},{"lottie-web":"7GKqM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"7GKqM":[function(require,module,exports) {
+},{"lottie-web":"7GKqM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","animejs":"jokr5"}],"7GKqM":[function(require,module,exports) {
 typeof navigator !== "undefined" && function(global, factory) {
     module.exports = factory();
 }(this, function() {

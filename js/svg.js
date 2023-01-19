@@ -35,7 +35,6 @@ class SvgPlane {
 
   sizeSvg(){
     let rect = this.plane.getBoundingRect()
-    console.log(this.plane)
     this.canvas.width = rect.width
     this.canvas.height = rect.height
     this.context.width = rect.width

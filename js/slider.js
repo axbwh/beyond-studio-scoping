@@ -130,8 +130,6 @@ class Slider {
     this.time = this.timeTarget
     this.timeline.seek(this.time)
 
-    console.log(this.time, this.timeline.duration, this.doms.length)
-
   }
 
   onClick(i) {
