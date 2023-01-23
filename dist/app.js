@@ -70197,10 +70197,9 @@ class Preloader {
         let loop = 0;
         let self = this;
         return new Promise((resolve, reject)=>{
-            anim.addEventListener("loopComplete", function loopListener() {
+            self.anim.addEventListener("loopComplete", function loopListener() {
                 loop = loop + 1;
                 if (loop >= loopNum && !self.forceStart) {
-                    console.log("wtf");
                     self.anim.loop = false;
                     self.anim.stop();
                     self.anim.removeEventListener("loopComplete", loopListener);
