@@ -31,15 +31,11 @@ const normCoord = (x, y) => {
     ny = normY(y)
     return { x: nx, y: ny}
 }
-const getCoord = (el, log = false) => {
+const getCoord = (el) => {
     if(!el) return false
     let scrollDom = document.querySelector('.scrolldom')
     let rect = el.getBoundingClientRect()
-    if(log){
-        console.log(rect)
-        console.log(window.innerHeight)
-        console.log(scrollDom.scrollTop)
-    }
+    
     let keyframe = rect.top + rect.height / 2 + scrollDom.scrollTop - window.innerHeight / 2
     keyframe = keyframe < 0 ? 0 : keyframe
     let yoffset = el.getAttribute('yoffset') === 'bottom'

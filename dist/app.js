@@ -688,7 +688,7 @@ class App {
         });
     }
     initTimeline() {
-        let origin = document.querySelector("[origin]") ? (0, _utils.getCoord)(document.querySelector("[origin]"), true) : (0, _utils.getCoord)(document.querySelector(".puck"));
+        let origin = document.querySelector("[origin]") ? (0, _utils.getCoord)(document.querySelector("[origin]")) : (0, _utils.getCoord)(document.querySelector(".puck"));
         this.origin = origin ? {
             x: origin.x,
             y: origin.y,
@@ -1134,7 +1134,6 @@ class App {
                 easing: "easeOutBounce",
                 delay: delay
             });
-            (0, _utils.getCoord)(document.querySelector("[origin]"), true);
             this.origin.loaded = true;
             document.removeEventListener("click", ()=>this.startAnim());
             this.container.removeEventListener("scroll", ()=>this.startAnim());
@@ -66052,15 +66051,10 @@ const normCoord = (x, y)=>{
         y: ny
     };
 };
-const getCoord = (el, log = false)=>{
+const getCoord = (el)=>{
     if (!el) return false;
     let scrollDom = document.querySelector(".scrolldom");
     let rect = el.getBoundingClientRect();
-    if (log) {
-        console.log(rect);
-        console.log(window.innerHeight);
-        console.log(scrollDom.scrollTop);
-    }
     let keyframe = rect.top + rect.height / 2 + scrollDom.scrollTop - window.innerHeight / 2;
     keyframe = keyframe < 0 ? 0 : keyframe;
     let yoffset = el.getAttribute("yoffset") === "bottom";

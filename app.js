@@ -154,7 +154,7 @@ class App {
 
     initTimeline(){
 
-        let origin = document.querySelector('[origin]') ? getCoord(document.querySelector('[origin]'), true) : getCoord(document.querySelector('.puck'))
+        let origin = document.querySelector('[origin]') ? getCoord(document.querySelector('[origin]')) : getCoord(document.querySelector('.puck'))
 
         this.origin = origin ? {
             x: origin.x,
@@ -675,8 +675,6 @@ class App {
                 easing: 'easeOutBounce',
                 delay: delay,
                })
-
-               getCoord(document.querySelector('[origin]'), true)
 
                this.origin.loaded = true
                document.removeEventListener('click', () => this.startAnim())
