@@ -665,6 +665,7 @@ class App {
         this.ticking = false;
     }
     init() {
+        document.querySelector("#canvas").style.height = `${this.height}px`;
         // create curtains instance
         this.curtains = new (0, _curtainsjs.Curtains)({
             container: "canvas",
@@ -687,7 +688,7 @@ class App {
         });
     }
     initTimeline() {
-        let origin = document.querySelector("[origin]") ? (0, _utils.getCoord)(document.querySelector("[origin]")) : (0, _utils.getCoord)(document.querySelector(".puck"));
+        let origin = document.querySelector("[origin]") ? (0, _utils.getCoord)(document.querySelector("[origin]"), true) : (0, _utils.getCoord)(document.querySelector(".puck"));
         this.origin = origin ? {
             x: origin.x,
             y: origin.y,
@@ -866,6 +867,10 @@ class App {
         else this.loadImg("[card] img", this.imgTarget, "uImg", false);
     }
     onResize() {
+        this.height = window.innerHeight;
+        this.contHeight = this.container.scrollHeight;
+        this.width = window.innerWidth;
+        document.querySelector("#canvas").style.height = `${this.height}px`;
         this.inMenu && this.menuClose();
         (0, _animejsDefault.default).set({
             targets: this.container,
@@ -874,9 +879,6 @@ class App {
         this.initTimeline();
         this.loopSlider && this.loopSlider.resize();
         this.scrollbar && this.scrollbar.onResize();
-        this.height = window.innerHeight;
-        this.contHeight = this.container.scrollHeight;
-        this.width = window.innerWidth;
         this.cards.forEach((c)=>{
             c.resize();
         });
@@ -912,6 +914,8 @@ class App {
         ]).then(this.onLoaded.bind(this));
     }
     onLoaded() {
+        this.container.style.height = "100%";
+        this.container.style.overflow = "hidden";
         this.stats = new (0, _statsJsDefault.default)();
         this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
         this.stats.dom.classList.add("stats");
@@ -1017,14 +1021,6 @@ class App {
             "trailing": true,
             "leading": true
         });
-        let _scroll = (0, _lodashDefault.default).throttle(this.onScroll.bind(this), 16, {
-            "trailing": true,
-            "leading": true
-        });
-        //    this.container.addEventListener("scroll", (e) => {
-        //         e.preventDefault()
-        //         _scroll()
-        //    });
         document.addEventListener("mousemove", _mouse.bind(this), false);
         this.scroller = new (0, _virtualScrollDefault.default)({
             preventTouch: false,
@@ -1035,33 +1031,6 @@ class App {
             this.onScroll(event);
         });
         this.scrollbar = this.tier.isMobile ? false : new (0, _scrollbarDefault.default)(this.container, this);
-        //    this.container.addEventListener("touchmove", (e) =>{
-        //     //e.preventDefault()
-        //         if(!this.ticking){
-        //             window.requestAnimationFrame(()=>{
-        //                 this.onScroll()
-        //                 this.ticking = false
-        //             })
-        //         }
-        //         ticking = true
-        //    })
-        // document.body.style.height = '100%'
-        // document.body.style.overflow = 'hidden'
-        this.container.style.height = "100%";
-        this.container.style.overflow = "hidden";
-        // this.container.addEventListener("scroll", (e) =>{
-        //     this.container.scrollTop = this.scroll.value
-        // })
-        //    this.container.addEventListener("scroll", (e) =>{
-        //     e.preventDefault()
-        //         // if(!this.ticking){
-        //         //     window.requestAnimationFrame(()=>{
-        //         //         this.onScroll()
-        //         //         this.ticking = false
-        //         //     })
-        //         // }
-        //         // this.ticking = true
-        //    })
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e)=>{
@@ -1165,6 +1134,7 @@ class App {
                 easing: "easeOutBounce",
                 delay: delay
             });
+            (0, _utils.getCoord)(document.querySelector("[origin]"), true);
             this.origin.loaded = true;
             document.removeEventListener("click", ()=>this.startAnim());
             this.container.removeEventListener("scroll", ()=>this.startAnim());
@@ -66082,10 +66052,15 @@ const normCoord = (x, y)=>{
         y: ny
     };
 };
-const getCoord = (el)=>{
+const getCoord = (el, log = false)=>{
     if (!el) return false;
     let scrollDom = document.querySelector(".scrolldom");
     let rect = el.getBoundingClientRect();
+    if (log) {
+        console.log(rect);
+        console.log(window.innerHeight);
+        console.log(scrollDom.scrollTop);
+    }
     let keyframe = rect.top + rect.height / 2 + scrollDom.scrollTop - window.innerHeight / 2;
     keyframe = keyframe < 0 ? 0 : keyframe;
     let yoffset = el.getAttribute("yoffset") === "bottom";

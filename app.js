@@ -119,6 +119,7 @@ class App {
     }
 
     init(){
+        document.querySelector('#canvas').style.height = `${this.height}px`
         // create curtains instance
         this.curtains = new Curtains({
             container: "canvas",
@@ -153,7 +154,7 @@ class App {
 
     initTimeline(){
 
-        let origin = document.querySelector('[origin]') ? getCoord(document.querySelector('[origin]')) : getCoord(document.querySelector('.puck'))
+        let origin = document.querySelector('[origin]') ? getCoord(document.querySelector('[origin]'), true) : getCoord(document.querySelector('.puck'))
 
         this.origin = origin ? {
             x: origin.x,
@@ -367,7 +368,10 @@ class App {
 
 
     onResize(){
-        
+        this.height = window.innerHeight
+        this.contHeight = this.container.scrollHeight
+        this.width = window.innerWidth
+        document.querySelector('#canvas').style.height = `${this.height}px`
         this.inMenu && this.menuClose()
         anime.set({
             targets: this.container,
@@ -376,9 +380,6 @@ class App {
         this.initTimeline()
         this.loopSlider && this.loopSlider.resize()
         this.scrollbar && this.scrollbar.onResize()
-        this.height = window.innerHeight
-        this.contHeight = this.container.scrollHeight
-        this.width = window.innerWidth
         this.cards.forEach(c => {
             c.resize()
         })
@@ -420,7 +421,8 @@ class App {
     }
 
     onLoaded(){
-
+        this.container.style.height = '100%'
+        this.container.style.overflow = 'hidden'
         
         this.stats = new Stats();
         this.stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -527,13 +529,6 @@ class App {
 
         let _mouse = _.throttle(this.mouseEvent.bind(this), 16, {'trailing' : true, 'leading': true})
 
-        let _scroll = _.throttle(this.onScroll.bind(this), 16, {'trailing' : true, 'leading': true})
-
-
-    //    this.container.addEventListener("scroll", (e) => {
-    //         e.preventDefault()
-    //         _scroll()
-    //    });
        document.addEventListener('mousemove', _mouse.bind(this), false);
 
        this.scroller = new VirtualScroll( {preventTouch: false, touchMultiplier : 3, mouseMultiplier : 0.5})
@@ -545,37 +540,6 @@ class App {
        
        this.scrollbar = this.tier.isMobile ? false : new ScrollBar(this.container, this)
 
-    //    this.container.addEventListener("touchmove", (e) =>{
-    //     //e.preventDefault()
-    //         if(!this.ticking){
-    //             window.requestAnimationFrame(()=>{
-    //                 this.onScroll()
-    //                 this.ticking = false
-    //             })
-    //         }
-    //         ticking = true
-    //    })
-
-        // document.body.style.height = '100%'
-        // document.body.style.overflow = 'hidden'
-
-        this.container.style.height = '100%'
-        this.container.style.overflow = 'hidden'
-
-    // this.container.addEventListener("scroll", (e) =>{
-    //     this.container.scrollTop = this.scroll.value
-    // })
-       
-    //    this.container.addEventListener("scroll", (e) =>{
-    //     e.preventDefault()
-    //         // if(!this.ticking){
-    //         //     window.requestAnimationFrame(()=>{
-    //         //         this.onScroll()
-    //         //         this.ticking = false
-    //         //     })
-    //         // }
-    //         // this.ticking = true
-    //    })
 
        this.curtains.onAfterResize(this.onResize.bind(this))
        this.threeD.setPos(this.origin)
@@ -618,9 +582,6 @@ class App {
                 event.preventDefault()
                 let tag = e.querySelector('span').innerHTML.toLowerCase()
 
-                
-
-                
                 if(tag === 'reset all'){
                     this.activeFilters = []
                     this.filters.forEach(e =>{
@@ -714,6 +675,8 @@ class App {
                 easing: 'easeOutBounce',
                 delay: delay,
                })
+
+               getCoord(document.querySelector('[origin]'), true)
 
                this.origin.loaded = true
                document.removeEventListener('click', () => this.startAnim())
