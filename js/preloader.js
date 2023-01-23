@@ -3,6 +3,7 @@ import lottie from 'lottie-web';
 
 class Preloader {
     constructor(){
+        document.querySelector('#preloader').style.display = 'flex'
         this.wrap = document.querySelector('#preloader .puck')
         console.log(this.wrap)
         this.anim = lottie.loadAnimation({

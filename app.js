@@ -543,8 +543,11 @@ class App {
 
        this.curtains.onAfterResize(this.onResize.bind(this))
        this.threeD.setPos(this.origin)
-        
 
+        window.addEventListener("popstate", (event) => {
+           this.storeScroll()
+        });
+        
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e) => {
             e.el.addEventListener('mouseenter', ()=> {
                 
@@ -628,6 +631,12 @@ class App {
             
         })
        
+    }
+
+    storeScroll(){
+        // let slug = window.location.pathname.match(/[^\/]+/g)
+        // console.log(window.location.pathname)
+        // sessionStorage.setItem(`scroll-${slug}`, this.container.scrollTop )
     }
 
     preload(){
@@ -717,6 +726,7 @@ class App {
     onPageChange(href){
         this.trans()
         this.preloader.start()
+        this.storeScroll()
         anime({
             targets: '.burger-menu',
             opacity: 0,

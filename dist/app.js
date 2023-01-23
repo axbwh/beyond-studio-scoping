@@ -1033,6 +1033,9 @@ class App {
         this.scrollbar = this.tier.isMobile ? false : new (0, _scrollbarDefault.default)(this.container, this);
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
+        window.addEventListener("popstate", (event)=>{
+            this.storeScroll();
+        });
         this.colorTriggers.length > 0 && this.colorTriggers.forEach((e)=>{
             e.el.addEventListener("mouseenter", ()=>{
                 !this.transition && (0, _animejsDefault.default).set(this.hoverColors, {
@@ -1094,6 +1097,11 @@ class App {
             if (this.inMenu) this.menuClose();
             else this.menuOpen();
         });
+    }
+    storeScroll() {
+    // let slug = window.location.pathname.match(/[^\/]+/g)
+    // console.log(window.location.pathname)
+    // sessionStorage.setItem(`scroll-${slug}`, this.container.scrollTop )
     }
     preload() {
         setTimeout(()=>{
@@ -1168,6 +1176,7 @@ class App {
     onPageChange(href) {
         this.trans();
         this.preloader.start();
+        this.storeScroll();
         (0, _animejsDefault.default)({
             targets: ".burger-menu",
             opacity: 0,
@@ -70116,6 +70125,7 @@ var _lottieWeb = require("lottie-web");
 var _lottieWebDefault = parcelHelpers.interopDefault(_lottieWeb);
 class Preloader {
     constructor(){
+        document.querySelector("#preloader").style.display = "flex";
         this.wrap = document.querySelector("#preloader .puck");
         console.log(this.wrap);
         this.anim = (0, _lottieWebDefault.default).loadAnimation({
@@ -85252,10 +85262,15 @@ var _animejsDefault = parcelHelpers.interopDefault(_animejs);
 scrollToId = (app)=>{
     let container = document.querySelector(".scrolldom");
     if (container) {
+        let slug = window.location.pathname.match(/[^\/]+/g);
         if (window.location.hash && document.querySelector(window.location.hash)) {
             let target = document.querySelector(window.location.hash).offsetTop;
             container.scrollTop = target;
             if (app) app.y = target;
+        } else if (sessionStorage.getItem(`scroll-${slug}`)) {
+            let target1 = sessionStorage.getItem(`scroll-${slug}`);
+            container.scrollTop = target1;
+            if (app) app.y = target1;
         }
         document.querySelectorAll("a[href^='#']").forEach((e)=>{
             let href = e.href.substring(e.href.lastIndexOf("#"));
