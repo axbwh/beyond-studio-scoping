@@ -1049,7 +1049,6 @@ class App {
             this.onScroll(event);
         });
         this.scrollbar = this.tier.isMobile ? false : new (0, _scrollbarDefault.default)(this.container, this);
-        this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
         window.addEventListener("resize", ()=>{
             _resize();

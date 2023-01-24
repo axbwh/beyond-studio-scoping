@@ -564,8 +564,6 @@ class App {
        
        this.scrollbar = this.tier.isMobile ? false : new ScrollBar(this.container, this)
 
-
-       this.curtains.onAfterResize(this.onResize.bind(this))
        this.threeD.setPos(this.origin)
 
        window.addEventListener('resize', ()=> {
