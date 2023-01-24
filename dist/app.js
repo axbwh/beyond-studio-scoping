@@ -1099,9 +1099,8 @@ class App {
         });
     }
     storeScroll() {
-    // let slug = window.location.pathname.match(/[^\/]+/g)
-    // console.log(window.location.pathname)
-    // sessionStorage.setItem(`scroll-${slug}`, this.container.scrollTop )
+        let slug = window.location.pathname.match(/[^\/]+/g);
+        sessionStorage.setItem(`scroll-${slug}`, this.container.scrollTop);
     }
     preload() {
         setTimeout(()=>{
@@ -70125,9 +70124,7 @@ var _lottieWeb = require("lottie-web");
 var _lottieWebDefault = parcelHelpers.interopDefault(_lottieWeb);
 class Preloader {
     constructor(){
-        document.querySelector("#preloader").style.display = "flex";
         this.wrap = document.querySelector("#preloader .puck");
-        console.log(this.wrap);
         this.anim = (0, _lottieWebDefault.default).loadAnimation({
             container: this.wrap,
             renderer: "svg",
@@ -85262,7 +85259,7 @@ var _animejsDefault = parcelHelpers.interopDefault(_animejs);
 scrollToId = (app)=>{
     let container = document.querySelector(".scrolldom");
     if (container) {
-        let slug = window.location.pathname.match(/[^\/]+/g);
+        let slug = window.location.pathname;
         if (window.location.hash && document.querySelector(window.location.hash)) {
             let target = document.querySelector(window.location.hash).offsetTop;
             container.scrollTop = target;

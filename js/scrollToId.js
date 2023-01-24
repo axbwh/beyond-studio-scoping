@@ -6,7 +6,7 @@ scrollToId = (app) => {
 
 
     if (container) {
-        let slug = window.location.pathname.match(/[^\/]+/g)
+        let slug = window.location.pathname
 
         if(window.location.hash && document.querySelector(window.location.hash)){
             let target = document.querySelector(window.location.hash).offsetTop

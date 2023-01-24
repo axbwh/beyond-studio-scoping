@@ -634,9 +634,8 @@ class App {
     }
 
     storeScroll(){
-        // let slug = window.location.pathname.match(/[^\/]+/g)
-        // console.log(window.location.pathname)
-        // sessionStorage.setItem(`scroll-${slug}`, this.container.scrollTop )
+        let slug = window.location.pathname.match(/[^\/]+/g)
+        sessionStorage.setItem(`scroll-${slug}`, this.container.scrollTop )
     }
 
     preload(){
