@@ -783,6 +783,7 @@ class App {
             }, previousTime);
         });
         this.timeline = timeline;
+        this.scroll.value = this.y;
         this.onScroll();
         (0, _animejsDefault.default).set(this.hoverColors, {
             ...this.hoverColors
@@ -1119,7 +1120,7 @@ class App {
         });
     }
     storeScroll() {
-        let slug = window.location.pathname.match(/[^\/]+/g);
+        let slug = window.location.pathname;
         sessionStorage.setItem(`scroll-${slug}`, this.container.scrollTop);
     }
     preload() {
@@ -85282,13 +85283,13 @@ scrollToId = (app)=>{
     let container = document.querySelector(".scrolldom");
     if (container) {
         let slug = window.location.pathname;
+        console.log(slug, sessionStorage.getItem(`scroll-${slug}`));
         if (window.location.hash && document.querySelector(window.location.hash)) {
             let target = document.querySelector(window.location.hash).offsetTop;
             container.scrollTop = target;
             if (app) app.y = target;
         } else if (sessionStorage.getItem(`scroll-${slug}`)) {
             let target1 = sessionStorage.getItem(`scroll-${slug}`);
-            container.scrollTop = target1;
             if (app) app.y = target1;
         }
         document.querySelectorAll("a[href^='#']").forEach((e)=>{

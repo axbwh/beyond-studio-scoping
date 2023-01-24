@@ -7,7 +7,7 @@ scrollToId = (app) => {
 
     if (container) {
         let slug = window.location.pathname
-
+        console.log(slug, sessionStorage.getItem(`scroll-${slug}`))
         if(window.location.hash && document.querySelector(window.location.hash)){
             let target = document.querySelector(window.location.hash).offsetTop
             container.scrollTop = target
@@ -16,7 +16,6 @@ scrollToId = (app) => {
             }
         }else if(sessionStorage.getItem(`scroll-${slug}`)){
             let target = sessionStorage.getItem(`scroll-${slug}`)
-            container.scrollTop = target
             if(app){
                 app.y = target
             }

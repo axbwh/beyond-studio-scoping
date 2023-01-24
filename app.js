@@ -248,6 +248,7 @@ class App {
         })
 
         this.timeline = timeline
+        this.scroll.value = this.y
         this.onScroll()
 
         anime.set( this.hoverColors, {
@@ -370,8 +371,6 @@ class App {
 
 
     onResize(){
-
-
         this.height = window.innerHeight
         this.contHeight = this.container.scrollHeight
         this.width = window.innerWidth
@@ -660,7 +659,7 @@ class App {
     }
 
     storeScroll(){
-        let slug = window.location.pathname.match(/[^\/]+/g)
+        let slug = window.location.pathname
         sessionStorage.setItem(`scroll-${slug}`, this.container.scrollTop )
     }
 
