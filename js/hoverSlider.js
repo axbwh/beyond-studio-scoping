@@ -7,6 +7,7 @@ class HoverSlider {
     this.curtains = curtains
     this.element = el
     this.triggers = trigger.querySelectorAll('.service')
+    this.images = this.element.querySelectorAll('img')
 
     this.params = {
       vertexShader: sliderVert,
@@ -24,7 +25,7 @@ class HoverSlider {
     this.state = {
       activeIndex: 0,
       nextIndex: 1, // does not care for now
-      maxTextures: this.element.querySelectorAll('img').length, // -1 because displacement image does not count
+      maxTextures: this.images.length, // -1 because displacement image does not count
 
       isChanging: false,
       transitionTimer: 0,
@@ -93,9 +94,9 @@ class HoverSlider {
   onEnter(i) {
 
     this.state.activeIndex = this.state.nextIndex
-    this.active.setSource(this.plane.images[this.state.activeIndex])
-    this.displacement.setSource(this.plane.images[this.state.activeIndex])
-    this.next.setSource(this.plane.images[i])
+    this.active.setSource(this.images[this.state.activeIndex])
+    this.displacement.setSource(this.images[this.state.activeIndex])
+    this.next.setSource(this.images[i])
     this.state.nextIndex = i
 
     this.state.isChanging = true
