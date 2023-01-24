@@ -395,6 +395,8 @@ class App {
         this.container.scrollTop = this.scroll.value
 
         this.onScroll()
+
+        document.querySelector('#canvas').style.height = `${this.height}px`
         
         this.cards.forEach(c => {
             c.resize()

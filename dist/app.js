@@ -889,6 +889,7 @@ class App {
         this.curtains.updateScrollValues(0, this.scroll.value);
         this.container.scrollTop = this.scroll.value;
         this.onScroll();
+        document.querySelector("#canvas").style.height = `${this.height}px`;
         this.cards.forEach((c)=>{
             c.resize();
         });
@@ -55109,7 +55110,6 @@ class ThreeD {
     onWindowResize() {
         this.height = window.innerHeight;
         this.width = window.innerWidth;
-        document.querySelector("#canvas").style.height = `${this.height}px`;
         this.camera.aspect = this.width / this.height;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.width, this.height);
