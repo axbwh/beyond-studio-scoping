@@ -242,6 +242,7 @@ class ThreeD {
     onWindowResize(){
         this.height = window.innerHeight
         this.width = window.innerWidth
+        document.querySelector('#canvas').style.height = `${this.height}px`
         this.camera.aspect = this.width / this.height
         this.camera.updateProjectionMatrix()
         this.renderer.setSize( this.width, this.height)

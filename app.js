@@ -371,7 +371,7 @@ class App {
         this.height = window.innerHeight
         this.contHeight = this.container.scrollHeight
         this.width = window.innerWidth
-        document.querySelector('#canvas').style.height = `${this.height}px`
+        console.log(document.querySelector('#canvas').style.height, this.height )
         this.inMenu && this.menuClose()
         anime.set({
             targets: this.container,

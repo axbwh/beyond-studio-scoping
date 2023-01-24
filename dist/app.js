@@ -870,7 +870,7 @@ class App {
         this.height = window.innerHeight;
         this.contHeight = this.container.scrollHeight;
         this.width = window.innerWidth;
-        document.querySelector("#canvas").style.height = `${this.height}px`;
+        console.log(document.querySelector("#canvas").style.height, this.height);
         this.inMenu && this.menuClose();
         (0, _animejsDefault.default).set({
             targets: this.container,
@@ -55099,6 +55099,7 @@ class ThreeD {
     onWindowResize() {
         this.height = window.innerHeight;
         this.width = window.innerWidth;
+        document.querySelector("#canvas").style.height = `${this.height}px`;
         this.camera.aspect = this.width / this.height;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.width, this.height);
