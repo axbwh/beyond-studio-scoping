@@ -599,6 +599,7 @@ class App {
         this.container = document.querySelector(".scrolldom");
         this.contHeight = this.container.scrollHeight;
         this.y = 0;
+        this.ny = 0;
         this.canScroll = true;
         this.height = window.innerHeight;
         this.width = window.innerWidth;
@@ -870,15 +871,24 @@ class App {
         this.height = window.innerHeight;
         this.contHeight = this.container.scrollHeight;
         this.width = window.innerWidth;
-        console.log(document.querySelector("#canvas").style.height, this.height);
         this.inMenu && this.menuClose();
         (0, _animejsDefault.default).set({
             targets: this.container,
             opacity: 1
         });
-        this.initTimeline();
         this.loopSlider && this.loopSlider.resize();
         this.scrollbar && this.scrollbar.onResize();
+        console.log(this.y);
+        this.y = 0;
+        this.scroll.value = 0;
+        this.container.scrollTop = this.scroll.value;
+        this.curtains.updateScrollValues(0, 0);
+        this.initTimeline();
+        this.scroll.value = this.ny * (this.contHeight - this.height);
+        this.y = this.scroll.value;
+        this.curtains.updateScrollValues(0, this.scroll.value);
+        this.container.scrollTop = this.scroll.value;
+        this.onScroll();
         this.cards.forEach((c)=>{
             c.resize();
         });
@@ -1307,9 +1317,9 @@ class App {
         this.scroll.value = this.curtains.lerp(this.scroll.value, this.y, delta * 2.5);
         this.curtains.updateScrollValues(0, this.scroll.value);
         this.container.scrollTop = this.scroll.value;
-        let y = this.scroll.value / (this.contHeight - this.height);
-        this.scrollbar && this.scrollbar.set(y);
-        this.timeline.seek(this.timeline.duration * y);
+        this.ny = this.scroll.value / (this.contHeight - this.height);
+        this.scrollbar && this.scrollbar.set(this.ny);
+        this.timeline.seek(this.timeline.duration * this.ny);
         let mouseVal = this.pass.uniforms.mouse.value;
         //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
         /// axes mixed with origin
