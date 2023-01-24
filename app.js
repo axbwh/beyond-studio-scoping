@@ -116,7 +116,7 @@ class App {
         this.threeD = new ThreeD(this.pixelRatio, this.tier, this)
         this.textTextures = []
         this.ticking = false
-
+        this.rendering = true
     }
 
     init(){
@@ -126,6 +126,7 @@ class App {
             container: "canvas",
             pixelRatio: this.pixelRatio,
             watchScroll: false,
+            autoResize: false
             //premultipliedAlpha: true,
             //antialias: false,
         })
@@ -369,9 +370,12 @@ class App {
 
 
     onResize(){
+
+
         this.height = window.innerHeight
         this.contHeight = this.container.scrollHeight
         this.width = window.innerWidth
+        document.querySelector('#canvas').style.height = `${this.height}px`
         this.inMenu && this.menuClose()
         anime.set({
             targets: this.container,
@@ -380,12 +384,13 @@ class App {
         this.loopSlider && this.loopSlider.resize()
         this.scrollbar && this.scrollbar.onResize()
 
-        console.log(this.y)
 
         this.y = 0
         this.scroll.value = 0
         this.container.scrollTop = this.scroll.value
         this.curtains.updateScrollValues(0, 0)
+        this.curtains.resize()
+        this.threeD.onWindowResize()
         
         this.initTimeline()
 
@@ -396,11 +401,11 @@ class App {
 
         this.onScroll()
 
-        document.querySelector('#canvas').style.height = `${this.height}px`
-        
         this.cards.forEach(c => {
             c.resize()
         })
+
+        this.rendering = true
     }
 
     onSuccess(){
@@ -546,6 +551,7 @@ class App {
         this.pass.onRender(this.onRender.bind(this))
 
         let _mouse = _.throttle(this.mouseEvent.bind(this), 16, {'trailing' : true, 'leading': true})
+        let _resize = _.debounce(() => this.onResize(), 100, {'trailing' : true })
 
        document.addEventListener('mousemove', _mouse.bind(this), false);
 
@@ -561,6 +567,10 @@ class App {
 
        this.curtains.onAfterResize(this.onResize.bind(this))
        this.threeD.setPos(this.origin)
+
+       window.addEventListener('resize', ()=> {
+        _resize()
+       })
 
         window.addEventListener("popstate", (event) => {
            this.storeScroll()
@@ -884,6 +894,7 @@ class App {
     }
 
     onRender(){
+        if(this.rendering){
         this.stats.begin()
         
         let delta = this.getDelta()
@@ -948,6 +959,7 @@ class App {
         })
 
         this.stats.end()
+        }
     }
 
     mouseEvent(event){

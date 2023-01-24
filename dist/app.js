@@ -664,6 +664,7 @@ class App {
         this.threeD = new (0, _3DDefault.default)(this.pixelRatio, this.tier, this);
         this.textTextures = [];
         this.ticking = false;
+        this.rendering = true;
     }
     init() {
         document.querySelector("#canvas").style.height = `${this.height}px`;
@@ -671,7 +672,8 @@ class App {
         this.curtains = new (0, _curtainsjs.Curtains)({
             container: "canvas",
             pixelRatio: this.pixelRatio,
-            watchScroll: false
+            watchScroll: false,
+            autoResize: false
         });
         this.curtains.gl.blendFunc(this.curtains.gl.SRC_ALPHA, this.curtains.gl.ONE_MINUS_SRC_ALPHA);
         this.curtains.gl.blendFunc(this.curtains.gl.ONE_MINUS_DST_ALPHA, this.curtains.gl.DST_ALPHA);
@@ -871,6 +873,7 @@ class App {
         this.height = window.innerHeight;
         this.contHeight = this.container.scrollHeight;
         this.width = window.innerWidth;
+        document.querySelector("#canvas").style.height = `${this.height}px`;
         this.inMenu && this.menuClose();
         (0, _animejsDefault.default).set({
             targets: this.container,
@@ -878,21 +881,22 @@ class App {
         });
         this.loopSlider && this.loopSlider.resize();
         this.scrollbar && this.scrollbar.onResize();
-        console.log(this.y);
         this.y = 0;
         this.scroll.value = 0;
         this.container.scrollTop = this.scroll.value;
         this.curtains.updateScrollValues(0, 0);
+        this.curtains.resize();
+        this.threeD.onWindowResize();
         this.initTimeline();
         this.scroll.value = this.ny * (this.contHeight - this.height);
         this.y = this.scroll.value;
         this.curtains.updateScrollValues(0, this.scroll.value);
         this.container.scrollTop = this.scroll.value;
         this.onScroll();
-        document.querySelector("#canvas").style.height = `${this.height}px`;
         this.cards.forEach((c)=>{
             c.resize();
         });
+        this.rendering = true;
     }
     onSuccess() {
         this.slider = document.getElementById("slider") ? new (0, _sliderDefault.default)(this.curtains, document.getElementById("slider"), document.getElementById("slider-dom"), document.getElementById("slider-trigger")) : false;
@@ -1032,6 +1036,9 @@ class App {
             "trailing": true,
             "leading": true
         });
+        let _resize = (0, _lodashDefault.default).debounce(()=>this.onResize(), 100, {
+            "trailing": true
+        });
         document.addEventListener("mousemove", _mouse.bind(this), false);
         this.scroller = new (0, _virtualScrollDefault.default)({
             preventTouch: false,
@@ -1044,6 +1051,9 @@ class App {
         this.scrollbar = this.tier.isMobile ? false : new (0, _scrollbarDefault.default)(this.container, this);
         this.curtains.onAfterResize(this.onResize.bind(this));
         this.threeD.setPos(this.origin);
+        window.addEventListener("resize", ()=>{
+            _resize();
+        });
         window.addEventListener("popstate", (event)=>{
             this.storeScroll();
         });
@@ -1312,59 +1322,61 @@ class App {
         this.y = y * (this.contHeight - this.height);
     }
     onRender() {
-        this.stats.begin();
-        let delta = this.getDelta();
-        //this.scroll.lastValue = this.scroll.value
-        this.scroll.value = this.curtains.lerp(this.scroll.value, this.y, delta * 2.5);
-        this.curtains.updateScrollValues(0, this.scroll.value);
-        this.container.scrollTop = this.scroll.value;
-        this.ny = this.scroll.value / (this.contHeight - this.height);
-        this.scrollbar && this.scrollbar.set(this.ny);
-        this.timeline.seek(this.timeline.duration * this.ny);
-        let mouseVal = this.pass.uniforms.mouse.value;
-        //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
-        /// axes mixed with origin
-        let ax = {
-            ...this.axes,
-            x: this.curtains.lerp(this.origin.x, this.axes.x, this.origin.range),
-            y: this.curtains.lerp(this.origin.y, this.axes.y, this.origin.range),
-            size: this.curtains.lerp(this.origin.size, this.axes.size, this.origin.range),
-            range: this.curtains.lerp(this.origin.range, this.axes.range, this.origin.range),
-            rotRange: this.curtains.lerp(this.origin.rotRange, this.axes.rotRange, this.origin.rotRange)
-        };
-        ///
-        this.threeD.move(ax, this.mouse, delta);
-        this.threeD.render();
-        let mouseLerp = [
-            this.curtains.lerp(mouseVal[0], this.mouse.x, delta * 3.125),
-            this.curtains.lerp(mouseVal[1], this.mouse.y, delta * 3.125)
-        ];
-        this.pass.uniforms.mouse.value = mouseLerp;
-        this.pass.uniforms.time.value += delta * 50;
-        //this.impulses.color = this.curtains.lerp(this.impulses.color, this.hoverColors.mix, delta * 3.15)
-        let colAtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.a), (0, _utils.rgbaToArray)(this.hoverColors.a), this.hoverColors.mix);
-        let colBtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.b), (0, _utils.rgbaToArray)(this.hoverColors.b), this.hoverColors.mix);
-        let colCtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.c), (0, _utils.rgbaToArray)(this.hoverColors.c), this.hoverColors.mix);
-        let colDtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.d), (0, _utils.rgbaToArray)(this.hoverColors.d), this.hoverColors.mix);
-        let colOtarget = this.curtains.lerp(this.colors.opacity, this.hoverColors.opacity, this.hoverColors.mix);
-        colOtarget = this.curtains.lerp(1.0, colOtarget, this.origin.range);
-        this.pass.uniforms.colA.value = (0, _utils.lerpRgba)(this.pass.uniforms.colA.value, colAtarget, delta * 1.5);
-        this.pass.uniforms.colB.value = (0, _utils.lerpRgba)(this.pass.uniforms.colB.value, colBtarget, delta * 1.5);
-        this.pass.uniforms.colC.value = (0, _utils.lerpRgba)(this.pass.uniforms.colC.value, colCtarget, delta * 1.5);
-        this.pass.uniforms.colD.value = (0, _utils.lerpRgba)(this.pass.uniforms.colD.value, colDtarget, delta * 1.5);
-        this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5);
-        this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta * 1.5);
-        // this.pass.uniforms.morph.value = this.pass.uniforms.morph.value > 0.01 ? this.pass.uniforms.morph.value : 0
-        this.pass.uniforms.opacity.value = this.curtains.lerp(this.pass.uniforms.opacity.value, this.impulses.opacity, delta * 4);
-        if (this.fadeIn && this.fadeOut) {
-            this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4);
-            this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4);
+        if (this.rendering) {
+            this.stats.begin();
+            let delta = this.getDelta();
+            //this.scroll.lastValue = this.scroll.value
+            this.scroll.value = this.curtains.lerp(this.scroll.value, this.y, delta * 2.5);
+            this.curtains.updateScrollValues(0, this.scroll.value);
+            this.container.scrollTop = this.scroll.value;
+            this.ny = this.scroll.value / (this.contHeight - this.height);
+            this.scrollbar && this.scrollbar.set(this.ny);
+            this.timeline.seek(this.timeline.duration * this.ny);
+            let mouseVal = this.pass.uniforms.mouse.value;
+            //this.impulses.acceleration = THREE.MathUtils.damp(this.impulses.acceleration, 0.005, 1, delta)
+            /// axes mixed with origin
+            let ax = {
+                ...this.axes,
+                x: this.curtains.lerp(this.origin.x, this.axes.x, this.origin.range),
+                y: this.curtains.lerp(this.origin.y, this.axes.y, this.origin.range),
+                size: this.curtains.lerp(this.origin.size, this.axes.size, this.origin.range),
+                range: this.curtains.lerp(this.origin.range, this.axes.range, this.origin.range),
+                rotRange: this.curtains.lerp(this.origin.rotRange, this.axes.rotRange, this.origin.rotRange)
+            };
+            ///
+            this.threeD.move(ax, this.mouse, delta);
+            this.threeD.render();
+            let mouseLerp = [
+                this.curtains.lerp(mouseVal[0], this.mouse.x, delta * 3.125),
+                this.curtains.lerp(mouseVal[1], this.mouse.y, delta * 3.125)
+            ];
+            this.pass.uniforms.mouse.value = mouseLerp;
+            this.pass.uniforms.time.value += delta * 50;
+            //this.impulses.color = this.curtains.lerp(this.impulses.color, this.hoverColors.mix, delta * 3.15)
+            let colAtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.a), (0, _utils.rgbaToArray)(this.hoverColors.a), this.hoverColors.mix);
+            let colBtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.b), (0, _utils.rgbaToArray)(this.hoverColors.b), this.hoverColors.mix);
+            let colCtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.c), (0, _utils.rgbaToArray)(this.hoverColors.c), this.hoverColors.mix);
+            let colDtarget = (0, _utils.lerpRgba)((0, _utils.rgbaToArray)(this.colors.d), (0, _utils.rgbaToArray)(this.hoverColors.d), this.hoverColors.mix);
+            let colOtarget = this.curtains.lerp(this.colors.opacity, this.hoverColors.opacity, this.hoverColors.mix);
+            colOtarget = this.curtains.lerp(1.0, colOtarget, this.origin.range);
+            this.pass.uniforms.colA.value = (0, _utils.lerpRgba)(this.pass.uniforms.colA.value, colAtarget, delta * 1.5);
+            this.pass.uniforms.colB.value = (0, _utils.lerpRgba)(this.pass.uniforms.colB.value, colBtarget, delta * 1.5);
+            this.pass.uniforms.colC.value = (0, _utils.lerpRgba)(this.pass.uniforms.colC.value, colCtarget, delta * 1.5);
+            this.pass.uniforms.colD.value = (0, _utils.lerpRgba)(this.pass.uniforms.colD.value, colDtarget, delta * 1.5);
+            this.pass.uniforms.gradientOpacity.value = this.curtains.lerp(this.pass.uniforms.gradientOpacity.value, colOtarget, delta * 1.5);
+            this.pass.uniforms.morph.value = this.curtains.lerp(this.pass.uniforms.morph.value, ax.rotRange, delta * 1.5);
+            // this.pass.uniforms.morph.value = this.pass.uniforms.morph.value > 0.01 ? this.pass.uniforms.morph.value : 0
+            this.pass.uniforms.opacity.value = this.curtains.lerp(this.pass.uniforms.opacity.value, this.impulses.opacity, delta * 4);
+            if (this.fadeIn && this.fadeOut) {
+                this.fadeIn.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeIn.plane.uniforms.opacity.value, this.origin.range, delta * 4);
+                this.fadeOut.plane.uniforms.opacity.value = this.curtains.lerp(this.fadeOut.plane.uniforms.opacity.value, 1.0 - this.origin.range, delta * 4);
+            }
+            this.loopSlider && this.loopSlider.update(delta);
+            this.cards.forEach((c)=>{
+                c.update(delta, this.mse);
+            });
+            this.stats.end();
         }
-        this.loopSlider && this.loopSlider.update(delta);
-        this.cards.forEach((c)=>{
-            c.update(delta, this.mse);
-        });
-        this.stats.end();
     }
     mouseEvent(event) {
         //event.preventDefault();
@@ -54986,7 +54998,6 @@ class ThreeD {
             y: 0.5
         };
         this.time = 0;
-        window.addEventListener("resize", this.onWindowResize.bind(this));
         // this.domEl = document.body.appendChild( this.renderer.domElement )
         //  this.domEl.style.zIndex = 10000
         //  this.domEl.style.position = 'fixed'
