@@ -6,7 +6,7 @@
 	if (typeof parceled === 'undefined') {
 		let script = document.createElement('script')
 		script.type = 'text/javascript'
-		script.src = 'https://psychoactive-studios.github.io/beyond-studio-scoping/dist/app.js?v=15';
+		script.src = 'https://psychoactive-studios.github.io/beyond-studio-scoping/dist/app.js?v=25';
 		document.head.appendChild(script)
 	}
 	//checks if the parceled variable from app.js is undefined- meaning local host isn't up and running
@@ -46,8 +46,11 @@
 		}
 	}
 
-	#preloader p {
+	/* #preloader p {
 		opacity: 0;
+	} */
+
+	.blink{
 		animation: blink 1s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 	}
 
@@ -57,11 +60,11 @@
 
 	@keyframes blink {
 		0% {
-			opacity: 0;
+			opacity: 1;
 		}
 
 		100% {
-			opacity: 1;
+			opacity: 0;
 		}
 	}
 

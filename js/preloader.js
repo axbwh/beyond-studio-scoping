@@ -4,6 +4,7 @@ import lottie from 'lottie-web';
 class Preloader {
     constructor(){
         this.wrap = document.querySelector('#preloader .puck')
+        this.text = document.querySelector('#preloader p')
         this.anim = lottie.loadAnimation({
             container: this.wrap,
             renderer: 'svg',
@@ -16,6 +17,7 @@ class Preloader {
         })
         
         this.forceStart = false
+        this.text.classList.add('blink')
 
         anime.set(this.wrap, {
             opacity: 0
@@ -26,7 +28,7 @@ class Preloader {
             anime({
                 targets: this.wrap,
                 opacity: 1,
-                duration: 500,
+                duration: 1000,
                 easing: "easeInOutSine"
             })
             this.anim.play()
@@ -34,11 +36,16 @@ class Preloader {
         })
     }
 
-    start(){
+    restart(){
+        this.text.classList.remove('blink')
+        anime.set(this.wrap, {
+            opacity: 0
+        })
+        
         anime({
             targets: '#preloader .hero-content-wrapper',
             opacity: 1,
-            duration: 500
+            duration: 1000
         })
         this.forceStart = true
         this.anim.loop = true

@@ -743,7 +743,7 @@ class App {
             duration: 1500,
             x: 0,
             y: 0,
-            size: this.width > this.height ? this.height * 2.2: this.width * (2.2 /1.29),
+            size: this.width > this.height ? this.width* 2.2: this.height * (2.2 /1.29),
             easing: 'easeInOutExpo',
         })
     }
@@ -751,7 +751,7 @@ class App {
     
     onPageChange(href){
         this.trans()
-        this.preloader.start()
+        this.preloader.restart()
         this.storeScroll()
         anime({
             targets: '.burger-menu',
@@ -767,11 +767,13 @@ class App {
         anime({
             targets: '#preloader',
             opacity: 1,
-            duration: 2000,
-            delay: 1500,
-            easing: 'easeInOutExpo',
+            duration: 1000,
+            delay: 1000,
+            easing: 'easeInSine',
         })
-        .finished.then(() => this.preloader.stop).then(() => window.location.href = href)
+        .finished
+        //.then(() => this.preloader.stop)
+        .then(() => window.location.href = href)
     }
 
     menuOpen(){

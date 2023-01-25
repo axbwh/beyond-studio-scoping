@@ -1190,13 +1190,13 @@ class App {
             duration: 1500,
             x: 0,
             y: 0,
-            size: this.width > this.height ? this.height * 2.2 : this.width * (2.2 / 1.29),
+            size: this.width > this.height ? this.width * 2.2 : this.height * (2.2 / 1.29),
             easing: "easeInOutExpo"
         });
     }
     onPageChange(href) {
         this.trans();
-        this.preloader.start();
+        this.preloader.restart();
         this.storeScroll();
         (0, _animejsDefault.default)({
             targets: ".burger-menu",
@@ -1210,10 +1210,11 @@ class App {
         (0, _animejsDefault.default)({
             targets: "#preloader",
             opacity: 1,
-            duration: 2000,
-            delay: 1500,
-            easing: "easeInOutExpo"
-        }).finished.then(()=>this.preloader.stop).then(()=>window.location.href = href);
+            duration: 1000,
+            delay: 1000,
+            easing: "easeInSine"
+        }).finished//.then(() => this.preloader.stop)
+        .then(()=>window.location.href = href);
     }
     menuOpen() {
         this.canScroll = false;
@@ -70149,6 +70150,7 @@ var _lottieWebDefault = parcelHelpers.interopDefault(_lottieWeb);
 class Preloader {
     constructor(){
         this.wrap = document.querySelector("#preloader .puck");
+        this.text = document.querySelector("#preloader p");
         this.anim = (0, _lottieWebDefault.default).loadAnimation({
             container: this.wrap,
             renderer: "svg",
@@ -70159,6 +70161,7 @@ class Preloader {
             path: "https://uploads-ssl.webflow.com/6370af344b77a6b1153f7f41/63c89ef491c3e307e0ef43f9_Beyond_Preloader_Puck_v01.json"
         });
         this.forceStart = false;
+        this.text.classList.add("blink");
         (0, _animejsDefault.default).set(this.wrap, {
             opacity: 0
         });
@@ -70167,18 +70170,22 @@ class Preloader {
             (0, _animejsDefault.default)({
                 targets: this.wrap,
                 opacity: 1,
-                duration: 500,
+                duration: 1000,
                 easing: "easeInOutSine"
             });
             this.anim.play();
             this.wrap.querySelector("svg").style.opacity = "1";
         });
     }
-    start() {
+    restart() {
+        this.text.classList.remove("blink");
+        (0, _animejsDefault.default).set(this.wrap, {
+            opacity: 0
+        });
         (0, _animejsDefault.default)({
             targets: "#preloader .hero-content-wrapper",
             opacity: 1,
-            duration: 500
+            duration: 1000
         });
         this.forceStart = true;
         this.anim.loop = true;
