@@ -627,8 +627,10 @@ class App {
                 
                 
                 // let tagged = document.querySelectorAll(`[category*="${tag}"]`)
-                document.querySelectorAll('[role="listitem"]').forEach((e, i) =>{
+                document.querySelectorAll('.cms-item').forEach((e, i) =>{
+                    console.log(e)
                     let category = e.querySelector(`[category]`).getAttribute('category').toLowerCase()
+
 
                     e.style.display = this.activeFilters.includes(category) || this.activeFilters.length < 1 ? '' : 'none'                
                 })
