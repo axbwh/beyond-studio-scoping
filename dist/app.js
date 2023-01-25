@@ -65385,7 +65385,7 @@ class HoverSlider {
     constructor(curtains, el, trigger){
         this.curtains = curtains;
         this.element = el;
-        this.triggers = trigger.querySelectorAll(".service");
+        this.triggers = trigger.querySelectorAll(".service, .cms-item");
         this.images = this.element.querySelectorAll("img");
         this.params = {
             vertexShader: (0, _sliderVertDefault.default),
