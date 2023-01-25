@@ -217,10 +217,10 @@ class ThreeD {
 
         this.groupRot = this.app.curtains.lerp(this.groupRot, THREE.MathUtils.degToRad(this.rotationTarget)  * axes.rotRange , delta * 2)
         
-        if(this.groupRot >= Math.PI * 2){
+        if(this.groupRot > Math.PI * 2){
             this.groupRot = 0
             this.rotationTarget = this.rotationTarget - 360
-        }else if(this.groupRot <= 0){
+        }else if(this.groupRot < 0){
             this.groupRot = Math.PI * 2
             this.rotationTarget = this.rotationTarget + 360
         }
