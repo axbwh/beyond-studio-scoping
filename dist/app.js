@@ -55103,7 +55103,8 @@ class ThreeD {
     move(axes, mouse, delta = 1) {
         let mpos = this.isMobile ? this.mobileMove(axes) : this.screenToPos(mouse.x, mouse.y);
         let pos = this.screenToPos(axes.x, axes.y);
-        this.setScale(axes.size);
+        let mobMult = this.isMobile ? 1 + 0.2 * axes.range : 1;
+        this.setScale(axes.size * mobMult);
         pos.lerp(mpos, axes.range);
         this.mesh.rotation.z += this.group.position.distanceTo(pos) * delta * 0.4 * axes.range;
         this.group.position.lerp(pos, delta * 1.5);
