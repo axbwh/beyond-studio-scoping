@@ -420,12 +420,13 @@ export class TextTexture {
      Resize the canvas and write the texture again (internally called right after the plane object has been resized)
      ***/
     resize() {
+        let color = this.textElement.style.color
         this.textElement.style.color=''
         if(this.texture) {
             this.setCanvasSize();
             this.writeTexture();
         }
-        this.textElement.style.color='#ff000000'
+        this.textElement.style.color= color
     }
 
 

@@ -112,11 +112,12 @@ class App {
 
         this.frames = []
         this.pixelRatio = Math.min(this.tier.tier > 1 ? 1 + this.tier.tier / 2 : 1, window.devicePixelRatio)
-
+        this.maxRatio = window.devicePixelRatio
         this.threeD = new ThreeD(this.pixelRatio, this.tier, this)
         this.textTextures = []
         this.ticking = false
         this.rendering = true
+        this.textPlanes = []
     }
 
     init(){
@@ -140,6 +141,7 @@ class App {
             // premultiplyAlpha: true,
             // minFilter: this.curtains.gl.LINEAR_MIPMAP_NEAREST,
             // anisotropy: 16,
+            clear: true,
         }
 
         this.filters = document.querySelectorAll('label.filters')
@@ -259,32 +261,42 @@ class App {
 
     }
 
+    removeText(){
+        if(this.hasText){
+            this.textPlanes.forEach( (plane, i) => {
+                plane.visible = false
+                plane.htmlElement.style.color = ''
+            })
+            this.hasText = false
+        }
+    }
+
     
     initText(target, pass=true){
-
-        const textEls = document.querySelectorAll('[text]')
+        this.textElements = document.querySelectorAll('[text]')
         if(!this.tier.isMobile && this.tier.tier > 1){
-            textEls.forEach(textEl => {    
+            this.textElements.forEach((textEl, i) => {    
                 
                 //console.log(textEl.style.fontSize)
-                const plane = new Plane(this.curtains, textEl, {
+                this.textPlanes[i] = new Plane(this.curtains, textEl, {
                     vertexShader: textShader.vs,
                     fragmentShader: textShader.fs
                 })
                 // create the text texture and... that's it!
                 this.textTextures[this.textTextures.length] = new TextTexture({
-                    plane: plane,
-                    textElement: plane.htmlElement,
+                    plane: this.textPlanes[i],
+                    textElement: this.textPlanes[i].htmlElement,
                     sampler: "uTexture",
                     resolution: 1.5,
                     skipFontLoading: true, // we've already loaded the fonts
                 })
 
-                plane.setRenderTarget(target)
+                this.textPlanes[i].setRenderTarget(target)
                 textEl.style.color = "#ff000000"//make text invisible bhut still highlightable
             })
         }
 
+        this.hasText = true
 
         if(pass){
             this.pass.createTexture({
@@ -525,7 +537,6 @@ class App {
                 }
             }
         })
-
         this.pass.loadCanvas(this.threeD.canvas)
         this.initText(this.textTarget)
         //our img elements that will be in the puck & outside of it
@@ -862,7 +873,7 @@ class App {
         if(this.frames.length >= 45){
            let total = this.frames.reduce((acc, val) => acc + val)
             if (total / 45 > 1 / 30 && this.pixelRatio > 0.8){
-                let minus = total /45 > 1 / 15 ? 0.3 : 0.1
+                let minus = total /45 > 1 / 15 ? 0.15 : 0.1
                 this.pixelRatio =  this.pixelRatio - minus
                 // anime.set(this.container, {
                 //     translateY: 0
@@ -870,6 +881,12 @@ class App {
                 this.curtains.setPixelRatio(this.pixelRatio)
                 this.threeD.setPixelRatio(this.pixelRatio)
             }
+
+            if(this.pixelRatio < 0.85 && this.hasText){
+                this.removeText()
+            }
+
+            //console.log(total / 45, 1 / 50, total / 45 < 1 / 50, this.pixelRatio, this.maxRatio)
 
             this.frames = []
         }
