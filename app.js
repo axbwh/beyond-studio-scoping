@@ -585,7 +585,7 @@ class App {
             _resize()
        })
 
-       this.container.querySelectorAll('img, #player').forEach(child => {
+       this.container.querySelectorAll('img, #player, .form').forEach(child => {
             observer.observe(child)
        })
 
