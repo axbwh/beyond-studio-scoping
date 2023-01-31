@@ -580,6 +580,15 @@ class App {
         _resize()
        })
 
+       let observer = new ResizeObserver( ()=>{
+        // console.log('resize')
+            _resize()
+       })
+
+       this.container.querySelectorAll('img, #player').forEach(child => {
+            observer.observe(child)
+       })
+
         window.addEventListener("popstate", (event) => {
            this.storeScroll()
         });
