@@ -1074,7 +1074,7 @@ class App {
             // console.log('resize')
             _resize();
         });
-        this.container.querySelectorAll("img, #player, .form").forEach((child)=>{
+        this.container.querySelectorAll("img, #player, #submit").forEach((child)=>{
             observer.observe(child);
         });
         window.addEventListener("popstate", (event)=>{
