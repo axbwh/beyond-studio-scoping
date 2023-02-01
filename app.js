@@ -582,7 +582,7 @@ class App {
 
        let observer = new ResizeObserver( ()=>{
         console.log('resize')
-            _resize()
+            this.onResize()
        })
 
        this.container.querySelectorAll('img, #player, #submit').forEach(child => {
