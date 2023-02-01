@@ -1071,7 +1071,7 @@ class App {
             _resize();
         });
         let observer = new ResizeObserver(()=>{
-            // console.log('resize')
+            console.log("resize");
             _resize();
         });
         this.container.querySelectorAll("img, #player, #submit").forEach((child)=>{

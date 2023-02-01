@@ -581,7 +581,7 @@ class App {
        })
 
        let observer = new ResizeObserver( ()=>{
-        // console.log('resize')
+        console.log('resize')
             _resize()
        })
 
