@@ -458,10 +458,10 @@ class App {
         this.container.style.height = '100%'
         this.container.style.overflow = 'hidden'
         
-        this.stats = new Stats();
-        this.stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
-        this.stats.dom.classList.add('stats');
-        document.body.appendChild( this.stats.dom );
+        // this.stats = new Stats();
+        // this.stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+        // this.stats.dom.classList.add('stats');
+        // document.body.appendChild( this.stats.dom );
 
         this.initTimeline()
 
@@ -925,7 +925,7 @@ class App {
 
     onRender(){
         if(this.rendering){
-        this.stats.begin()
+        // this.stats.begin()
         
         let delta = this.getDelta()
         //this.scroll.lastValue = this.scroll.value
@@ -988,7 +988,7 @@ class App {
             c.update(delta, this.mse)
         })
 
-        this.stats.end()
+        // this.stats.end()
         }
     }
 

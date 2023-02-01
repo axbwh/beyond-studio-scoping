@@ -948,10 +948,10 @@ class App {
     onLoaded() {
         this.container.style.height = "100%";
         this.container.style.overflow = "hidden";
-        this.stats = new (0, _statsJsDefault.default)();
-        this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-        this.stats.dom.classList.add("stats");
-        document.body.appendChild(this.stats.dom);
+        // this.stats = new Stats();
+        // this.stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+        // this.stats.dom.classList.add('stats');
+        // document.body.appendChild( this.stats.dom );
         this.initTimeline();
         this.pass = new (0, _curtainsjs.ShaderPass)(this.curtains, {
             fragmentShader: (0, _pageFragDefault.default),
@@ -1352,7 +1352,7 @@ class App {
     }
     onRender() {
         if (this.rendering) {
-            this.stats.begin();
+            // this.stats.begin()
             let delta = this.getDelta();
             //this.scroll.lastValue = this.scroll.value
             this.scroll.value = this.curtains.lerp(this.scroll.value, this.y, delta * 2.5);
@@ -1404,7 +1404,7 @@ class App {
             this.cards.forEach((c)=>{
                 c.update(delta, this.mse);
             });
-            this.stats.end();
+        // this.stats.end()
         }
     }
     mouseEvent(event) {
