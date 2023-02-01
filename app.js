@@ -580,9 +580,12 @@ class App {
         _resize()
        })
 
+       window.visualViewport.addEventListener('resize', ()=>{
+        _resize()
+       });
+
        let observer = new ResizeObserver( ()=>{
-        console.log('resize')
-            this.onResize()
+            _resize()
        })
 
        this.container.querySelectorAll('img, #player, #submit').forEach(child => {
