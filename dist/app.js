@@ -1171,6 +1171,16 @@ class App {
                 delay: 1500,
                 easing: "easeInSine"
             });
+            (0, _animejsDefault.default)({
+                targets: this.container,
+                opacity: [
+                    0,
+                    1
+                ],
+                duration: 1500,
+                delay: 1500,
+                easing: "easeInSine"
+            });
             if (this.container.scrollTop > 10 || !this.fadeIn) this.startAnim(1000);
             else {
                 document.addEventListener("click", ()=>this.startAnim());
@@ -1427,7 +1437,6 @@ const onReady = async ()=>{
         }
     });
     (0, _copyToClipboardDefault.default)();
-    let parser = new DOMParser();
     document.querySelectorAll("[svg-embed]").forEach((e)=>{
         // let svg = parser.parseFromString(e.innerHTML, "image/svg+xml")
         let parent = e.parentElement;

@@ -711,6 +711,14 @@ class App {
                 delay: 1500,
                 easing: 'easeInSine',
             })
+            
+            anime({
+                targets: this.container,
+                opacity: [0, 1],
+                duration: 1500,
+                delay: 1500,
+                easing: 'easeInSine',
+            })
     
             if(this.container.scrollTop > 10 || !this.fadeIn){
                 this.startAnim(1000)
@@ -1016,7 +1024,7 @@ const onReady = async () => {
     })
 
     copyToClipboard()
-    let parser = new DOMParser()
+
     document.querySelectorAll('[svg-embed]').forEach(e => {
         // let svg = parser.parseFromString(e.innerHTML, "image/svg+xml")
         let parent = e.parentElement
