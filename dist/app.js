@@ -1144,6 +1144,12 @@ class App {
             if (this.inMenu) this.menuClose();
             else this.menuOpen();
         });
+    //    this.maskIframe()
+    }
+    maskIframe() {
+        document.querySelectorAll("iframe").forEach((i)=>{
+            i.style.pointerEvents = "none";
+        });
     }
     storeScroll() {
         let slug = window.location.pathname;

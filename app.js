@@ -160,15 +160,18 @@ class App {
 
         let origin = document.querySelector('[origin]') ? getCoord(document.querySelector('[origin]')) : getCoord(document.querySelector('.puck'))
 
-        this.origin = origin ? {
-            x: origin.x,
-            y: origin.y,
-            size: origin.size,
-            rotation: origin.rotation,
-            rotRange: origin.rotRange,
-            range: this.origin.range,
-            intro: this.origin.intro,
-        } : this.origin
+        if(!this.origin.loaded){
+            this.origin = origin ? {
+                x: origin.x,
+                y: origin.y,
+                size: origin.size,
+                rotation: origin.rotation,
+                rotRange: origin.rotRange,
+                range: this.origin.range,
+                intro: this.origin.intro,
+            } : this.origin
+        }
+
 
         let frames = [...document.querySelectorAll('[stick]')].map(el => {
             return {el: el, coord: getCoord(el)}
@@ -680,7 +683,13 @@ class App {
             }
             
         })
-       
+    //    this.maskIframe()
+    }
+
+    maskIframe(){
+        document.querySelectorAll('iframe').forEach(i => {
+            i.style.pointerEvents = 'none'
+        })
     }
 
     storeScroll(){
