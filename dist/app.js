@@ -698,7 +698,7 @@ class App {
     }
     initTimeline() {
         let origin = document.querySelector("[origin]") ? (0, _utils.getCoord)(document.querySelector("[origin]")) : (0, _utils.getCoord)(document.querySelector(".puck"));
-        this.origin = origin ? {
+        if (!this.origin.loaded) this.origin = origin ? {
             x: origin.x,
             y: origin.y,
             size: origin.size,
