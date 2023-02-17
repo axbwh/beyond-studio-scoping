@@ -750,9 +750,9 @@ class App {
                 duration: 2500,
                 easing: 'easeOutBounce',
                 delay: delay,
-               })
+               }).finished.then(() => {
                 this.hasAnimed = true
-               console.log('started')
+               })
             //    document.removeEventListener('click', () => this.startAnim())
             //    this.container.removeEventListener("scroll", () => this.startAnim())
         }
