@@ -1196,16 +1196,22 @@ class App {
         }, 1000);
     }
     startAnim(delay = 0) {
-        if (!this.hasAnimed && !this.transition) (0, _animejsDefault.default)({
-            targets: this.origin,
-            range: 1,
-            rotRange: 1,
-            duration: 2500,
-            easing: "easeOutBounce",
-            delay: delay
-        }).finished.then(()=>{
-            this.hasAnimed = true;
-        });
+        if (!this.hasAnimed && !this.transition) {
+            (0, _animejsDefault.default)({
+                targets: this.origin,
+                range: 1,
+                rotRange: 1,
+                duration: 2500,
+                easing: "easeOutBounce",
+                delay: delay
+            }).finished.then(()=>{
+                this.hasAnimed = true;
+                console.log("hasAnimed");
+            });
+            console.log("isAnimed");
+        //    document.removeEventListener('click', () => this.startAnim())
+        //    this.container.removeEventListener("scroll", () => this.startAnim())
+        }
     }
     trans() {
         this.transition = true;

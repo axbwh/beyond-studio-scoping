@@ -752,7 +752,9 @@ class App {
                 delay: delay,
                }).finished.then(() => {
                 this.hasAnimed = true
+                console.log('hasAnimed')
                })
+               console.log('isAnimed')
             //    document.removeEventListener('click', () => this.startAnim())
             //    this.container.removeEventListener("scroll", () => this.startAnim())
         }
