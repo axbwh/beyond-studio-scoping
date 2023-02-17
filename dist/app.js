@@ -1197,7 +1197,7 @@ class App {
         }, 1000);
     }
     startAnim(delay = 0) {
-        if (!this.hasAnimed && !this.transition) {
+        if (!this.isAnimed && !this.transition) {
             (0, _animejsDefault.default)({
                 targets: this.origin,
                 range: 1,

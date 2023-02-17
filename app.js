@@ -744,7 +744,7 @@ class App {
     }
 
     startAnim(delay = 0){
-        if(!this.hasAnimed && !this.transition){
+        if(!this.isAnimed && !this.transition){
             anime({
                 targets: this.origin,
                 range: 1,
