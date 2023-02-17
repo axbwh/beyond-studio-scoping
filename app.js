@@ -48,6 +48,7 @@ class App {
         this.width = window.innerWidth
         this.transition = false
         this.inMenu = false
+        this.hasAnimed = false
         // track scroll values
         this.scroll = {
             value: 0,
@@ -160,7 +161,6 @@ class App {
 
         let origin = document.querySelector('[origin]') ? getCoord(document.querySelector('[origin]')) : getCoord(document.querySelector('.puck'))
 
-        if(!this.origin.loaded){
             this.origin = origin ? {
                 x: origin.x,
                 y: origin.y,
@@ -170,7 +170,6 @@ class App {
                 range: this.origin.range,
                 intro: this.origin.intro,
             } : this.origin
-        }
 
 
         let frames = [...document.querySelectorAll('[stick]')].map(el => {
@@ -420,6 +419,8 @@ class App {
         })
 
         this.rendering = true
+
+
     }
 
     onSuccess(){
@@ -741,7 +742,7 @@ class App {
     }
 
     startAnim(delay = 0){
-        if(!this.origin.loaded && !this.transition){
+        if(!this.hasAnimed && !this.transition){
             anime({
                 targets: this.origin,
                 range: 1,
@@ -749,11 +750,11 @@ class App {
                 duration: 2500,
                 easing: 'easeOutBounce',
                 delay: delay,
+               }).finished.then(() => {
+                this.hasAnimed = true
                })
-
-               this.origin.loaded = true
-               document.removeEventListener('click', () => this.startAnim())
-               this.container.removeEventListener("scroll", () => this.startAnim())
+            //    document.removeEventListener('click', () => this.startAnim())
+            //    this.container.removeEventListener("scroll", () => this.startAnim())
         }
     }
 

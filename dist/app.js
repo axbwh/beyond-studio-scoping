@@ -605,6 +605,7 @@ class App {
         this.width = window.innerWidth;
         this.transition = false;
         this.inMenu = false;
+        this.hasAnimed = false;
         // track scroll values
         this.scroll = {
             value: 0,
@@ -698,7 +699,7 @@ class App {
     }
     initTimeline() {
         let origin = document.querySelector("[origin]") ? (0, _utils.getCoord)(document.querySelector("[origin]")) : (0, _utils.getCoord)(document.querySelector(".puck"));
-        if (!this.origin.loaded) this.origin = origin ? {
+        this.origin = origin ? {
             x: origin.x,
             y: origin.y,
             size: origin.size,
@@ -1195,19 +1196,16 @@ class App {
         }, 1000);
     }
     startAnim(delay = 0) {
-        if (!this.origin.loaded && !this.transition) {
-            (0, _animejsDefault.default)({
-                targets: this.origin,
-                range: 1,
-                rotRange: 1,
-                duration: 2500,
-                easing: "easeOutBounce",
-                delay: delay
-            });
-            this.origin.loaded = true;
-            document.removeEventListener("click", ()=>this.startAnim());
-            this.container.removeEventListener("scroll", ()=>this.startAnim());
-        }
+        if (!this.hasAnimed && !this.transition) (0, _animejsDefault.default)({
+            targets: this.origin,
+            range: 1,
+            rotRange: 1,
+            duration: 2500,
+            easing: "easeOutBounce",
+            delay: delay
+        }).finished.then(()=>{
+            this.hasAnimed = true;
+        });
     }
     trans() {
         this.transition = true;
