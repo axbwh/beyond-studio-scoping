@@ -49,6 +49,7 @@ class App {
         this.transition = false
         this.inMenu = false
         this.hasAnimed = false
+        this.isAnimed = false
         // track scroll values
         this.scroll = {
             value: 0,
@@ -161,6 +162,7 @@ class App {
 
         let origin = document.querySelector('[origin]') ? getCoord(document.querySelector('[origin]')) : getCoord(document.querySelector('.puck'))
 
+        if(!this.isAnimed){
             this.origin = origin ? {
                 x: origin.x,
                 y: origin.y,
@@ -170,7 +172,7 @@ class App {
                 range: this.origin.range,
                 intro: this.origin.intro,
             } : this.origin
-
+        }
 
         let frames = [...document.querySelectorAll('[stick]')].map(el => {
             return {el: el, coord: getCoord(el)}
@@ -754,6 +756,7 @@ class App {
                 this.hasAnimed = true
                 console.log('hasAnimed')
                })
+               this.isAnimed = true
                console.log('isAnimed')
             //    document.removeEventListener('click', () => this.startAnim())
             //    this.container.removeEventListener("scroll", () => this.startAnim())

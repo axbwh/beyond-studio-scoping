@@ -606,6 +606,7 @@ class App {
         this.transition = false;
         this.inMenu = false;
         this.hasAnimed = false;
+        this.isAnimed = false;
         // track scroll values
         this.scroll = {
             value: 0,
@@ -699,7 +700,7 @@ class App {
     }
     initTimeline() {
         let origin = document.querySelector("[origin]") ? (0, _utils.getCoord)(document.querySelector("[origin]")) : (0, _utils.getCoord)(document.querySelector(".puck"));
-        this.origin = origin ? {
+        if (!this.isAnimed) this.origin = origin ? {
             x: origin.x,
             y: origin.y,
             size: origin.size,
@@ -1208,6 +1209,7 @@ class App {
                 this.hasAnimed = true;
                 console.log("hasAnimed");
             });
+            this.isAnimed = true;
             console.log("isAnimed");
         //    document.removeEventListener('click', () => this.startAnim())
         //    this.container.removeEventListener("scroll", () => this.startAnim())
